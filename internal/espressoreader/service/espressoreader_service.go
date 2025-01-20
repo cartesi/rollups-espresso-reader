@@ -13,10 +13,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cartesi/espresso-reader/internal/espressoreader"
-	"github.com/cartesi/espresso-reader/internal/evmreader"
-	"github.com/cartesi/espresso-reader/internal/evmreader/retrypolicy"
-	"github.com/cartesi/espresso-reader/internal/repository"
+	"github.com/cartesi/rollups-espresso-reader/internal/espressoreader"
+	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
+	"github.com/cartesi/rollups-espresso-reader/internal/evmreader/retrypolicy"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 
 	"github.com/EspressoSystems/espresso-sequencer-go/client"
 	"github.com/EspressoSystems/espresso-sequencer-go/types"

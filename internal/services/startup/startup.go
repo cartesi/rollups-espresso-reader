@@ -9,9 +9,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/cartesi/espresso-reader/internal/config"
-	"github.com/cartesi/espresso-reader/internal/model"
-	"github.com/cartesi/espresso-reader/internal/repository"
+	"github.com/cartesi/rollups-espresso-reader/internal/config"
+	"github.com/cartesi/rollups-espresso-reader/internal/model"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/lmittmann/tint"

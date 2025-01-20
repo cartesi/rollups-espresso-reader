@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	//    "github.com/cartesi/espresso-reader/internal/repository/memory"
-	. "github.com/cartesi/espresso-reader/internal/repository"
-	"github.com/cartesi/espresso-reader/internal/repository/postgres"
-	//    "github.com/cartesi/espresso-reader/internal/repository/sqlite"
-	//"github.com/cartesi/espresso-reader/internal/repository/migration"
+	//    "github.com/cartesi/rollups-espresso-reader/internal/repository/memory"
+	. "github.com/cartesi/rollups-espresso-reader/internal/repository"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres"
+	//    "github.com/cartesi/rollups-espresso-reader/internal/repository/sqlite"
+	//"github.com/cartesi/rollups-espresso-reader/internal/repository/migration"
 )
 
 // NewRepositoryFromConnectionString chooses the backend based on the connection string.

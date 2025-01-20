@@ -6,9 +6,9 @@ package retrypolicy
 import (
 	"time"
 
-	"github.com/cartesi/espresso-reader/internal/evmreader"
-	"github.com/cartesi/espresso-reader/internal/services/retry"
-	"github.com/cartesi/espresso-reader/pkg/contracts/iapplication"
+	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
+	"github.com/cartesi/rollups-espresso-reader/internal/services/retry"
+	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/iapplication"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"

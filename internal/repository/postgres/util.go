@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-jet/jet/v2/postgres"
 
-	"github.com/cartesi/espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
 )
 
 var hexAddressRegex = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)

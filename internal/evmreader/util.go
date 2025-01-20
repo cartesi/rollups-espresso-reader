@@ -7,7 +7,7 @@ import (
 	"cmp"
 	"slices"
 
-	. "github.com/cartesi/espresso-reader/internal/model"
+	. "github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/ethereum/go-ethereum/common"
 )
 

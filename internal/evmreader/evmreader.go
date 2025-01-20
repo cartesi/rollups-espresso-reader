@@ -11,11 +11,11 @@ import (
 	"os"
 	"strings"
 
-	. "github.com/cartesi/espresso-reader/internal/model"
-	"github.com/cartesi/espresso-reader/internal/repository"
-	appcontract "github.com/cartesi/espresso-reader/pkg/contracts/iapplication"
-	"github.com/cartesi/espresso-reader/pkg/contracts/iconsensus"
-	"github.com/cartesi/espresso-reader/pkg/contracts/iinputbox"
+	. "github.com/cartesi/rollups-espresso-reader/internal/model"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository"
+	appcontract "github.com/cartesi/rollups-espresso-reader/pkg/contracts/iapplication"
+	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/iconsensus"
+	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/iinputbox"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"

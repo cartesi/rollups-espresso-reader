@@ -8,8 +8,8 @@ import (
 	"database/sql"
 	"strings"
 
-	"github.com/cartesi/espresso-reader/internal/model"
-	"github.com/cartesi/espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
+	"github.com/cartesi/rollups-espresso-reader/internal/model"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
 )
 
 func (r *postgresRepository) CreateNodeConfig(

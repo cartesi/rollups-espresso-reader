@@ -5,7 +5,7 @@ package retrypolicy
 import (
 	"time"
 
-	"github.com/cartesi/espresso-reader/internal/evmreader"
+	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"

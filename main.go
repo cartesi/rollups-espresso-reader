@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/cartesi/espresso-reader/internal/config"
-	"github.com/cartesi/espresso-reader/internal/espressoreader/service"
-	"github.com/cartesi/espresso-reader/internal/repository/factory"
-	"github.com/cartesi/espresso-reader/internal/services/startup"
+	"github.com/cartesi/rollups-espresso-reader/internal/config"
+	"github.com/cartesi/rollups-espresso-reader/internal/espressoreader/service"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository/factory"
+	"github.com/cartesi/rollups-espresso-reader/internal/services/startup"
 
 	"github.com/spf13/cobra"
 )
