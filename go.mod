@@ -1,4 +1,4 @@
-module github.com/cartesi/espresso-reader
+module github.com/cartesi/rollups-espresso-reader
 
 go 1.23.2
 

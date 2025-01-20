@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/cartesi/espresso-reader/internal/model"
-	"github.com/cartesi/espresso-reader/internal/repository"
-	"github.com/cartesi/espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
+	"github.com/cartesi/rollups-espresso-reader/internal/model"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/jackc/pgx/v5"
 )

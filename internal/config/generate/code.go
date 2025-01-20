@@ -69,7 +69,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cartesi/espresso-reader/internal/model"
+	"github.com/cartesi/rollups-espresso-reader/internal/model"
 )
 
 type (

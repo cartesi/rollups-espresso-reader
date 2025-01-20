@@ -7,8 +7,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/cartesi/espresso-reader/internal/evmreader"
-	"github.com/cartesi/espresso-reader/internal/services/retry"
+	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
+	"github.com/cartesi/rollups-espresso-reader/internal/services/retry"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"

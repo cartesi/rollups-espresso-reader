@@ -4,7 +4,7 @@
 package evmreader
 
 import (
-	appcontract "github.com/cartesi/espresso-reader/pkg/contracts/iapplication"
+	appcontract "github.com/cartesi/rollups-espresso-reader/pkg/contracts/iapplication"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"

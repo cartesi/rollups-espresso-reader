@@ -10,7 +10,7 @@ import (
 	"log/slog"
 	"math/big"
 
-	. "github.com/cartesi/espresso-reader/internal/model"
+	. "github.com/cartesi/rollups-espresso-reader/internal/model"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"

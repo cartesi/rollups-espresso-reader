@@ -10,8 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/cartesi/espresso-reader/internal/repository"
-	"github.com/cartesi/espresso-reader/internal/repository/postgres/schema"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/schema"
 )
 
 // postgresRepository is the concrete type that implements the repository.Repository interface.

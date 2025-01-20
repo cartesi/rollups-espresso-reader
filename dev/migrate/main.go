@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/cartesi/espresso-reader/internal/config"
-	"github.com/cartesi/espresso-reader/internal/repository/postgres/schema"
+	"github.com/cartesi/rollups-espresso-reader/internal/config"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/schema"
 )
 
 func main() {

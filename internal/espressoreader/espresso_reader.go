@@ -19,9 +19,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cartesi/espresso-reader/internal/evmreader"
-	"github.com/cartesi/espresso-reader/internal/model"
-	"github.com/cartesi/espresso-reader/internal/repository"
+	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
+	"github.com/cartesi/rollups-espresso-reader/internal/model"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 
 	"github.com/EspressoSystems/espresso-sequencer-go/client"
 	"github.com/ethereum/go-ethereum/common"
