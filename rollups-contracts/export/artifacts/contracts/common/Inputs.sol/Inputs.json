@@ -1,0 +1,94 @@
+{
+  "contractName": "Inputs",
+  "sourceName": "contracts/common/Inputs.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "chainId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "appContract",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "msgSender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "blockTimestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "prevRandao",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "payload",
+          "type": "bytes"
+        }
+      ],
+      "name": "EvmAdvance",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {},
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "EvmAdvance(uint256,address,address,uint256,uint256,uint256,uint256,bytes)": {
+        "details": "See EIP-4399 for safe usage of `prevRandao`.",
+        "params": {
+          "appContract": "The application contract address",
+          "blockNumber": "The number of the block in which the input was added",
+          "blockTimestamp": "The timestamp of the block in which the input was added",
+          "chainId": "The chain ID",
+          "index": "The index of the input in the input box",
+          "msgSender": "The address of whoever sent the input",
+          "payload": "The payload provided by the message sender",
+          "prevRandao": "The latest RANDAO mix of the post beacon state of the previous block"
+        }
+      }
+    },
+    "title": "Inputs",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "EvmAdvance(uint256,address,address,uint256,uint256,uint256,uint256,bytes)": {
+        "notice": "An advance request from an EVM-compatible blockchain to a Cartesi Machine."
+      }
+    },
+    "notice": "Defines the signatures of inputs.",
+    "version": 1
+  },
+  "evm": {
+    "gasEstimates": null,
+    "methodIdentifiers": {
+      "EvmAdvance(uint256,address,address,uint256,uint256,uint256,uint256,bytes)": "415bf363"
+    }
+  }
+}

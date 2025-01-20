@@ -1,0 +1,180 @@
+{
+  "contractName": "IQuorumFactory",
+  "sourceName": "contracts/consensus/quorum/IQuorumFactory.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "contract IQuorum",
+          "name": "quorum",
+          "type": "address"
+        }
+      ],
+      "name": "QuorumCreated",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "validators",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "epochLength",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "salt",
+          "type": "bytes32"
+        }
+      ],
+      "name": "calculateQuorumAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "validators",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "epochLength",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "salt",
+          "type": "bytes32"
+        }
+      ],
+      "name": "newQuorum",
+      "outputs": [
+        {
+          "internalType": "contract IQuorum",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "validators",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "epochLength",
+          "type": "uint256"
+        }
+      ],
+      "name": "newQuorum",
+      "outputs": [
+        {
+          "internalType": "contract IQuorum",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {},
+  "devdoc": {
+    "events": {
+      "QuorumCreated(address)": {
+        "details": "MUST be triggered on a successful call to `newQuorum`.",
+        "params": {
+          "quorum": "The quorum"
+        }
+      }
+    },
+    "kind": "dev",
+    "methods": {
+      "calculateQuorumAddress(address[],uint256,bytes32)": {
+        "details": "Beware that only the `newQuorum` function with the `salt` parameter      is able to deterministically deploy a quorum.",
+        "params": {
+          "epochLength": "The epoch length",
+          "salt": "The salt used to deterministically generate the quorum address",
+          "validators": "the list of validators"
+        },
+        "returns": {
+          "_0": "The deterministic quorum address"
+        }
+      },
+      "newQuorum(address[],uint256)": {
+        "details": "On success, MUST emit a `QuorumCreated` event.Duplicates in the `validators` array are ignored.Reverts if the epoch length is zero.",
+        "params": {
+          "epochLength": "The epoch length",
+          "validators": "the list of validators"
+        },
+        "returns": {
+          "_0": "The quorum"
+        }
+      },
+      "newQuorum(address[],uint256,bytes32)": {
+        "details": "On success, MUST emit a `QuorumCreated` event.Duplicates in the `validators` array are ignored.Reverts if the epoch length is zero.",
+        "params": {
+          "epochLength": "The epoch length",
+          "salt": "The salt used to deterministically generate the quorum address",
+          "validators": "the list of validators"
+        },
+        "returns": {
+          "_0": "The quorum"
+        }
+      }
+    },
+    "title": "Quorum Factory interface",
+    "version": 1
+  },
+  "userdoc": {
+    "events": {
+      "QuorumCreated(address)": {
+        "notice": "A new quorum was deployed."
+      }
+    },
+    "kind": "user",
+    "methods": {
+      "calculateQuorumAddress(address[],uint256,bytes32)": {
+        "notice": "Calculate the address of a quorum to be deployed deterministically."
+      },
+      "newQuorum(address[],uint256)": {
+        "notice": "Deploy a new quorum."
+      },
+      "newQuorum(address[],uint256,bytes32)": {
+        "notice": "Deploy a new quorum deterministically."
+      }
+    },
+    "version": 1
+  },
+  "evm": {
+    "gasEstimates": null,
+    "methodIdentifiers": {
+      "calculateQuorumAddress(address[],uint256,bytes32)": "ca8f271c",
+      "newQuorum(address[],uint256)": "d4af3bc8",
+      "newQuorum(address[],uint256,bytes32)": "2f74f862"
+    }
+  }
+}
