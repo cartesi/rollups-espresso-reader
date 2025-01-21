@@ -1,2 +1,4 @@
-internal/repository/postgres/db/
-rollups-espresso-reader
+/internal/repository/postgres/db/
+/rollups-espresso-reader
+/rollups-node
+/cartesi-rollups-*
