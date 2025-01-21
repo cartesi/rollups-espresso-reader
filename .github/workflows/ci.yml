@@ -1,0 +1,453 @@
+name: CI with PostgreSQL
+
+on: push
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: rollupsdb
+        options: --name postgres
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Clone Node V2 (avoid submodules)
+        run: |
+          git clone -b feature/new-build-20250124 --recurse-submodules https://github.com/cartesi/rollups-node.git
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready";
+              exit 0;
+            fi;
+            sleep 2;
+          done;
+          echo "PostgreSQL did not become ready in time";
+          exit 1;
+
+      - name: Migrate Node V2 DB
+        run: |
+          cd rollups-node
+          eval $(make env)
+          make migrate
+      
+      - name: Migrate Espresso DB
+        run: |
+          eval $(make env)
+          make migrate
+          make generate-db
+
+      - name: Deps and Cartesi Machine
+        run: |
+          export CARTESI_MACHINE_VERSION=0.18.1
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev lua5.4 libslirp0
+          wget https://github.com/cartesi/machine-emulator/releases/download/v0.18.1/cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
+          sudo dpkg -i ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
+          rm ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
+      
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run devnet (Anvil)
+        run: |
+          cd rollups-node
+          make devnet
+          make run-devnet
+      
+      - name: Build Espresso image
+        run: |
+          docker build -t espresso -f ./ci/Dockerfile .
+
+      - name: Dump database
+        env:
+          PGPASSWORD: password
+        run: |
+          pg_dump -h localhost -U postgres -d rollupsdb > rollupsdb-dump.sql
+
+      - name: Save Docker image
+        run: |
+          docker save cartesi/rollups-node-devnet:devel -o docker-devnet-image.tar
+          docker save espresso -o docker-espresso-image.tar
+
+      - name: Tar DB bindings
+        run: |
+          tar -czf rollupsdb-postgres-bindings.tar.gz internal/repository/postgres/db/
+
+      - name: Upload Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-images
+          path: docker-*
+  
+      - name: Upload database dump
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-dump
+          path: rollupsdb-*
+  
+  integration_test:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: rollupsdb
+        options: --name postgres
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Download DB files
+        uses: actions/download-artifact@v4
+        with:
+          name: db-dump
+
+      - name: Restore DB bindings
+        run: |
+          mkdir -p internal/repository/postgres/db/
+          tar -xzf rollupsdb-postgres-bindings.tar.gz
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready";
+              exit 0;
+            fi;
+            sleep 2;
+          done;
+          echo "PostgreSQL did not become ready in time";
+          exit 1;
+  
+      - name: Restore database
+        env:
+          PGPASSWORD: password
+        run: |
+          psql -h localhost -U postgres -d rollupsdb < rollupsdb-dump.sql
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-images
+  
+      - name: Load Docker image
+        run: |
+          docker load -i docker-devnet-image.tar
+          docker load -i docker-espresso-image.tar
+      
+      - name: Run devnet (Anvil)
+        run: |
+          docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
+
+      - name: Run Espresso image (Default input disabled)
+        env:
+          CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
+          CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
+          CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
+        run: |
+          docker run -d --env-file ./ci/env.nodev2-sepolia-no-reader \
+            -e CARTESI_AUTH_MNEMONIC="$CARTESI_AUTH_MNEMONIC" \
+            -e CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=$CARTESI_BLOCKCHAIN_HTTP_ENDPOINT \
+            -e CARTESI_BLOCKCHAIN_WS_ENDPOINT=$CARTESI_BLOCKCHAIN_WS_ENDPOINT \
+            --rm --network=host \
+            --name c_espresso espresso
+
+      - name: Run integration tests
+        env:
+          CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
+          CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
+          CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
+          CARTESI_BLOCKCHAIN_ID: '11155111'
+          CARTESI_CONTRACTS_INPUT_BOX_ADDRESS: '0x593E5BCf894D6829Dd26D0810DA7F064406aebB6'
+          CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER: '6850934'
+          CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
+          ESPRESSO_BASE_URL: 'https://query.decaf.testnet.espresso.network'
+          ESPRESSO_STARTING_BLOCK: '1490657'
+          ESPRESSO_NAMESPACE: '55555'
+          ESPRESSO_SERVICE_ENDPOINT: '0.0.0.0:8080'
+        run: |
+          go test --timeout 1m -p 1 ./...
+
+  test:
+    name: e2e tests (EVM Reader)
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: rollupsdb
+        options: --name postgres
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Download database dump
+        uses: actions/download-artifact@v4
+        with:
+          name: db-dump
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-images
+
+      - name: Load Docker image
+        run: |
+          docker load -i docker-devnet-image.tar
+          docker load -i docker-espresso-image.tar
+      
+      - name: Run devnet (Anvil)
+        run: |
+          docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
+  
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready";
+              exit 0;
+            fi;
+            sleep 2;
+          done;
+          echo "PostgreSQL did not become ready in time";
+          exit 1;
+
+      - name: Restore database
+        env:
+          PGPASSWORD: password
+        run: |
+          psql -h localhost -U postgres -d rollupsdb < rollupsdb-dump.sql
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run Espresso image (pure with EVM reader)
+        run: |
+          docker run -d --env-file ./ci/env.nodev2-local \
+            --rm --network=host \
+            --name c_espresso espresso
+
+      - name: Install Echo App
+        run: |
+          docker logs --timestamps c_espresso
+          docker exec c_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v
+
+      - name: Send input transaction
+        run: |
+          INPUT=0xdeadbeef; \
+          INPUT_BOX_ADDRESS=0x593E5BCf894D6829Dd26D0810DA7F064406aebB6; \
+          APPLICATION_ADDRESS=0x36B9E60ACb181da458aa8870646395CD27cD0E6E; \
+          cast send \
+              --mnemonic "test test test test test test test test test test test junk" \
+              --rpc-url "http://localhost:8545" \
+              $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
+
+      - name: Query Database for Output
+        run: |
+          MAX_RETRIES=30
+          for i in $(seq 1 $MAX_RETRIES); do
+            RESULT=$(docker exec -i postgres psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.output;")
+            if [[ "$RESULT" =~ "deadbeef" ]]; then
+              echo "Result found: $RESULT"
+              exit 0
+            fi
+            echo "Result: $RESULT"
+            echo "Waiting for result... attempt $i"
+            sleep 5
+          done
+          echo "Timeout reached: result not found"
+          docker logs --timestamps c_espresso
+          exit 1
+
+      - name: Copy binaries
+        run: |
+          docker cp c_espresso:/usr/bin/cartesi-machine .
+          docker cp c_espresso:/usr/bin/cartesi-machine-stored-hash .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-advancer .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-claimer .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-cli .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-espresso-reader .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-evm-reader .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-node .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-validator .
+          ls -la
+
+      - name: Upload binaries as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cartesi-binaries
+          path: cartesi-*
+
+
+  test_espresso:
+    name: e2e tests (Espresso Reader)
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: rollupsdb
+        options: --name postgres
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Download database dump
+        uses: actions/download-artifact@v4
+        with:
+          name: db-dump
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-images
+
+      - name: Load Docker image
+        run: |
+          docker load -i docker-devnet-image.tar
+          docker load -i docker-espresso-image.tar
+      
+      - name: Run devnet (Anvil)
+        run: |
+          docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
+  
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready";
+              exit 0;
+            fi;
+            sleep 2;
+          done;
+          echo "PostgreSQL did not become ready in time";
+          exit 1;
+
+      - name: Restore database
+        env:
+          PGPASSWORD: password
+        run: |
+          psql -h localhost -U postgres -d rollupsdb < rollupsdb-dump.sql
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run Espresso image (Default input disabled)
+        env:
+          CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
+          CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
+          CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
+        run: |
+          export ESPRESSO_STARTING_BLOCK=$(curl -s https://query.decaf.testnet.espresso.network/v0/status/block-height)
+          docker run -d --env-file ./ci/env.nodev2-sepolia \
+            -e CARTESI_AUTH_MNEMONIC="$CARTESI_AUTH_MNEMONIC" \
+            -e ESPRESSO_STARTING_BLOCK=$ESPRESSO_STARTING_BLOCK \
+            -e CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=$CARTESI_BLOCKCHAIN_HTTP_ENDPOINT \
+            -e CARTESI_BLOCKCHAIN_WS_ENDPOINT=$CARTESI_BLOCKCHAIN_WS_ENDPOINT --rm --network=host --name c_espresso espresso
+
+      - name: Register Echo App
+        run: |
+          docker logs --timestamps c_espresso
+          docker exec c_espresso cartesi-rollups-cli app register -v -c 0x48F176733DBdEc10EC4d1692e98403E0927E869C -a 0x5a205Fcb6947e200615B75C409ac0aa486D77649 -n echo-dapp -t applications/echo-dapp/
+
+      - name: Send input transaction
+        env:
+          SENDER_PRIVATE_KEY: ${{ secrets.SENDER_PRIVATE_KEY }}
+        run: |
+          git clone --recurse-submodules https://github.com/Calindra/nonodo.git
+          cd nonodo/eip712-client-js
+          npm i
+          APP_ADDRESS=0x5a205Fcb6947e200615B75C409ac0aa486D77649 node index.js
+
+      - name: Query Database for Output
+        run: |
+          MAX_RETRIES=30
+          for i in $(seq 1 $MAX_RETRIES); do
+            RESULT=$(docker exec -i postgres psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.output;")
+            if [[ "$RESULT" =~ "deadbeef" ]]; then
+              echo "Result found: $RESULT"
+              exit 0
+            fi
+            echo "Result: $RESULT"
+            echo "Waiting for result... attempt $i"
+            sleep 5
+          done
+          echo "Timeout reached: result not found"
+          docker logs --timestamps c_espresso
+          exit 1
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [test, test_espresso, integration_test]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # TODO: remove in the future unrelated binaries.
+      - name: Download binaries artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: cartesi-binaries
+
+      - name: Download DB files
+        uses: actions/download-artifact@v4
+        with:
+          name: db-dump
+
+      - name: Publish Github release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          body_path: CHANGELOG.md
+          files: |
+            cartesi-*
+            rollupsdb-*

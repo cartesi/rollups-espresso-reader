@@ -1,14 +1,17 @@
-To buid
-```
-eval $(make env)
-make migrate
-make generate-db
+# Cartesi Rollups Espresso Reader
+
+To build:
+
+```bash
 go build
 ```
 
-To run
-```
-./espresso-reader     
+To run:
+
+```bash
+eval $(make env)
+make migrate
+./espresso-reader
 ```
 
 To run automated integrated tests, 
