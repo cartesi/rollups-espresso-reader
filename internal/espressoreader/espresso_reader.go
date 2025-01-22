@@ -301,7 +301,7 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 			Status:               model.InputCompletionStatus_None,
 			RawData:              payloadAbi,
 			BlockNumber:          l1FinalizedLatestHeight,
-			TransactionReference: sigHashHexBytes,
+			TransactionReference: common.BytesToHash(sigHashHexBytes),
 		}
 		currentInputs, ok := epochInputMap[currentEpoch]
 		if !ok {

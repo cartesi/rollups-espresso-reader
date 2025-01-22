@@ -12,11 +12,9 @@ package table
 func UseSchema(schema string) {
 	Application = Application.FromSchema(schema)
 	Epoch = Epoch.FromSchema(schema)
-	EspressoBlock = EspressoBlock.FromSchema(schema)
-	EspressoNonce = EspressoNonce.FromSchema(schema)
+	EspressoSchemaMigrations = EspressoSchemaMigrations.FromSchema(schema)
 	ExecutionParameters = ExecutionParameters.FromSchema(schema)
 	Input = Input.FromSchema(schema)
-	InputIndex = InputIndex.FromSchema(schema)
 	NodeConfig = NodeConfig.FromSchema(schema)
 	Output = Output.FromSchema(schema)
 	Report = Report.FromSchema(schema)

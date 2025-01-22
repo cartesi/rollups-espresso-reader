@@ -22,7 +22,7 @@ import (
 //go:embed migrations/*
 var content embed.FS
 
-const ExpectedVersion uint = 2
+const ExpectedVersion uint = 1
 
 type Schema struct {
 	migrate *mig.Migrate

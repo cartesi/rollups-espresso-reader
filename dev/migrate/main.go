@@ -17,7 +17,7 @@ func main() {
 	var s *schema.Schema
 	var err error
 
-	postgresEndpoint := config.GetPostgresEndpoint()
+	postgresEndpoint := config.GetPostgresEndpoint() + "&x-migrations-table=espresso_schema_migrations"
 
 	uri, err := url.Parse(postgresEndpoint)
 	if err == nil {
