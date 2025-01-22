@@ -134,8 +134,8 @@ WORKDIR ${NODE_RUNTIME_DIR}
 HEALTHCHECK --interval=1s --timeout=1s --retries=5 \
     CMD curl -G -f -H 'Content-Type: application/json' http://127.0.0.1:10000/healthz
 
-# Disable default input reader
-ENV CARTESI_FEATURE_INPUT_READER_ENABLED=false
+# Enable or disable default input reader
+ENV CARTESI_FEATURE_INPUT_READER_ENABLED=true
 ENV CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=wss://sepolia.gateway.tenderly.co
 ENV CARTESI_BLOCKCHAIN_ID="11155111"
 ENV CARTESI_LOG_LEVEL="info"
@@ -144,7 +144,7 @@ ENV CARTESI_CONTRACTS_INPUT_BOX_ADDRESS="0x593E5BCf894D6829Dd26D0810DA7F064406ae
 ENV CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER="10"
 ENV CARTESI_AUTH_MNEMONIC="test test test test test test test test test test test junk"
 ENV CARTESI_POSTGRES_ENDPOINT="postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
-ENV CARTESI_TEST_POSTGRES_ENDPOINT="postgres://test_user:password@localhost:5432/test_rollupsdb?sslmode=disable"
+# ENV CARTESI_TEST_POSTGRES_ENDPOINT="postgres://test_user:password@localhost:5432/test_rollupsdb?sslmode=disable"
 ENV CARTESI_FEATURE_CLAIMER_SUBMISSION_ENABLED=true
 
 # Set the Go supervisor as the command.
