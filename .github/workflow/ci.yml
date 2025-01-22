@@ -1,0 +1,48 @@
+name: CI with PostgreSQL
+
+on: push
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" \
+          --health-interval 10s \
+          --health-timeout 5s \
+          --health-retries 5
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: rollupsdb
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready";
+              exit 0;
+            fi;
+            sleep 2;
+          done;
+          echo "PostgreSQL did not become ready in time";
+          exit 1;
+
+      - name: Run your tests
+        run: |
+          cd rollups-node
+          make migrate
