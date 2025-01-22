@@ -43,8 +43,13 @@ jobs:
           echo "PostgreSQL did not become ready in time";
           exit 1;
 
-      - name: Run your tests
+      - name: Migrate Node V2 DB
         run: |
           cd rollups-node
+          eval $(make env)
+          make migrate
+      
+      - name: Migrate Espresso DB
+        run: |
           eval $(make env)
           make migrate
