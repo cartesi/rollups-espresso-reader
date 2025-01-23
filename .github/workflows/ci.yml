@@ -119,7 +119,7 @@ jobs:
           ls -la
 
       - name: Upload binaries as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cartesi-binaries
           path: cartesi-*
@@ -135,9 +135,12 @@ jobs:
           submodules: recursive
 
       - name: Download binaries artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: cartesi-binaries
+
+      - name: Trim CHANGELOG.md
+        run: sed -e '0,/^##[^#]/d' -e '/^##[^#]/,$d' -i CHANGELOG.md
 
       - name: Publish Github release
         uses: softprops/action-gh-release@v2
