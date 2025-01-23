@@ -126,6 +126,10 @@ EOF
 ARG GO_BUILD_PATH
 COPY --from=go-builder ${GO_BUILD_PATH}/rollups-node/cartesi-rollups-* /usr/bin
 
+RUN curl -L https://github.com/cartesi/image-kernel/releases/download/v0.20.0/linux-6.5.13-ctsi-1-v0.20.0.bin -o /usr/share/cartesi-machine/images/linux.bin
+
+RUN curl -L https://github.com/cartesi/machine-emulator-tools/releases/download/v0.16.1/rootfs-tools-v0.16.1.ext2 -o /usr/share/cartesi-machine/images/rootfs.ext2
+
 # Set user to low-privilege.
 USER cartesi
 
@@ -146,6 +150,9 @@ ENV CARTESI_AUTH_MNEMONIC="test test test test test test test test test test tes
 ENV CARTESI_POSTGRES_ENDPOINT="postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
 # ENV CARTESI_TEST_POSTGRES_ENDPOINT="postgres://test_user:password@localhost:5432/test_rollupsdb?sslmode=disable"
 ENV CARTESI_FEATURE_CLAIMER_SUBMISSION_ENABLED=true
+
+RUN mkdir applications
+RUN cartesi-machine --ram-length=128Mi --store=applications/echo-dapp --final-hash -- ioctl-echo-loop --vouchers=1 --notices=1 --reports=1 --verbose=1
 
 # Set the Go supervisor as the command.
 CMD [ "cartesi-rollups-node" ]
