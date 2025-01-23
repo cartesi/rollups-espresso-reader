@@ -49,10 +49,10 @@ jobs:
           eval $(make env)
           make migrate
       
-      - name: Migrate Espresso DB
-        run: |
-          eval $(make env)
-          make migrate
+      # - name: Migrate Espresso DB
+      #   run: |
+      #     eval $(make env)
+      #     make migrate
 
       - name: Deps and Cartesi Machine
         run: |
