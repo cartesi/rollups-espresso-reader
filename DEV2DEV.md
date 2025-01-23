@@ -48,14 +48,34 @@ Run the image
 docker run --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
 ```
 
-docker run --env-file env.nodev2-local --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
+## Pure with default EVM reader
 
+```sh
+cd rollups-node
+make devnet
+make run-devnet
+```
+
+```sh
+docker run --env-file env.nodev2-local --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
+```
+
+Deploy the echo-dapp
+
+```sh
+docker exec c_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v
+```
+
+Troubleshoting
+
+```sh
 docker exec -it c_espresso /bin/bash
 
 mkdir -p applications
 cartesi-machine --ram-length=128Mi --store=applications/echo-dapp --final-hash -- ioctl-echo-loop --vouchers=1 --notices=1 --reports=1 --verbose=1
 
 cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v
+```
 
 Output:
 
@@ -69,11 +89,18 @@ New Application contract deployed at address: 0x36B9E60ACb181da458aa8870646395CD
 Application 0x36b9e60acb181da458aa8870646395cd27cd0e6e successfully deployed
 ```
 
+Send input transaction
 
-INPUT=0xdeadbeef; \
+```sh
+docker exec -it devnet /bin/bash
+```
+
+```sh
+docker exec devnet INPUT=0xdeadbeef; \
 INPUT_BOX_ADDRESS=0x593E5BCf894D6829Dd26D0810DA7F064406aebB6; \
 APPLICATION_ADDRESS=0x36B9E60ACb181da458aa8870646395CD27cD0E6E; \
 cast send \
     --mnemonic "test test test test test test test test test test test junk" \
     --rpc-url "http://localhost:8545" \
     $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
+```
