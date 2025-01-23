@@ -105,6 +105,7 @@ jobs:
               echo "Result found: $RESULT"
               exit 0
             fi
+            echo "Result: $RESULT"
             echo "Waiting for result... attempt $i"
             sleep 5
           done
