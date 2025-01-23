@@ -29,6 +29,7 @@ make devnet
 make run-devnet
 cd -
 
-docker run --env-file env.nodev2-local --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
+# docker run --env-file env.nodev2-local --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
+docker run --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
 
 docker exec c_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v

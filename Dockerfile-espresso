@@ -91,7 +91,6 @@ RUN go build -o cartesi-rollups-espresso-reader
 RUN cd ${GO_BUILD_PATH}/rollups-node && make build-go
 
 
-
 # =============================================================================
 # STAGE: rollups-node
 #
