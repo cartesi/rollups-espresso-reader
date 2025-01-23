@@ -62,3 +62,16 @@ jobs:
           wget https://github.com/cartesi/machine-emulator/releases/download/v0.18.1/cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
           sudo dpkg -i ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
           rm ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
+
+      - name: Build Espresso image
+        run: |
+          docker build -t espresso .
+
+      - name: Run Espresso image
+        run: |
+          docker run -d --rm --network=host espresso
+
+      - name: Install Echo App
+
+      - name: Add Espresso inputs
+      
