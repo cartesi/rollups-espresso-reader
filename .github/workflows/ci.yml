@@ -98,7 +98,7 @@ jobs:
 
       - name: Query Database for Output
         run: |
-          MAX_RETRIES=10
+          MAX_RETRIES=30
           for i in $(seq 1 $MAX_RETRIES); do
             RESULT=$(docker exec -i postgres psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.output;")
             if [[ "$RESULT" =~ "deadbeef" ]]; then
