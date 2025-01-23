@@ -70,7 +70,7 @@ jobs:
 
       - name: Build Espresso image
         run: |
-          docker build -t espresso -f Dockerfile .
+          docker build -t espresso -f Dockerfile-espresso .
 
       - name: Run Espresso image (pure with EVM reader)
         run: |
@@ -109,7 +109,15 @@ jobs:
 
       - name: Copy binaries
         run: |
+          docker cp c_espresso:/usr/bin/cartesi-machine .
+          docker cp c_espresso:/usr/bin/cartesi-machine-stored-hash .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-advancer .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-claimer .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-cli .
           docker cp c_espresso:/usr/bin/cartesi-rollups-espresso-reader .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-evm-reader .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-node .
+          docker cp c_espresso:/usr/bin/cartesi-rollups-validator .
           ls -la
 
       - name: Upload binaries as artifact
@@ -132,9 +140,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: cartesi-binaries
-
-      - name: Trim CHANGELOG.md
-        run: sed -e '0,/^##[^#]/d' -e '/^##[^#]/,$d' -i CHANGELOG.md
 
       - name: Publish Github release
         uses: softprops/action-gh-release@v2
