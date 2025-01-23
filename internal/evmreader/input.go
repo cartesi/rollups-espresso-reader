@@ -251,7 +251,7 @@ func (r *EvmReader) readInputsFromBlockchain(
 			Status:               InputCompletionStatus_None,
 			RawData:              event.Input,
 			BlockNumber:          event.Raw.BlockNumber,
-			TransactionReference: event.Index.Bytes(),
+			TransactionReference: common.BytesToHash(event.Index.Bytes()),
 		}
 
 		// Insert Sorted

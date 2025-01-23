@@ -5,10 +5,10 @@ package evmreader
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"math/big"
-	"os"
 	"strings"
 
 	. "github.com/cartesi/rollups-espresso-reader/internal/model"
@@ -23,6 +23,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
+
+//go:embed abi.json
+var abiData string
 
 // Interface for Input reading
 type InputSource interface {
@@ -129,11 +132,7 @@ func NewEvmReader(
 	contractFactory ContractFactory,
 	shouldModifyIndex bool,
 ) EvmReader {
-	abiData, err := os.ReadFile("internal/evmreader/abi.json")
-	if err != nil {
-		panic(err)
-	}
-	ioABI, err := abi.JSON(strings.NewReader(string(abiData)))
+	ioABI, err := abi.JSON(strings.NewReader(abiData))
 	if err != nil {
 		panic(err)
 	}

@@ -36,3 +36,10 @@ migrate: ## Run migration on development database
 	@echo "Running PostgreSQL migration"
 	@go run dev/migrate/main.go
 
+generate-db: ## Generate repository/db with Jet
+	@echo "Generating internal/repository/db with jet"
+	@rm -rf internal/repository/postgres/db
+	@go run github.com/go-jet/jet/v2/cmd/jet -dsn=$$CARTESI_POSTGRES_ENDPOINT -schema=public -path=./internal/repository/postgres/db
+	@rm -rf internal/repository/postgres/db/rollupsdb/public/model
+	@go run github.com/go-jet/jet/v2/cmd/jet -dsn=$$CARTESI_POSTGRES_ENDPOINT -schema=espresso -path=./internal/repository/postgres/db
+	@rm -rf internal/repository/postgres/db/rollupsdb/espresso/model

@@ -215,7 +215,7 @@ type Input struct {
 	Status               InputCompletionStatus
 	MachineHash          *common.Hash
 	OutputsHash          *common.Hash
-	TransactionReference []byte
+	TransactionReference common.Hash
 	SnapshotURI          *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time

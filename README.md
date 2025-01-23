@@ -1,15 +1,16 @@
 # Cartesi Rollups Espresso Reader
 
-To build:
+To build
 
-```bash
-go build
 ```
-
-To run:
-
-```bash
 eval $(make env)
 make migrate
-./espresso-reader
+make generate-db
+go build -o cartesi-rollups-espresso-reader
+```
+
+To run
+
+```
+./espresso-reader     
 ```
