@@ -84,11 +84,12 @@ ARG GO_BUILD_PATH
 
 COPY --chown=cartesi:cartesi . ${GO_BUILD_PATH}/
 
+# Build espresso reader.
+RUN go build -o cartesi-rollups-espresso-reader
+
 # Build rollups node.
 RUN cd ${GO_BUILD_PATH}/rollups-node && make build-go
 
-# Build espresso reader.
-RUN go build -o cartesi-rollups-espresso-reader
 
 # =============================================================================
 # STAGE: rollups-node
@@ -114,7 +115,8 @@ RUN <<EOF
     apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
-        procps
+        procps \
+        tini
     rm -rf /var/lib/apt/lists/*
     mkdir -p ${NODE_RUNTIME_DIR}/snapshots ${NODE_RUNTIME_DIR}/data
     chown -R cartesi:cartesi ${NODE_RUNTIME_DIR}
@@ -123,6 +125,7 @@ EOF
 # Copy Go binary.
 ARG GO_BUILD_PATH
 COPY --from=go-builder ${GO_BUILD_PATH}/rollups-node/cartesi-rollups-* /usr/bin
+COPY --from=go-builder ${GO_BUILD_PATH}/cartesi-rollups-* /usr/bin
 
 RUN curl -L https://github.com/cartesi/image-kernel/releases/download/v0.20.0/linux-6.5.13-ctsi-1-v0.20.0.bin -o /usr/share/cartesi-machine/images/linux.bin
 
@@ -137,7 +140,7 @@ HEALTHCHECK --interval=1s --timeout=1s --retries=5 \
     CMD curl -G -f -H 'Content-Type: application/json' http://127.0.0.1:10000/healthz
 
 # Enable or disable default input reader
-ENV CARTESI_FEATURE_INPUT_READER_ENABLED=true
+ENV CARTESI_FEATURE_INPUT_READER_ENABLED=false
 ENV CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=wss://sepolia.gateway.tenderly.co
 ENV CARTESI_BLOCKCHAIN_ID="11155111"
 ENV CARTESI_LOG_LEVEL="info"
@@ -149,8 +152,13 @@ ENV CARTESI_POSTGRES_ENDPOINT="postgres://postgres:password@localhost:5432/rollu
 # ENV CARTESI_TEST_POSTGRES_ENDPOINT="postgres://test_user:password@localhost:5432/test_rollupsdb?sslmode=disable"
 ENV CARTESI_FEATURE_CLAIMER_SUBMISSION_ENABLED=true
 
+ENV ESPRESSO_BASE_URL="https://query.decaf.testnet.espresso.network"
+ENV ESPRESSO_STARTING_BLOCK="1409980"
+ENV ESPRESSO_NAMESPACE="55555"
+
 RUN mkdir applications
 RUN cartesi-machine --ram-length=128Mi --store=applications/echo-dapp --final-hash -- ioctl-echo-loop --vouchers=1 --notices=1 --reports=1 --verbose=1
 
 # Set the Go supervisor as the command.
 CMD [ "cartesi-rollups-node" ]
+# CMD ["tini", "--", "sh", "-c", "cartesi-rollups-node & cartesi-rollups-espresso-reader"]

@@ -3,8 +3,7 @@
 Run the database
 
 ```sh
-cd rollups-node
-docker run --rm --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=password -e POSTGRES_DB=rollupsdb -v ./test/postgres/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh postgres:16-alpine
+docker run --rm --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=password -e POSTGRES_DB=rollupsdb postgres:16-alpine
 ```
 
 Migrate the database
@@ -48,6 +47,14 @@ Build espresso image
 docker build -t espresso -f Dockerfile-espresso .
 ```
 
+Run Anvil
+
+```sh
+cd rollups-node
+make devnet
+make run-devnet
+```
+
 Run the image
 
 ```sh
@@ -55,12 +62,6 @@ docker run --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/s
 ```
 
 ## Pure with default EVM reader
-
-```sh
-cd rollups-node
-make devnet
-make run-devnet
-```
 
 ```sh
 docker run --env-file env.nodev2-local --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
@@ -102,7 +103,7 @@ docker exec -it devnet /bin/bash
 ```
 
 ```sh
-docker exec devnet INPUT=0xdeadbeef; \
+INPUT=0xdeadbeef; \
 INPUT_BOX_ADDRESS=0x593E5BCf894D6829Dd26D0810DA7F064406aebB6; \
 APPLICATION_ADDRESS=0x36B9E60ACb181da458aa8870646395CD27cD0E6E; \
 cast send \
