@@ -109,7 +109,7 @@ jobs:
 
       - name: Copy binaries
         run: |
-          docker cp espresso:/usr/bin/cartesi-* .
+          docker cp c_espresso:/usr/bin/cartesi-* .
           ls -la
 
       - name: Upload binaries as artifact
