@@ -42,6 +42,12 @@ Make sure that you are on the project root folder
 docker build -t espresso .
 ```
 
+Build espresso image
+
+```sh
+docker build -t espresso -f Dockerfile-espresso .
+```
+
 Run the image
 
 ```sh

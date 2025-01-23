@@ -84,13 +84,11 @@ ARG GO_BUILD_PATH
 
 COPY --chown=cartesi:cartesi . ${GO_BUILD_PATH}/
 
-# Build espresso reader.
-RUN go build .
-
 # Build rollups node.
 RUN cd ${GO_BUILD_PATH}/rollups-node && make build-go
 
-
+# Build espresso reader.
+RUN go build -o cartesi-rollups-espresso-reader
 
 # =============================================================================
 # STAGE: rollups-node

@@ -153,6 +153,10 @@ ENV CARTESI_POSTGRES_ENDPOINT="postgres://postgres:password@localhost:5432/rollu
 # ENV CARTESI_TEST_POSTGRES_ENDPOINT="postgres://test_user:password@localhost:5432/test_rollupsdb?sslmode=disable"
 ENV CARTESI_FEATURE_CLAIMER_SUBMISSION_ENABLED=true
 
+ENV ESPRESSO_BASE_URL="https://query.decaf.testnet.espresso.network"
+ENV ESPRESSO_STARTING_BLOCK="1409980"
+ENV ESPRESSO_NAMESPACE="55555"
+
 RUN mkdir applications
 RUN cartesi-machine --ram-length=128Mi --store=applications/echo-dapp --final-hash -- ioctl-echo-loop --vouchers=1 --notices=1 --reports=1 --verbose=1
 
