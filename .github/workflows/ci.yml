@@ -95,6 +95,20 @@ jobs:
               --rpc-url "http://localhost:8545" \
               $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
 
+      - name: Query Database for Output
+        run: |
+          MAX_RETRIES=10
+          for i in $(seq 1 $MAX_RETRIES); do
+            RESULT=$(docker exec -i postgres psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.output;")
+            if [[ "$RESULT" =~ "deadbeef" ]]; then
+              echo "Result found: $RESULT"
+              exit 0
+            fi
+            echo "Waiting for result... attempt $i"
+            sleep 5
+          done
+          echo "Timeout reached: result not found"
+          exit 1
       # - name: Add Espresso inputs
       #   run: |
       #     curl 'http://localhost:8080/submit' \
@@ -112,3 +126,6 @@ jobs:
       #     -H 'sec-ch-ua-mobile: ?0' \
       #     -H 'sec-ch-ua-platform: "macOS"' \
       #     --data-raw '{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":31337,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x75135d8ADb7180640d29d822D9AD59E83E8695b2","nonce":0,"data":"0x74657374","max_gas_price":10}},"account":"0x70997970C51812dc3A010C7d01b50e0d17dc79C8","signature":"0xb99f1f4a4034cb0b2911a8ce03e0285b3d312608913c416874090509a2089d2a45d815fcf1f128f60990929c043c56bf002aba3ac9f807bf8fec975c147f016f1b"}'
+
+
+    
