@@ -62,16 +62,53 @@ jobs:
           wget https://github.com/cartesi/machine-emulator/releases/download/v0.18.1/cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
           sudo dpkg -i ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
           rm ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
+      
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run devnet (Anvil)
+        run: |
+          cd rollups-node
+          make devnet
+          make run-devnet
 
       - name: Build Espresso image
         run: |
           docker build -t espresso .
 
-      - name: Run Espresso image
+      - name: Run Espresso image (pure with EVM reader)
         run: |
-          docker run -d --rm --network=host espresso
+          docker run -d --env-file env.nodev2-local --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
 
       - name: Install Echo App
+        run: |
+          echo "Install Echo App"
+          docker exec c_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v
 
-      - name: Add Espresso inputs
-      
+      - name: Send input transaction
+        run: |
+          INPUT=0xdeadbeef; \
+          INPUT_BOX_ADDRESS=0x593E5BCf894D6829Dd26D0810DA7F064406aebB6; \
+          APPLICATION_ADDRESS=0x36B9E60ACb181da458aa8870646395CD27cD0E6E; \
+          cast send \
+              --mnemonic "test test test test test test test test test test test junk" \
+              --rpc-url "http://localhost:8545" \
+              $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
+
+      # - name: Add Espresso inputs
+      #   run: |
+      #     curl 'http://localhost:8080/submit' \
+      #     -H 'Accept: */*' \
+      #     -H 'Accept-Language: en-US,en;q=0.9,pt;q=0.8' \
+      #     -H 'Connection: keep-alive' \
+      #     -H 'Content-Type: application/json' \
+      #     -H 'Origin: http://localhost:5173' \
+      #     -H 'Referer: http://localhost:5173/' \
+      #     -H 'Sec-Fetch-Dest: empty' \
+      #     -H 'Sec-Fetch-Mode: cors' \
+      #     -H 'Sec-Fetch-Site: same-site' \
+      #     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0' \
+      #     -H 'sec-ch-ua: "Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"' \
+      #     -H 'sec-ch-ua-mobile: ?0' \
+      #     -H 'sec-ch-ua-platform: "macOS"' \
+      #     --data-raw '{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":31337,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x75135d8ADb7180640d29d822D9AD59E83E8695b2","nonce":0,"data":"0x74657374","max_gas_price":10}},"account":"0x70997970C51812dc3A010C7d01b50e0d17dc79C8","signature":"0xb99f1f4a4034cb0b2911a8ce03e0285b3d312608913c416874090509a2089d2a45d815fcf1f128f60990929c043c56bf002aba3ac9f807bf8fec975c147f016f1b"}'
