@@ -24,6 +24,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: rollupsdb
+        options: --name postgres
 
     steps:
       - name: Checkout code
