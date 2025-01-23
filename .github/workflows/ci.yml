@@ -1,12 +1,6 @@
 name: CI with PostgreSQL
 
-on:
-  push:
-    branches:
-      - '**'
-  pull_request:
-    branches:
-      - '**'
+on: push
 
 permissions:
   contents: write
