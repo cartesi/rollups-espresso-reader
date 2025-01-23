@@ -1,7 +1,7 @@
 // (c) Cartesi and individual authors (see AUTHORS)
 // SPDX-License-Identifier: Apache-2.0 (see LICENSE)
 
-package service
+package espressoreader
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cartesi/rollups-espresso-reader/internal/espressoreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader/retrypolicy"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
@@ -77,7 +76,7 @@ func (s *EspressoReaderService) Start(
 
 	evmReader := s.setupEvmReader(ctx, s.database)
 
-	espressoReader := espressoreader.NewEspressoReader(s.EspressoBaseUrl, s.EspressoStartingBlock, s.EspressoNamespace, s.database, evmReader, s.chainId, s.inputBoxDeploymentBlock)
+	espressoReader := NewEspressoReader(s.EspressoBaseUrl, s.EspressoStartingBlock, s.EspressoNamespace, s.database, evmReader, s.chainId, s.inputBoxDeploymentBlock)
 
 	go s.setupNonceHttpServer()
 
@@ -237,7 +236,7 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msgSender, typedData, sigHash, err := espressoreader.ExtractSigAndData(string(tx.Payload))
+	msgSender, typedData, sigHash, err := ExtractSigAndData(string(tx.Payload))
 	if err != nil {
 		slog.Error("transaction not correctly formatted", "error", err)
 		return
