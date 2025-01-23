@@ -182,7 +182,7 @@ func (r *postgresRepository) CreateEpochsAndInputs(
 				postgres.RawFloat(fmt.Sprintf("%d", input.BlockNumber)),
 				postgres.Bytea(input.RawData),
 				postgres.NewEnumValue(input.Status.String()),
-				postgres.Bytea(fmt.Sprintf("%032x", input.Index)),
+				postgres.Bytea(input.TransactionReference.Bytes()),
 			).WHERE(
 				whereClause,
 			)

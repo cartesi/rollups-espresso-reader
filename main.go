@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/config"
-	"github.com/cartesi/rollups-espresso-reader/internal/espressoreader/service"
+	"github.com/cartesi/rollups-espresso-reader/internal/espressoreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/factory"
 	"github.com/cartesi/rollups-espresso-reader/internal/services/startup"
 
@@ -57,7 +57,7 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	// create Espresso Reader Service
-	service := service.NewEspressoReaderService(
+	service := espressoreader.NewEspressoReaderService(
 		c.BlockchainHttpEndpoint.Value,
 		c.BlockchainHttpEndpoint.Value,
 		database,
