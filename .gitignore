@@ -2,3 +2,4 @@
 /rollups-espresso-reader
 /cartesi-rollups-*
 internal/repository/postgres/db/
+/rollups-node

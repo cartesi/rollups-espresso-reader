@@ -105,9 +105,11 @@ docker exec -it devnet /bin/bash
 ```sh
 INPUT=0xdeadbeef; \
 INPUT_BOX_ADDRESS=0x593E5BCf894D6829Dd26D0810DA7F064406aebB6; \
-APPLICATION_ADDRESS=0x36B9E60ACb181da458aa8870646395CD27cD0E6E; \
+APPLICATION_ADDRESS=0x5a205fcb6947e200615b75c409ac0aa486d77649; \
 cast send \
     --mnemonic "test test test test test test test test test test test junk" \
     --rpc-url "http://localhost:8545" \
     $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
 ```
+
+docker exec -i postgres psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.application;"

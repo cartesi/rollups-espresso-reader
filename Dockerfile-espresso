@@ -150,7 +150,7 @@ ENV CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER="10"
 ENV CARTESI_AUTH_MNEMONIC="test test test test test test test test test test test junk"
 ENV CARTESI_POSTGRES_ENDPOINT="postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
 # ENV CARTESI_TEST_POSTGRES_ENDPOINT="postgres://test_user:password@localhost:5432/test_rollupsdb?sslmode=disable"
-ENV CARTESI_FEATURE_CLAIMER_SUBMISSION_ENABLED=true
+ENV CARTESI_FEATURE_CLAIM_SUBMISSION_ENABLED=true
 
 ENV ESPRESSO_BASE_URL="https://query.decaf.testnet.espresso.network"
 ENV ESPRESSO_STARTING_BLOCK="1409980"
