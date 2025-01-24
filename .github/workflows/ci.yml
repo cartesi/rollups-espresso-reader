@@ -177,7 +177,8 @@ jobs:
             -e CARTESI_AUTH_MNEMONIC=$CARTESI_AUTH_MNEMONIC \
             -e CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=$CARTESI_BLOCKCHAIN_HTTP_ENDPOINT \
             -e CARTESI_BLOCKCHAIN_WS_ENDPOINT=$CARTESI_BLOCKCHAIN_WS_ENDPOINT \
-            --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
+            --rm --network=host \
+            --name c_espresso espresso
 
       - name: Run unit tests
         env:
@@ -386,7 +387,8 @@ jobs:
             -e CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=$CARTESI_BLOCKCHAIN_HTTP_ENDPOINT \
             -e CARTESI_BLOCKCHAIN_WS_ENDPOINT=$CARTESI_BLOCKCHAIN_WS_ENDPOINT \
             -e ESPRESSO_STARTING_BLOCK=$ESPRESSO_STARTING_BLOCK \
-            --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
+            --rm --network=host \
+            --name c_espresso espresso
 
       - name: Register Echo App
         run: |
