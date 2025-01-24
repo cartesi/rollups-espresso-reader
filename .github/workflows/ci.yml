@@ -77,6 +77,8 @@ jobs:
           docker build -t espresso -f Dockerfile .
 
       - name: Dump database
+        env:
+          PGPASSWORD: password
         run: |
           pg_dump -h localhost -U postgres -d rollupsdb > rollupsdb.sql
   
@@ -130,6 +132,8 @@ jobs:
           exit 1;
 
       - name: Restore database
+        env:
+          PGPASSWORD: password
         run: |
           psql -h localhost -U postgres -d rollupsdb < rollupsdb.sql
 
