@@ -293,7 +293,7 @@ jobs:
         run: |
           git clone --recurse-submodules https://github.com/Calindra/nonodo.git
           cd nonodo/eip712-client-js
-          pnpm i
+          npm i
           node index.js
 
       - name: Query Database for Output
