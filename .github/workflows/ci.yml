@@ -341,4 +341,6 @@ jobs:
         with:
           prerelease: true
           body_path: CHANGELOG.md
-          files: cartesi-* rollupsdb-*
+          files: |
+            cartesi-*
+            rollupsdb-*
