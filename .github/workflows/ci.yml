@@ -71,7 +71,7 @@ jobs:
           cd rollups-node
           make devnet
           make run-devnet
-
+      
       - name: Build Espresso image
         run: |
           docker build -t espresso -f Dockerfile .
@@ -81,6 +81,17 @@ jobs:
           PGPASSWORD: password
         run: |
           pg_dump -h localhost -U postgres -d rollupsdb > rollupsdb.sql
+
+      - name: Save Docker image
+        run: |
+          docker save cartesi/rollups-node-devnet:devel -o docker-devnet-image.tar
+          docker save espresso -o docker-espresso-image.tar
+
+      - name: Upload Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-images
+          path: docker-*
   
       - name: Upload database dump
         uses: actions/upload-artifact@v4
@@ -115,6 +126,15 @@ jobs:
         with:
           name: db-dump
 
+      - name: Download Docker image
+        uses: actions/download-artifact@v3
+        with:
+          name: my-images
+      - name: Load Docker image
+        run: |
+          docker load -i docker-devnet-image.tar
+          docker load -i docker-espresso-image.tar
+      
       - name: Run devnet (Anvil)
         run: |
           docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
