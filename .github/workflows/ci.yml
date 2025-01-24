@@ -126,7 +126,7 @@ jobs:
           go test --timeout 1m -p 1 ./...
 
   test:
-    name: Pure Node v2
+    name: e2e tests (EVM Reader)
     runs-on: ubuntu-latest
     needs: [build]
 
@@ -243,7 +243,7 @@ jobs:
 
 
   test_espresso:
-    name: Espresso Node v2
+    name: e2e tests (Espresso Reader)
     runs-on: ubuntu-latest
     needs: [build]
 
