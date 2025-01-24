@@ -381,8 +381,8 @@ jobs:
           CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
           CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
         run: |
-          export ESPRESSO_STARTING_BLOCK=$(curl -s https://query.decaf.testnet.espresso.network/v0/status/block-height)
-          docker run -d --env-file ./ci/env.nodev2-sepolia -e CARTESI_AUTH_MNEMONIC=$CARTESI_AUTH_MNEMONIC -e CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=$CARTESI_BLOCKCHAIN_HTTP_ENDPOINT -e CARTESI_BLOCKCHAIN_WS_ENDPOINT=$CARTESI_BLOCKCHAIN_WS_ENDPOINT -e ESPRESSO_STARTING_BLOCK=$ESPRESSO_STARTING_BLOCK --rm --network=host --name c_espresso espresso
+          # export ESPRESSO_STARTING_BLOCK=$(curl -s https://query.decaf.testnet.espresso.network/v0/status/block-height)
+          docker run -d --env-file ./ci/env.nodev2-sepolia --rm --network=host --name c_espresso espresso
 
       - name: Register Echo App
         run: |
