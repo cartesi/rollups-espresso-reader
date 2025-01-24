@@ -282,10 +282,9 @@ jobs:
         run: |
           docker run -d --env-file env.nodev2-sepolia --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
 
-      - name: Install Echo App
+      - name: Register Echo App
         run: |
-          echo "Install Echo App"
-          docker exec c_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v
+          docker exec c_espresso cartesi-rollups-cli app register -v -c 0x48F176733DBdEc10EC4d1692e98403E0927E869C -a 0x5a205Fcb6947e200615B75C409ac0aa486D77649 -n echo-dapp -t applications/echo-dapp/
 
       - name: Send input transaction
         env:
@@ -294,7 +293,7 @@ jobs:
           git clone --recurse-submodules https://github.com/Calindra/nonodo.git
           cd nonodo/eip712-client-js
           npm i
-          node index.js
+          APP_ADDRESS=0x5a205Fcb6947e200615B75C409ac0aa486D77649 node index.js
 
       - name: Query Database for Output
         run: |
