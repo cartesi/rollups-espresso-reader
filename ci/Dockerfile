@@ -139,25 +139,9 @@ WORKDIR ${NODE_RUNTIME_DIR}
 HEALTHCHECK --interval=1s --timeout=1s --retries=5 \
     CMD curl -G -f -H 'Content-Type: application/json' http://127.0.0.1:10000/healthz
 
-# Enable or disable default input reader
-ENV CARTESI_FEATURE_INPUT_READER_ENABLED=false
-ENV CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=wss://sepolia.gateway.tenderly.co
-ENV CARTESI_BLOCKCHAIN_ID="11155111"
-ENV CARTESI_LOG_LEVEL="info"
-ENV CARTESI_BLOCKCHAIN_WS_ENDPOINT=wss://sepolia.gateway.tenderly.co
-ENV CARTESI_CONTRACTS_INPUT_BOX_ADDRESS="0x593E5BCf894D6829Dd26D0810DA7F064406aebB6"
-ENV CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER="10"
-ENV CARTESI_AUTH_MNEMONIC="test test test test test test test test test test test junk"
-ENV CARTESI_POSTGRES_ENDPOINT="postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
-ENV CARTESI_FEATURE_CLAIM_SUBMISSION_ENABLED=true
-
-ENV ESPRESSO_BASE_URL="https://query.decaf.testnet.espresso.network"
-ENV ESPRESSO_STARTING_BLOCK="1409980"
-ENV ESPRESSO_NAMESPACE="55555"
-
 RUN mkdir applications
 RUN cartesi-machine --ram-length=128Mi --store=applications/echo-dapp --final-hash -- ioctl-echo-loop --vouchers=1 --notices=1 --reports=1 --verbose=1
 
-COPY --chown=cartesi:cartesi entrypoint.sh /entrypoint.sh
+COPY --chown=cartesi:cartesi ./ci/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 CMD ["tini", "--", "/entrypoint.sh"]
