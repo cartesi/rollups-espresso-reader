@@ -80,12 +80,16 @@ jobs:
         env:
           PGPASSWORD: password
         run: |
-          pg_dump -h localhost -U postgres -d rollupsdb > rollupsdb.sql
+          pg_dump -h localhost -U postgres -d rollupsdb > rollupsdb-dump.sql
 
       - name: Save Docker image
         run: |
           docker save cartesi/rollups-node-devnet:devel -o docker-devnet-image.tar
           docker save espresso -o docker-espresso-image.tar
+
+      - name: Tar DB bindings
+        run: |
+          tar -czf rollupsdb-postgres-bindings.tar.gz internal/repository/postgres/db/
 
       - name: Upload Docker image
         uses: actions/upload-artifact@v4
@@ -97,7 +101,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: db-dump
-          path: rollupsdb.sql
+          path: rollupsdb-*
         
   test:
     name: Pure Node v2
@@ -156,7 +160,7 @@ jobs:
         env:
           PGPASSWORD: password
         run: |
-          psql -h localhost -U postgres -d rollupsdb < rollupsdb.sql
+          psql -h localhost -U postgres -d rollupsdb < rollupsdb-dump.sql
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -273,7 +277,7 @@ jobs:
         env:
           PGPASSWORD: password
         run: |
-          psql -h localhost -U postgres -d rollupsdb < rollupsdb.sql
+          psql -h localhost -U postgres -d rollupsdb < rollupsdb-dump.sql
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -327,29 +331,14 @@ jobs:
         with:
           name: cartesi-binaries
 
+      - name: Download DB files
+        uses: actions/download-artifact@v4
+        with:
+          name: db-dump
+
       - name: Publish Github release
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           body_path: CHANGELOG.md
-          files: cartesi-*
-      # - name: Add Espresso inputs
-      #   run: |
-      #     curl 'http://localhost:8080/submit' \
-      #     -H 'Accept: */*' \
-      #     -H 'Accept-Language: en-US,en;q=0.9,pt;q=0.8' \
-      #     -H 'Connection: keep-alive' \
-      #     -H 'Content-Type: application/json' \
-      #     -H 'Origin: http://localhost:5173' \
-      #     -H 'Referer: http://localhost:5173/' \
-      #     -H 'Sec-Fetch-Dest: empty' \
-      #     -H 'Sec-Fetch-Mode: cors' \
-      #     -H 'Sec-Fetch-Site: same-site' \
-      #     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0' \
-      #     -H 'sec-ch-ua: "Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"' \
-      #     -H 'sec-ch-ua-mobile: ?0' \
-      #     -H 'sec-ch-ua-platform: "macOS"' \
-      #     --data-raw '{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":31337,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x75135d8ADb7180640d29d822D9AD59E83E8695b2","nonce":0,"data":"0x74657374","max_gas_price":10}},"account":"0x70997970C51812dc3A010C7d01b50e0d17dc79C8","signature":"0xb99f1f4a4034cb0b2911a8ce03e0285b3d312608913c416874090509a2089d2a45d815fcf1f128f60990929c043c56bf002aba3ac9f807bf8fec975c147f016f1b"}'
-
-
-    
+          files: cartesi-* rollupsdb-*
