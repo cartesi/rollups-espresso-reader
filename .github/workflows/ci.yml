@@ -134,17 +134,18 @@ jobs:
         run: |
           mkdir -p internal/repository/postgres/db/
           tar -xzf rollupsdb-postgres-bindings.tar.gz
-          - name: Wait for PostgreSQL to be ready
-          run: |
-            for i in {1..30}; do
-              if pg_isready -h localhost -p 5432 -U postgres; then
-                echo "PostgreSQL is ready";
-                exit 0;
-              fi;
-              sleep 2;
-            done;
-            echo "PostgreSQL did not become ready in time";
-            exit 1;
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready";
+              exit 0;
+            fi;
+            sleep 2;
+          done;
+          echo "PostgreSQL did not become ready in time";
+          exit 1;
   
       - name: Restore database
         env:
