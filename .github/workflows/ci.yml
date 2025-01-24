@@ -153,6 +153,20 @@ jobs:
         run: |
           psql -h localhost -U postgres -d rollupsdb < rollupsdb-dump.sql
 
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: my-images
+  
+      - name: Load Docker image
+        run: |
+          docker load -i docker-devnet-image.tar
+          docker load -i docker-espresso-image.tar
+      
+      - name: Run devnet (Anvil)
+        run: |
+          docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
+
       - name: Run Espresso image (Default input disabled)
         run: |
           docker run -d --env-file env.nodev2-sepolia-no-reader --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
