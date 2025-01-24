@@ -102,7 +102,29 @@ jobs:
         with:
           name: db-dump
           path: rollupsdb-*
-        
+  
+  unit_test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    needs: [build]
+  
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Run unit tests
+        env:
+          CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
+          CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
+          CARTESI_BLOCKCHAIN_ID: '11155111'
+          CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
+          CARTESI_CONTRACTS_INPUT_BOX_ADDRESS: '0x593E5BCf894D6829Dd26D0810DA7F064406aebB6'
+          CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER: '10'
+        run: |
+          go test --timeout 1m -p 1 ./...
+
   test:
     name: Pure Node v2
     runs-on: ubuntu-latest
@@ -319,7 +341,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [test, test_espresso]
+    needs: [test, test_espresso, unit_test]
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
