@@ -107,7 +107,18 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
     needs: [build]
-  
+
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: rollupsdb
+        options: --name postgres
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -123,6 +134,23 @@ jobs:
         run: |
           mkdir -p internal/repository/postgres/db/
           tar -xzf rollupsdb-postgres-bindings.tar.gz
+          - name: Wait for PostgreSQL to be ready
+          run: |
+            for i in {1..30}; do
+              if pg_isready -h localhost -p 5432 -U postgres; then
+                echo "PostgreSQL is ready";
+                exit 0;
+              fi;
+              sleep 2;
+            done;
+            echo "PostgreSQL did not become ready in time";
+            exit 1;
+  
+      - name: Restore database
+        env:
+          PGPASSWORD: password
+        run: |
+          psql -h localhost -U postgres -d rollupsdb < rollupsdb-dump.sql
 
       - name: Run unit tests
         env:
