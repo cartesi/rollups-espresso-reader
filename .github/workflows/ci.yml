@@ -70,7 +70,7 @@ jobs:
 
       - name: Build Espresso image
         run: |
-          docker build -t espresso -f Dockerfile-espresso .
+          docker build -t espresso -f Dockerfile .
 
       - name: Run Espresso image (pure with EVM reader)
         run: |
