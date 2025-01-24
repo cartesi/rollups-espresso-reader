@@ -121,6 +121,7 @@ jobs:
 
       - name: Restore DB bindings
         run: |
+          mkdir -p internal/repository/postgres/db/
           tar -xzf rollupsdb-postgres-bindings.tar.gz -C internal/repository/postgres/db/
 
       - name: Run unit tests
