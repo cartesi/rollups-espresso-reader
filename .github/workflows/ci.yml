@@ -75,6 +75,16 @@ jobs:
       - name: Build Espresso image
         run: |
           docker build -t espresso -f Dockerfile .
+
+          - name: Dump database
+          run: |
+            pg_dump -h localhost -U postgres -d rollupsdb > rollupsdb.sql
+  
+      - name: Upload database dump
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-dump
+          path: rollupsdb.sql
         
   test:
     name: Pure Node v2
@@ -93,6 +103,36 @@ jobs:
         options: --name postgres
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Download database dump
+        uses: actions/download-artifact@v4
+        with:
+          name: db-dump
+
+      - name: Run devnet (Anvil)
+        run: |
+          docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
+  
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready";
+              exit 0;
+            fi;
+            sleep 2;
+          done;
+          echo "PostgreSQL did not become ready in time";
+          exit 1;
+
+      - name: Restore database
+        run: |
+          psql -h localhost -U postgres -d rollupsdb < rollupsdb.sql
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
