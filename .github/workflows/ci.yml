@@ -215,10 +215,108 @@ jobs:
           name: cartesi-binaries
           path: cartesi-*
 
+
+  test_espresso:
+    name: Espresso Node v2
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: rollupsdb
+        options: --name postgres
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Download database dump
+        uses: actions/download-artifact@v4
+        with:
+          name: db-dump
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: my-images
+
+      - name: Load Docker image
+        run: |
+          docker load -i docker-devnet-image.tar
+          docker load -i docker-espresso-image.tar
+      
+      - name: Run devnet (Anvil)
+        run: |
+          docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
+  
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready";
+              exit 0;
+            fi;
+            sleep 2;
+          done;
+          echo "PostgreSQL did not become ready in time";
+          exit 1;
+
+      - name: Restore database
+        env:
+          PGPASSWORD: password
+        run: |
+          psql -h localhost -U postgres -d rollupsdb < rollupsdb.sql
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run Espresso image (pure with EVM reader)
+        run: |
+          docker run -d --env-file env.nodev2-sepolia --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
+
+      - name: Install Echo App
+        run: |
+          echo "Install Echo App"
+          docker exec c_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v
+
+      - name: Send input transaction
+        env:
+          SENDER_PRIVATE_KEY: ${{ secrets.SENDER_PRIVATE_KEY }}
+        run: |
+          git clone --recurse-submodules https://github.com/Calindra/nonodo.git
+          cd nonodo/eip712-client-js
+          pnpm i
+          node index.js
+
+      - name: Query Database for Output
+        run: |
+          MAX_RETRIES=30
+          for i in $(seq 1 $MAX_RETRIES); do
+            RESULT=$(docker exec -i postgres psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.output;")
+            if [[ "$RESULT" =~ "deadbeef" ]]; then
+              echo "Result found: $RESULT"
+              exit 0
+            fi
+            echo "Result: $RESULT"
+            echo "Waiting for result... attempt $i"
+            sleep 5
+          done
+          echo "Timeout reached: result not found"
+          docker logs --timestamps c_espresso
+          exit 1
+
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, test_espresso]
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
