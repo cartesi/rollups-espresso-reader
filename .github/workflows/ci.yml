@@ -114,6 +114,15 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Download DB files
+        uses: actions/download-artifact@v4
+        with:
+          name: db-dump
+
+      - name: Restore DB bindings
+        run: |
+          tar -xzf rollupsdb-postgres-bindings.tar.gz -C internal/repository/postgres/db/
+
       - name: Run unit tests
         env:
           CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
