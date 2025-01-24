@@ -25,7 +25,7 @@ make generate-db
 
 echo "Build image"
 #docker build -t espresso .
-docker build -t espresso -f Dockerfile-espresso .
+docker build -t espresso -f Dockerfile .
 
 echo "Run Anvil"
 cd rollups-node
@@ -33,8 +33,8 @@ make devnet
 make run-devnet
 cd -
 
-# docker run --env-file env.nodev2-local --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
-docker run --env-file env.nodev2-sepolia --rm --network=host --name c_espresso espresso
+docker run --env-file env.nodev2-local --rm --network=host --name c_espresso espresso
+# docker run --env-file env.nodev2-sepolia --rm --network=host --name c_espresso espresso
 
 exit 0
 

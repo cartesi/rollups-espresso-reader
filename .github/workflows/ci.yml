@@ -6,7 +6,8 @@ permissions:
   contents: write
 
 jobs:
-  test:
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
     services:
@@ -19,12 +20,15 @@ jobs:
           POSTGRES_PASSWORD: password
           POSTGRES_DB: rollupsdb
         options: --name postgres
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - name: Clone Node V2 (avoid submodules)
+        run: |
+          git clone -b feature/new-build --recurse-submodules https://github.com/cartesi/rollups-node.git
 
       - name: Wait for PostgreSQL to be ready
         run: |
@@ -71,6 +75,26 @@ jobs:
       - name: Build Espresso image
         run: |
           docker build -t espresso -f Dockerfile .
+        
+  test:
+    name: Pure Node v2
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: rollupsdb
+        options: --name postgres
+
+    steps:
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run Espresso image (pure with EVM reader)
         run: |

@@ -149,8 +149,7 @@ ENV CARTESI_CONTRACTS_INPUT_BOX_ADDRESS="0x593E5BCf894D6829Dd26D0810DA7F064406ae
 ENV CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER="10"
 ENV CARTESI_AUTH_MNEMONIC="test test test test test test test test test test test junk"
 ENV CARTESI_POSTGRES_ENDPOINT="postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
-# ENV CARTESI_TEST_POSTGRES_ENDPOINT="postgres://test_user:password@localhost:5432/test_rollupsdb?sslmode=disable"
-ENV CARTESI_FEATURE_CLAIMER_SUBMISSION_ENABLED=true
+ENV CARTESI_FEATURE_CLAIM_SUBMISSION_ENABLED=true
 
 ENV ESPRESSO_BASE_URL="https://query.decaf.testnet.espresso.network"
 ENV ESPRESSO_STARTING_BLOCK="1409980"
@@ -159,6 +158,6 @@ ENV ESPRESSO_NAMESPACE="55555"
 RUN mkdir applications
 RUN cartesi-machine --ram-length=128Mi --store=applications/echo-dapp --final-hash -- ioctl-echo-loop --vouchers=1 --notices=1 --reports=1 --verbose=1
 
-# Set the Go supervisor as the command.
-CMD [ "cartesi-rollups-node" ]
-# CMD ["tini", "--", "sh", "-c", "cartesi-rollups-node & cartesi-rollups-espresso-reader"]
+COPY --chown=cartesi:cartesi entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+CMD ["tini", "--", "/entrypoint.sh"]
