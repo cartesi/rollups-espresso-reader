@@ -76,9 +76,9 @@ jobs:
         run: |
           docker build -t espresso -f Dockerfile .
 
-          - name: Dump database
-          run: |
-            pg_dump -h localhost -U postgres -d rollupsdb > rollupsdb.sql
+      - name: Dump database
+        run: |
+          pg_dump -h localhost -U postgres -d rollupsdb > rollupsdb.sql
   
       - name: Upload database dump
         uses: actions/upload-artifact@v4
