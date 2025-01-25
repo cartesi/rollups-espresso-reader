@@ -19,7 +19,7 @@ Check the [architecture](docs/architecture.md) page for more details about how t
 
 ## App Development
 
-Check the [development](docs/development.md) page for  details about how to develop Cartesi applications using Espresso.
+Check the [development](docs/development.md) page for details about how to develop Cartesi applications using Espresso.
 
 ## Building
 
