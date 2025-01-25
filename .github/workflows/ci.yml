@@ -264,7 +264,7 @@ jobs:
 
       - name: Install Echo App
         run: |
-          echo "Install Echo App"
+          docker logs --timestamps c_espresso
           docker exec c_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v
 
       - name: Send input transaction
