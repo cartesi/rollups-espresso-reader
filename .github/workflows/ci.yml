@@ -293,6 +293,7 @@ jobs:
             sleep 5
           done
           echo "Timeout reached: result not found"
+          docker logs --timestamps c_espresso
           exit 1
 
       - name: Copy binaries
