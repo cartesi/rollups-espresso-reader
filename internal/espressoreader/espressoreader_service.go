@@ -5,7 +5,6 @@ package espressoreader
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -229,7 +228,7 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var tx types.Transaction
 	tx.Namespace = s.EspressoNamespace
-	tx.Payload = []byte(base64.StdEncoding.EncodeToString(body))
+	tx.Payload = body
 	_, err = client.SubmitTransaction(ctx, tx)
 	if err != nil {
 		slog.Error("espresso tx submit error", "err", err)

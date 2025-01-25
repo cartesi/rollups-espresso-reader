@@ -29,7 +29,7 @@ env:
 	@echo export CARTESI_TEST_MACHINE_IMAGES_PATH=\"$(CARTESI_TEST_MACHINE_IMAGES_PATH)\"
 	@echo export PATH=$(CURDIR):$$PATH
 	@echo export ESPRESSO_BASE_URL="https://query.decaf.testnet.espresso.network"
-	@echo export ESPRESSO_STARTING_BLOCK="1468812"
+	@echo export ESPRESSO_STARTING_BLOCK="1490657"
 	@echo export ESPRESSO_NAMESPACE="55555"
 
 migrate: ## Run migration on development database
