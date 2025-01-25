@@ -260,7 +260,9 @@ jobs:
 
       - name: Run Espresso image (pure with EVM reader)
         run: |
-          docker run -d --env-file ./ci/env.nodev2-local --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
+          docker run -d --env-file ./ci/env.nodev2-local \
+            --rm --network=host \
+            --name c_espresso espresso
 
       - name: Install Echo App
         run: |
