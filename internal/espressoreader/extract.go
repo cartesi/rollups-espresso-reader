@@ -1,7 +1,6 @@
 package espressoreader
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -19,12 +18,7 @@ type SigAndData struct {
 
 func ExtractSigAndData(raw string) (common.Address, apitypes.TypedData, string, error) {
 	var sigAndData SigAndData
-	decodedRaw, err := base64.StdEncoding.DecodeString(raw)
-	if err != nil {
-		return common.HexToAddress("0x"), apitypes.TypedData{}, "", fmt.Errorf("decode base64: %w", err)
-	}
-
-	if err := json.Unmarshal(decodedRaw, &sigAndData); err != nil {
+	if err := json.Unmarshal([]byte(raw), &sigAndData); err != nil {
 		return common.HexToAddress("0x"), apitypes.TypedData{}, "", fmt.Errorf("unmarshal sigAndData: %w", err)
 	}
 

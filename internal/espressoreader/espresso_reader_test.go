@@ -32,8 +32,8 @@ type EspressoReaderTestSuite struct {
 }
 
 func (suite *EspressoReaderTestSuite) SetupSuite() {
-	appAddress := "0xdDedD051B0EeeF07A5099eE572Af85Cb816B3fdE"
-	consensusAddress := "0xb66b8260646df96E20E3745489BAF0108E842B8e"
+	appAddress := "0xA0a3baf0ABB307C7c944c2C1B60A50bBE34BD637"
+	consensusAddress := "0xF957365e6a65687a9dcE4fD0244667FD5C09E783"
 
 	templatePath := "applications/echo-dapp/"
 	templateHash := "0x1a456963bec81fdb3eddeddb2881281737b1136e744f856d6aa43a8dcf920cd5"
@@ -79,62 +79,62 @@ func (suite *EspressoReaderTestSuite) TestInputs() {
 	// input0
 	input, err := suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 0)
 	suite.Nil(err)
-	suite.Equal(uint64(755175), input.EpochIndex)
+	suite.Equal(uint64(756613), input.EpochIndex)
 	suite.Equal(uint64(0), input.Index)
-	suite.Equal(uint64(7551758), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7551758, 1737607776, "0x639a5df764d365b4c75dc038b068d9aee72bed6465cafee577b29e3dc4b0a8f8", 0, "bb01"), input.RawData)
+	suite.Equal(uint64(7566135), input.BlockNumber)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566135, 1737786720, "0xf4b4be2ff1373371ff705336b0eff0f70f117bcfe61fb04470e613a1b6e710f6", 0, "bb01"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
-	suite.Equal(common.HexToHash("0xcbd6ab30a829bd312776f9411f8e11b5997b757fd64f202336200a65ebab2ff8"), input.TransactionReference)
+	suite.Equal(common.HexToHash("0x04cb2532275733f68678223314a231d44ad407832f7fce0902ec95328c870fbd"), input.TransactionReference)
 
 	// input1
 	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 1)
 	suite.Nil(err)
-	suite.Equal(uint64(755175), input.EpochIndex)
+	suite.Equal(uint64(756613), input.EpochIndex)
 	suite.Equal(uint64(1), input.Index)
-	suite.Equal(uint64(7551758), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7551758, 1737607776, "0x639a5df764d365b4c75dc038b068d9aee72bed6465cafee577b29e3dc4b0a8f8", 1, "bb02"), input.RawData)
+	suite.Equal(uint64(7566135), input.BlockNumber)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566135, 1737786720, "0xf4b4be2ff1373371ff705336b0eff0f70f117bcfe61fb04470e613a1b6e710f6", 1, "bb02"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
-	suite.Equal(common.HexToHash("0xe836569fc44b6ac012748f69dc13e40ab9f65020a453ee2d27605cbb7aa44f97"), input.TransactionReference)
+	suite.Equal(common.HexToHash("0x02b0d850e04f4008109d7f65c0080304e01c97defc1998084d4c319997d2d9fb"), input.TransactionReference)
 
 	// input2
 	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 2)
 	suite.Nil(err)
-	suite.Equal(uint64(755182), input.EpochIndex)
+	suite.Equal(uint64(756621), input.EpochIndex)
 	suite.Equal(uint64(2), input.Index)
-	suite.Equal(uint64(7551823), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7551823, 1737608604, "0x6e60b652c4567d42692930f668ac87ea5ace1c52ec9d36a24705c67f50748acc", 2, "aa03"), input.RawData)
+	suite.Equal(uint64(7566214), input.BlockNumber)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566214, 1737787692, "0x9171073480935a9d1bafa8c6380716a352bc1471c18dc091bcdfdec6d0c24072", 2, "aa03"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
 	suite.Equal(common.HexToHash("0x00"), input.TransactionReference)
 
 	// input3
 	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 3)
 	suite.Nil(err)
-	suite.Equal(uint64(755182), input.EpochIndex)
+	suite.Equal(uint64(756621), input.EpochIndex)
 	suite.Equal(uint64(3), input.Index)
-	suite.Equal(uint64(7551827), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7551827, 1737608664, "0x3e5fd5b712082c3f1a1482f88ada563c61867b407ad00498dfe0c482d17c255a", 3, "aa04"), input.RawData)
+	suite.Equal(uint64(7566216), input.BlockNumber)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566216, 1737787728, "0x63ed554373a61df9fbcbc91ea12e1d0b6a4e7e108837c88204194c244c8ff8fe", 3, "aa04"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
 	suite.Equal(common.HexToHash("0x01"), input.TransactionReference)
 
 	// input4
 	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 4)
 	suite.Nil(err)
-	suite.Equal(uint64(755184), input.EpochIndex)
+	suite.Equal(uint64(756622), input.EpochIndex)
 	suite.Equal(uint64(4), input.Index)
-	suite.Equal(uint64(7551847), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7551847, 1737608916, "0x93e406ac7cbc987af170daf5a8c37f8c410dd06119a7efcbb74e17387f301ed2", 4, "bb05"), input.RawData)
+	suite.Equal(uint64(7566228), input.BlockNumber)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566228, 1737787872, "0x2bbd0c2b7dbbced136cfef527cde4c0fdd6d954d31341c5ee485e64cc15e6d83", 4, "bb05"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
-	suite.Equal(common.HexToHash("0xa5d16b4799a749218846823304cf59d4bd4f1c6f609e05b8332d0082871b3e37"), input.TransactionReference)
+	suite.Equal(common.HexToHash("0x5ded89e031600ae61b35ac3b383758651e707442f2acb26606e42ae8c88bcf3e"), input.TransactionReference)
 
 	// input5
 	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 5)
 	suite.Nil(err)
-	suite.Equal(uint64(755184), input.EpochIndex)
+	suite.Equal(uint64(756622), input.EpochIndex)
 	suite.Equal(uint64(5), input.Index)
-	suite.Equal(uint64(7551847), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7551847, 1737608916, "0x93e406ac7cbc987af170daf5a8c37f8c410dd06119a7efcbb74e17387f301ed2", 5, "bb06"), input.RawData)
+	suite.Equal(uint64(7566228), input.BlockNumber)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566228, 1737787872, "0x2bbd0c2b7dbbced136cfef527cde4c0fdd6d954d31341c5ee485e64cc15e6d83", 5, "bb06"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
-	suite.Equal(common.HexToHash("0x184d3fb1de731efd9e5643527b946f69b8ee1d6dd0873270ef82dd18ef2f31b5"), input.TransactionReference)
+	suite.Equal(common.HexToHash("0x73a160dde917feab97cacdc1e99d08c455c1f97621daaf75cabda53fabe31ee0"), input.TransactionReference)
 }
 
 func (suite *EspressoReaderTestSuite) TestEspressoNonce() {
@@ -157,34 +157,34 @@ func (suite *EspressoReaderTestSuite) TestApplication() {
 }
 
 func (suite *EspressoReaderTestSuite) TestEpoch() {
-	epoch0, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress, 755175)
+	epoch0, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress, 756613)
 	suite.Nil(err)
 	suite.Equal(int64(1), epoch0.ApplicationID)
-	suite.Equal(uint64(755175), epoch0.Index)
-	suite.Equal(uint64(7551750), epoch0.FirstBlock)
-	suite.Equal(uint64(7551759), epoch0.LastBlock)
+	suite.Equal(uint64(756613), epoch0.Index)
+	suite.Equal(uint64(7566130), epoch0.FirstBlock)
+	suite.Equal(uint64(7566139), epoch0.LastBlock)
 	// suite.Equal(, epoch0.ClaimHash)
 	// suite.Equal(, epoch0.ClaimTransactionHash)
 	// suite.Equal(, epoch0.Status)
 	suite.Equal(uint64(0), epoch0.VirtualIndex)
 
-	epoch1, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress, 755182)
+	epoch1, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress, 756621)
 	suite.Nil(err)
 	suite.Equal(int64(1), epoch1.ApplicationID)
-	suite.Equal(uint64(755182), epoch1.Index)
-	suite.Equal(uint64(7551820), epoch1.FirstBlock)
-	suite.Equal(uint64(7551829), epoch1.LastBlock)
+	suite.Equal(uint64(756621), epoch1.Index)
+	suite.Equal(uint64(7566210), epoch1.FirstBlock)
+	suite.Equal(uint64(7566219), epoch1.LastBlock)
 	// suite.Equal(, epoch1.ClaimHash)
 	// suite.Equal(, epoch1.ClaimTransactionHash)
 	// suite.Equal(, epoch1.Status)
 	suite.Equal(uint64(1), epoch1.VirtualIndex)
 
-	epoch2, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress, 755184)
+	epoch2, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress, 756622)
 	suite.Nil(err)
 	suite.Equal(int64(1), epoch2.ApplicationID)
-	suite.Equal(uint64(755184), epoch2.Index)
-	suite.Equal(uint64(7551840), epoch2.FirstBlock)
-	suite.Equal(uint64(7551849), epoch2.LastBlock)
+	suite.Equal(uint64(756622), epoch2.Index)
+	suite.Equal(uint64(7566220), epoch2.FirstBlock)
+	suite.Equal(uint64(7566229), epoch2.LastBlock)
 	// suite.Equal(, epoch2.ClaimHash)
 	// suite.Equal(, epoch2.ClaimTransactionHash)
 	// suite.Equal(, epoch2.Status)
@@ -195,6 +195,7 @@ func (suite *EspressoReaderTestSuite) TestNodeConfig() {
 	nodeConfig, err := suite.database.GetNodeConfig(suite.ctx)
 	suite.Nil(err)
 	suite.Equal(model.DefaultBlock_Finalized, nodeConfig.DefaultBlock)
+	// suite.Equal(, nodeConfig.InputBoxDeploymentBlock)
 	suite.Equal(strings.ToLower(common.HexToAddress("0x593E5BCf894D6829Dd26D0810DA7F064406aebB6").String()), nodeConfig.InputBoxAddress)
 	suite.Equal(uint64(11155111), nodeConfig.ChainID)
 }
