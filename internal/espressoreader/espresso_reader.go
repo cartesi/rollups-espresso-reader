@@ -206,9 +206,24 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 			continue
 		}
 
-		nonce := uint64(typedData.Message["nonce"].(float64))
-		payload := typedData.Message["data"].(string)
-		appAddressStr := typedData.Message["app"].(string)
+		var nonce uint64
+		nonceFloat64, ok := typedData.Message["nonce"].(float64)
+		if !ok {
+			slog.Error("failed to cast nonce to float")
+			continue
+		} else {
+			nonce = uint64(nonceFloat64)
+		}
+		payload, ok := typedData.Message["data"].(string)
+		if !ok {
+			slog.Error("failed to cast data to string")
+			continue
+		}
+		appAddressStr, ok := typedData.Message["app"].(string)
+		if !ok {
+			slog.Error("failed to cast app address to string")
+			continue
+		}
 		appAddress := common.HexToAddress(appAddressStr)
 		if strings.ToLower(appAddressStr) != strings.ToLower(app) {
 			slog.Debug("skipping... Looking for txs for", "app", app, "found tx for app", appAddressStr)
