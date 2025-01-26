@@ -99,6 +99,10 @@ func (r *EvmReader) ReadAndStoreInputs(
 					"epoch_index", currentEpoch.Index,
 					"start", currentEpoch.FirstBlock,
 					"end", currentEpoch.LastBlock)
+				_, ok := epochInputMap[currentEpoch]
+				if !ok {
+					epochInputMap[currentEpoch] = []*Input{}
+				}
 				currentEpoch = nil
 			}
 			if currentEpoch == nil {
