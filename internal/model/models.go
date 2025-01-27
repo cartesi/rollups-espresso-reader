@@ -306,13 +306,24 @@ type Report struct {
 	UpdatedAt               time.Time
 }
 
-type NodeConfig struct {
+const (
+	BaseConfigKey string = "BASE_NODE"
+)
+
+type NodeConfig[T any] struct {
+	Key       string
+	Value     T
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type NodeConfigValue struct {
 	DefaultBlock            DefaultBlock
+	InputReaderEnabled      bool
+	ClaimSubmissionEnabled  bool
 	InputBoxDeploymentBlock uint64
 	InputBoxAddress         string
 	ChainID                 uint64
-	CreatedAt               time.Time
-	UpdatedAt               time.Time
 }
 
 type AdvanceResult struct {

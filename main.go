@@ -46,13 +46,13 @@ func run(cmd *cobra.Command, args []string) {
 
 	database, err := factory.NewRepositoryFromConnectionString(ctx, c.PostgresEndpoint.Value)
 	if err != nil {
-		slog.Error("EVM Reader couldn't connect to the database", "error", err)
+		slog.Error("Espresso Reader couldn't connect to the database", "error", err)
 		os.Exit(1)
 	}
 
 	_, err = startup.SetupNodeConfig(ctx, database, c)
 	if err != nil {
-		slog.Error("EVM Reader couldn't connect to the database", "error", err)
+		slog.Error("Espresso Reader couldn't connect to the database", "error", err)
 		os.Exit(1)
 	}
 

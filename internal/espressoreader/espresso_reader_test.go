@@ -192,12 +192,12 @@ func (suite *EspressoReaderTestSuite) TestEpoch() {
 }
 
 func (suite *EspressoReaderTestSuite) TestNodeConfig() {
-	nodeConfig, err := suite.database.GetNodeConfig(suite.ctx)
+	nodeConfig, err := repository.LoadNodeConfig[model.NodeConfigValue](suite.ctx, suite.database, model.BaseConfigKey)
 	suite.Nil(err)
-	suite.Equal(model.DefaultBlock_Finalized, nodeConfig.DefaultBlock)
+	suite.Equal(model.DefaultBlock_Finalized, nodeConfig.Value.DefaultBlock)
 	// suite.Equal(, nodeConfig.InputBoxDeploymentBlock)
-	suite.Equal(strings.ToLower(common.HexToAddress("0x593E5BCf894D6829Dd26D0810DA7F064406aebB6").String()), nodeConfig.InputBoxAddress)
-	suite.Equal(uint64(11155111), nodeConfig.ChainID)
+	suite.Equal(strings.ToLower(common.HexToAddress("0x593E5BCf894D6829Dd26D0810DA7F064406aebB6").String()), nodeConfig.Value.InputBoxAddress)
+	suite.Equal(uint64(11155111), nodeConfig.Value.ChainID)
 }
 
 func (suite *EspressoReaderTestSuite) TestOutput() {
