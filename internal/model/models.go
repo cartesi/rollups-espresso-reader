@@ -13,10 +13,11 @@ import (
 type Application struct {
 	ID                   int64 `sql:"primary_key"`
 	Name                 string
-	IApplicationAddress  string
-	IConsensusAddress    string
+	IApplicationAddress  common.Address
+	IConsensusAddress    common.Address
 	TemplateHash         common.Hash
 	TemplateURI          string
+	EpochLength          uint64
 	State                ApplicationState
 	Reason               *string
 	LastProcessedBlock   uint64
@@ -306,13 +307,24 @@ type Report struct {
 	UpdatedAt               time.Time
 }
 
-type NodeConfig struct {
+const (
+	BaseConfigKey string = "BASE_NODE"
+)
+
+type NodeConfig[T any] struct {
+	Key       string
+	Value     T
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type NodeConfigValue struct {
 	DefaultBlock            DefaultBlock
+	InputReaderEnabled      bool
+	ClaimSubmissionEnabled  bool
 	InputBoxDeploymentBlock uint64
 	InputBoxAddress         string
 	ChainID                 uint64
-	CreatedAt               time.Time
-	UpdatedAt               time.Time
 }
 
 type AdvanceResult struct {

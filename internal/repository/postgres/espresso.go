@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/espresso/table"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-jet/jet/v2/postgres"
 )
 
@@ -18,12 +19,15 @@ func (r *postgresRepository) GetEspressoNonce(
 	senderAddress string,
 	nameOrAddress string,
 ) (uint64, error) {
+	// assume all are hex address string
+	sender := common.HexToAddress(senderAddress)
+	app := common.HexToAddress(nameOrAddress)
 	sel := table.EspressoNonce.
 		SELECT(table.EspressoNonce.Nonce).
 		FROM(table.EspressoNonce).
 		WHERE(
-			table.EspressoNonce.SenderAddress.EQ(postgres.LOWER(postgres.String(senderAddress))).
-				AND(table.EspressoNonce.ApplicationAddress.EQ(postgres.LOWER(postgres.String(nameOrAddress)))),
+			table.EspressoNonce.SenderAddress.EQ(postgres.Bytea(sender.Bytes())).
+				AND(table.EspressoNonce.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))),
 		)
 
 	sqlStr, args := sel.Sql()
@@ -47,6 +51,9 @@ func (r *postgresRepository) UpdateEspressoNonce(
 	senderAddress string,
 	nameOrAddress string,
 ) error {
+	// assume all are hex address string
+	sender := common.HexToAddress(senderAddress)
+	app := common.HexToAddress(nameOrAddress)
 	nonce, err := r.GetEspressoNonce(ctx, senderAddress, nameOrAddress)
 	if err != nil {
 		return err
@@ -58,8 +65,8 @@ func (r *postgresRepository) UpdateEspressoNonce(
 		table.EspressoNonce.ApplicationAddress,
 		table.EspressoNonce.Nonce,
 	).VALUES(
-		postgres.LOWER(postgres.String(senderAddress)),
-		postgres.LOWER(postgres.String(nameOrAddress)),
+		postgres.Bytea(sender.Bytes()),
+		postgres.Bytea(app.Bytes()),
 		nextNonce,
 	)
 
@@ -91,11 +98,12 @@ func (r *postgresRepository) GetInputIndex(
 	ctx context.Context,
 	nameOrAddress string,
 ) (uint64, error) {
+	app := common.HexToAddress(nameOrAddress)
 	sel := table.InputIndex.
 		SELECT(table.InputIndex.Index).
 		FROM(table.InputIndex).
 		WHERE(
-			table.InputIndex.ApplicationAddress.EQ(postgres.LOWER(postgres.String(nameOrAddress))),
+			table.InputIndex.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())),
 		)
 
 	sqlStr, args := sel.Sql()
@@ -118,6 +126,7 @@ func (r *postgresRepository) UpdateInputIndex(
 	ctx context.Context,
 	nameOrAddress string,
 ) error {
+	app := common.HexToAddress(nameOrAddress)
 	index, err := r.GetInputIndex(ctx, nameOrAddress)
 	if err != nil {
 		return err
@@ -128,7 +137,7 @@ func (r *postgresRepository) UpdateInputIndex(
 		table.InputIndex.ApplicationAddress,
 		table.InputIndex.Index,
 	).VALUES(
-		postgres.LOWER(postgres.String(nameOrAddress)),
+		postgres.Bytea(app.Bytes()),
 		nextIndex,
 	)
 
@@ -160,16 +169,16 @@ func (r *postgresRepository) GetLastProcessedEspressoBlock(
 	ctx context.Context,
 	nameOrAddress string,
 ) (uint64, error) {
+	app := common.HexToAddress(nameOrAddress)
 	sel := table.EspressoBlock.
 		SELECT(table.EspressoBlock.LastProcessedEspressoBlock).
 		FROM(table.EspressoBlock).
 		WHERE(
-			table.EspressoBlock.ApplicationAddress.EQ(postgres.LOWER(postgres.String(nameOrAddress))),
+			table.EspressoBlock.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())),
 		)
 
 	sqlStr, args := sel.Sql()
 	row := r.db.QueryRow(ctx, sqlStr, args...)
-
 	var lastProcessedEspressoBlock uint64
 	err := row.Scan(
 		&lastProcessedEspressoBlock,
@@ -188,11 +197,12 @@ func (r *postgresRepository) UpdateLastProcessedEspressoBlock(
 	nameOrAddress string,
 	lastProcessedEspressoBlock uint64,
 ) error {
+	app := common.HexToAddress(nameOrAddress)
 	insertStmt := table.EspressoBlock.INSERT(
 		table.EspressoBlock.ApplicationAddress,
 		table.EspressoBlock.LastProcessedEspressoBlock,
 	).VALUES(
-		postgres.LOWER(postgres.String(nameOrAddress)),
+		postgres.Bytea(app.Bytes()),
 		lastProcessedEspressoBlock,
 	)
 

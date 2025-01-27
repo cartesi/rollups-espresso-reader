@@ -17,12 +17,10 @@ type nodeConfigTable struct {
 	postgres.Table
 
 	// Columns
-	DefaultBlock            postgres.ColumnString
-	InputBoxDeploymentBlock postgres.ColumnInteger
-	InputBoxAddress         postgres.ColumnString
-	ChainID                 postgres.ColumnInteger
-	CreatedAt               postgres.ColumnTimestampz
-	UpdatedAt               postgres.ColumnTimestampz
+	Key       postgres.ColumnString
+	Value     postgres.ColumnString
+	CreatedAt postgres.ColumnTimestampz
+	UpdatedAt postgres.ColumnTimestampz
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -63,26 +61,22 @@ func newNodeConfigTable(schemaName, tableName, alias string) *NodeConfigTable {
 
 func newNodeConfigTableImpl(schemaName, tableName, alias string) nodeConfigTable {
 	var (
-		DefaultBlockColumn            = postgres.StringColumn("default_block")
-		InputBoxDeploymentBlockColumn = postgres.IntegerColumn("input_box_deployment_block")
-		InputBoxAddressColumn         = postgres.StringColumn("input_box_address")
-		ChainIDColumn                 = postgres.IntegerColumn("chain_id")
-		CreatedAtColumn               = postgres.TimestampzColumn("created_at")
-		UpdatedAtColumn               = postgres.TimestampzColumn("updated_at")
-		allColumns                    = postgres.ColumnList{DefaultBlockColumn, InputBoxDeploymentBlockColumn, InputBoxAddressColumn, ChainIDColumn, CreatedAtColumn, UpdatedAtColumn}
-		mutableColumns                = postgres.ColumnList{DefaultBlockColumn, InputBoxDeploymentBlockColumn, InputBoxAddressColumn, ChainIDColumn, CreatedAtColumn, UpdatedAtColumn}
+		KeyColumn       = postgres.StringColumn("key")
+		ValueColumn     = postgres.StringColumn("value")
+		CreatedAtColumn = postgres.TimestampzColumn("created_at")
+		UpdatedAtColumn = postgres.TimestampzColumn("updated_at")
+		allColumns      = postgres.ColumnList{KeyColumn, ValueColumn, CreatedAtColumn, UpdatedAtColumn}
+		mutableColumns  = postgres.ColumnList{ValueColumn, CreatedAtColumn, UpdatedAtColumn}
 	)
 
 	return nodeConfigTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		DefaultBlock:            DefaultBlockColumn,
-		InputBoxDeploymentBlock: InputBoxDeploymentBlockColumn,
-		InputBoxAddress:         InputBoxAddressColumn,
-		ChainID:                 ChainIDColumn,
-		CreatedAt:               CreatedAtColumn,
-		UpdatedAt:               UpdatedAtColumn,
+		Key:       KeyColumn,
+		Value:     ValueColumn,
+		CreatedAt: CreatedAtColumn,
+		UpdatedAt: UpdatedAtColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

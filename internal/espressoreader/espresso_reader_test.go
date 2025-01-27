@@ -6,6 +6,7 @@ package espressoreader
 import (
 	"context"
 	"encoding/hex"
+	"log/slog"
 	"math/big"
 	"strings"
 	"testing"
@@ -15,7 +16,6 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/factory"
-	"github.com/cartesi/rollups-espresso-reader/internal/services/startup"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -39,16 +39,17 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 	templateHash := "0x1a456963bec81fdb3eddeddb2881281737b1136e744f856d6aa43a8dcf920cd5"
 	suite.application = model.Application{
 		Name:                 "test-dapp",
-		IApplicationAddress:  strings.ToLower(common.HexToAddress(appAddress).String()),
-		IConsensusAddress:    strings.ToLower(common.HexToAddress(consensusAddress).String()),
+		IApplicationAddress:  common.HexToAddress(appAddress),
+		IConsensusAddress:    common.HexToAddress(consensusAddress),
 		TemplateURI:          templatePath,
 		TemplateHash:         common.HexToHash(templateHash),
 		State:                model.ApplicationState_Enabled,
 		LastProcessedBlock:   0,
 		LastOutputCheckBlock: 0,
 		LastClaimCheckBlock:  0,
+		EpochLength:          10,
 	}
-	suite.senderAddress = strings.ToLower(common.HexToAddress("0x590F92fEa8df163fFF2d7Df266364De7CE8F9E16").String())
+	suite.senderAddress = common.HexToAddress("0x590F92fEa8df163fFF2d7Df266364De7CE8F9E16").String()
 
 	suite.ctx = context.Background()
 	suite.c = config.FromEnv()
@@ -56,18 +57,22 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 	_, err := suite.database.CreateApplication(suite.ctx, &suite.application)
 	suite.Nil(err)
 
-	startup.SetupNodeConfig(suite.ctx, suite.database, suite.c)
+	config, err := repository.LoadNodeConfig[model.NodeConfigValue](suite.ctx, suite.database, model.BaseConfigKey)
+	if err != nil {
+		slog.Error("db config", "error", err)
+	}
+
 	service := NewEspressoReaderService(
 		suite.c.BlockchainHttpEndpoint.Value,
-		suite.c.BlockchainHttpEndpoint.Value,
+		suite.c.BlockchainWsEndpoint.Value,
 		suite.database,
 		suite.c.EspressoBaseUrl,
 		suite.c.EspressoStartingBlock,
 		suite.c.EspressoNamespace,
 		suite.c.EvmReaderRetryPolicyMaxRetries,
 		suite.c.EvmReaderRetryPolicyMaxDelay,
-		suite.c.BlockchainID,
-		uint64(suite.c.ContractsInputBoxDeploymentBlockNumber),
+		config.Value.ChainID,
+		config.Value.InputBoxDeploymentBlock,
 		suite.c.EspressoServiceEndpoint,
 	)
 	go service.Start(suite.ctx, make(chan struct{}, 1))
@@ -77,74 +82,74 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 
 func (suite *EspressoReaderTestSuite) TestInputs() {
 	// input0
-	input, err := suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 0)
+	input, err := suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress.Hex(), 0)
 	suite.Nil(err)
 	suite.Equal(uint64(756613), input.EpochIndex)
 	suite.Equal(uint64(0), input.Index)
 	suite.Equal(uint64(7566135), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566135, 1737786720, "0xf4b4be2ff1373371ff705336b0eff0f70f117bcfe61fb04470e613a1b6e710f6", 0, "bb01"), input.RawData)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress.Hex(), 7566135, 1737786720, "0xf4b4be2ff1373371ff705336b0eff0f70f117bcfe61fb04470e613a1b6e710f6", 0, "bb01"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
 	suite.Equal(common.HexToHash("0x04cb2532275733f68678223314a231d44ad407832f7fce0902ec95328c870fbd"), input.TransactionReference)
 
 	// input1
-	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 1)
+	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress.Hex(), 1)
 	suite.Nil(err)
 	suite.Equal(uint64(756613), input.EpochIndex)
 	suite.Equal(uint64(1), input.Index)
 	suite.Equal(uint64(7566135), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566135, 1737786720, "0xf4b4be2ff1373371ff705336b0eff0f70f117bcfe61fb04470e613a1b6e710f6", 1, "bb02"), input.RawData)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress.Hex(), 7566135, 1737786720, "0xf4b4be2ff1373371ff705336b0eff0f70f117bcfe61fb04470e613a1b6e710f6", 1, "bb02"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
 	suite.Equal(common.HexToHash("0x02b0d850e04f4008109d7f65c0080304e01c97defc1998084d4c319997d2d9fb"), input.TransactionReference)
 
 	// input2
-	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 2)
+	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress.Hex(), 2)
 	suite.Nil(err)
 	suite.Equal(uint64(756621), input.EpochIndex)
 	suite.Equal(uint64(2), input.Index)
 	suite.Equal(uint64(7566214), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566214, 1737787692, "0x9171073480935a9d1bafa8c6380716a352bc1471c18dc091bcdfdec6d0c24072", 2, "aa03"), input.RawData)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress.Hex(), 7566214, 1737787692, "0x9171073480935a9d1bafa8c6380716a352bc1471c18dc091bcdfdec6d0c24072", 2, "aa03"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
 	suite.Equal(common.HexToHash("0x00"), input.TransactionReference)
 
 	// input3
-	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 3)
+	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress.Hex(), 3)
 	suite.Nil(err)
 	suite.Equal(uint64(756621), input.EpochIndex)
 	suite.Equal(uint64(3), input.Index)
 	suite.Equal(uint64(7566216), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566216, 1737787728, "0x63ed554373a61df9fbcbc91ea12e1d0b6a4e7e108837c88204194c244c8ff8fe", 3, "aa04"), input.RawData)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress.Hex(), 7566216, 1737787728, "0x63ed554373a61df9fbcbc91ea12e1d0b6a4e7e108837c88204194c244c8ff8fe", 3, "aa04"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
 	suite.Equal(common.HexToHash("0x01"), input.TransactionReference)
 
 	// input4
-	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 4)
+	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress.Hex(), 4)
 	suite.Nil(err)
 	suite.Equal(uint64(756622), input.EpochIndex)
 	suite.Equal(uint64(4), input.Index)
 	suite.Equal(uint64(7566228), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566228, 1737787872, "0x2bbd0c2b7dbbced136cfef527cde4c0fdd6d954d31341c5ee485e64cc15e6d83", 4, "bb05"), input.RawData)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress.Hex(), 7566228, 1737787872, "0x2bbd0c2b7dbbced136cfef527cde4c0fdd6d954d31341c5ee485e64cc15e6d83", 4, "bb05"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
 	suite.Equal(common.HexToHash("0x5ded89e031600ae61b35ac3b383758651e707442f2acb26606e42ae8c88bcf3e"), input.TransactionReference)
 
 	// input5
-	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress, 5)
+	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress.Hex(), 5)
 	suite.Nil(err)
 	suite.Equal(uint64(756622), input.EpochIndex)
 	suite.Equal(uint64(5), input.Index)
 	suite.Equal(uint64(7566228), input.BlockNumber)
-	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress, 7566228, 1737787872, "0x2bbd0c2b7dbbced136cfef527cde4c0fdd6d954d31341c5ee485e64cc15e6d83", 5, "bb06"), input.RawData)
+	suite.Equal(EvmAdvanceEncode(suite.application.IApplicationAddress.Hex(), 7566228, 1737787872, "0x2bbd0c2b7dbbced136cfef527cde4c0fdd6d954d31341c5ee485e64cc15e6d83", 5, "bb06"), input.RawData)
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
 	suite.Equal(common.HexToHash("0x73a160dde917feab97cacdc1e99d08c455c1f97621daaf75cabda53fabe31ee0"), input.TransactionReference)
 }
 
 func (suite *EspressoReaderTestSuite) TestEspressoNonce() {
-	nonce, err := suite.database.GetEspressoNonce(suite.ctx, suite.senderAddress, suite.application.IApplicationAddress)
+	nonce, err := suite.database.GetEspressoNonce(suite.ctx, suite.senderAddress, suite.application.IApplicationAddress.Hex())
 	suite.Nil(err)
 	suite.Equal(uint64(4), nonce)
 }
 
 func (suite *EspressoReaderTestSuite) TestApplication() {
-	appInDB, err := suite.database.GetApplication(suite.ctx, suite.application.IApplicationAddress)
+	appInDB, err := suite.database.GetApplication(suite.ctx, suite.application.IApplicationAddress.Hex())
 	suite.Nil(err)
 	suite.Equal(int64(1), appInDB.ID)
 	suite.Equal("test-dapp", appInDB.Name)
@@ -157,7 +162,7 @@ func (suite *EspressoReaderTestSuite) TestApplication() {
 }
 
 func (suite *EspressoReaderTestSuite) TestEpoch() {
-	epoch0, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress, 756613)
+	epoch0, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress.Hex(), 756613)
 	suite.Nil(err)
 	suite.Equal(int64(1), epoch0.ApplicationID)
 	suite.Equal(uint64(756613), epoch0.Index)
@@ -168,7 +173,7 @@ func (suite *EspressoReaderTestSuite) TestEpoch() {
 	// suite.Equal(, epoch0.Status)
 	suite.Equal(uint64(0), epoch0.VirtualIndex)
 
-	epoch1, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress, 756621)
+	epoch1, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress.Hex(), 756621)
 	suite.Nil(err)
 	suite.Equal(int64(1), epoch1.ApplicationID)
 	suite.Equal(uint64(756621), epoch1.Index)
@@ -179,7 +184,7 @@ func (suite *EspressoReaderTestSuite) TestEpoch() {
 	// suite.Equal(, epoch1.Status)
 	suite.Equal(uint64(1), epoch1.VirtualIndex)
 
-	epoch2, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress, 756622)
+	epoch2, err := suite.database.GetEpoch(suite.ctx, suite.application.IApplicationAddress.Hex(), 756622)
 	suite.Nil(err)
 	suite.Equal(int64(1), epoch2.ApplicationID)
 	suite.Equal(uint64(756622), epoch2.Index)
@@ -192,16 +197,16 @@ func (suite *EspressoReaderTestSuite) TestEpoch() {
 }
 
 func (suite *EspressoReaderTestSuite) TestNodeConfig() {
-	nodeConfig, err := suite.database.GetNodeConfig(suite.ctx)
+	nodeConfig, err := repository.LoadNodeConfig[model.NodeConfigValue](suite.ctx, suite.database, model.BaseConfigKey)
 	suite.Nil(err)
-	suite.Equal(model.DefaultBlock_Finalized, nodeConfig.DefaultBlock)
+	suite.Equal(model.DefaultBlock_Finalized, nodeConfig.Value.DefaultBlock)
 	// suite.Equal(, nodeConfig.InputBoxDeploymentBlock)
-	suite.Equal(strings.ToLower(common.HexToAddress("0x593E5BCf894D6829Dd26D0810DA7F064406aebB6").String()), nodeConfig.InputBoxAddress)
-	suite.Equal(uint64(11155111), nodeConfig.ChainID)
+	suite.Equal(common.HexToAddress("0x593E5BCf894D6829Dd26D0810DA7F064406aebB6").String(), nodeConfig.Value.InputBoxAddress)
+	suite.Equal(uint64(11155111), nodeConfig.Value.ChainID)
 }
 
 func (suite *EspressoReaderTestSuite) TestOutput() {
-	output0, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 0)
+	output0, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 0)
 	suite.Nil(err)
 	suite.Equal(int64(1), output0.InputEpochApplicationID)
 	suite.Equal(uint64(0), output0.InputIndex)
@@ -210,7 +215,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output0.Hash)
 	// suite.Equal(, output0.OutputHashesSiblings)
 	// suite.Equal(, output0.ExecutionTransactionHash)
-	output1, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 1)
+	output1, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 1)
 	suite.Nil(err)
 	suite.Equal(int64(1), output1.InputEpochApplicationID)
 	suite.Equal(uint64(0), output1.InputIndex)
@@ -220,7 +225,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output1.OutputHashesSiblings)
 	// suite.Equal(, output1.ExecutionTransactionHash)
 
-	output2, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 2)
+	output2, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 2)
 	suite.Nil(err)
 	suite.Equal(int64(1), output2.InputEpochApplicationID)
 	suite.Equal(uint64(1), output2.InputIndex)
@@ -229,7 +234,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output2.Hash)
 	// suite.Equal(, output2.OutputHashesSiblings)
 	// suite.Equal(, output2.ExecutionTransactionHash)
-	output3, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 3)
+	output3, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 3)
 	suite.Nil(err)
 	suite.Equal(int64(1), output3.InputEpochApplicationID)
 	suite.Equal(uint64(1), output3.InputIndex)
@@ -239,7 +244,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output3.OutputHashesSiblings)
 	// suite.Equal(, output3.ExecutionTransactionHash)
 
-	output4, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 4)
+	output4, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 4)
 	suite.Nil(err)
 	suite.Equal(int64(1), output4.InputEpochApplicationID)
 	suite.Equal(uint64(2), output4.InputIndex)
@@ -248,7 +253,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output4.Hash)
 	// suite.Equal(, output4.OutputHashesSiblings)
 	// suite.Equal(, output4.ExecutionTransactionHash)
-	output5, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 5)
+	output5, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 5)
 	suite.Nil(err)
 	suite.Equal(int64(1), output5.InputEpochApplicationID)
 	suite.Equal(uint64(2), output5.InputIndex)
@@ -258,7 +263,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output5.OutputHashesSiblings)
 	// suite.Equal(, output5.ExecutionTransactionHash)
 
-	output6, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 6)
+	output6, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 6)
 	suite.Nil(err)
 	suite.Equal(int64(1), output6.InputEpochApplicationID)
 	suite.Equal(uint64(3), output6.InputIndex)
@@ -267,7 +272,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output6.Hash)
 	// suite.Equal(, output6.OutputHashesSiblings)
 	// suite.Equal(, output6.ExecutionTransactionHash)
-	output7, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 7)
+	output7, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 7)
 	suite.Nil(err)
 	suite.Equal(int64(1), output7.InputEpochApplicationID)
 	suite.Equal(uint64(3), output7.InputIndex)
@@ -277,7 +282,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output7.OutputHashesSiblings)
 	// suite.Equal(, output7.ExecutionTransactionHash)
 
-	output8, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 8)
+	output8, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 8)
 	suite.Nil(err)
 	suite.Equal(int64(1), output8.InputEpochApplicationID)
 	suite.Equal(uint64(4), output8.InputIndex)
@@ -286,7 +291,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output8.Hash)
 	// suite.Equal(, output8.OutputHashesSiblings)
 	// suite.Equal(, output8.ExecutionTransactionHash)
-	output9, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 9)
+	output9, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 9)
 	suite.Nil(err)
 	suite.Equal(int64(1), output9.InputEpochApplicationID)
 	suite.Equal(uint64(4), output9.InputIndex)
@@ -296,7 +301,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output9.OutputHashesSiblings)
 	// suite.Equal(, output9.ExecutionTransactionHash)
 
-	output10, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 10)
+	output10, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 10)
 	suite.Nil(err)
 	suite.Equal(int64(1), output10.InputEpochApplicationID)
 	suite.Equal(uint64(5), output10.InputIndex)
@@ -305,7 +310,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 	// suite.Equal(, output10.Hash)
 	// suite.Equal(, output10.OutputHashesSiblings)
 	// suite.Equal(, output10.ExecutionTransactionHash)
-	output11, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress, 11)
+	output11, err := suite.database.GetOutput(suite.ctx, suite.application.IApplicationAddress.Hex(), 11)
 	suite.Nil(err)
 	suite.Equal(int64(1), output11.InputEpochApplicationID)
 	suite.Equal(uint64(5), output11.InputIndex)
@@ -317,7 +322,7 @@ func (suite *EspressoReaderTestSuite) TestOutput() {
 }
 
 func (suite *EspressoReaderTestSuite) TestReport() {
-	report0, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress, 0)
+	report0, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress.Hex(), 0)
 	suite.Nil(err)
 	suite.Equal(int64(1), report0.InputEpochApplicationID)
 	suite.Equal(uint64(0), report0.InputIndex)
@@ -325,7 +330,7 @@ func (suite *EspressoReaderTestSuite) TestReport() {
 	expectedRawData, _ := hex.DecodeString("bb01")
 	suite.Equal(expectedRawData, report0.RawData)
 
-	report1, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress, 1)
+	report1, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress.Hex(), 1)
 	suite.Nil(err)
 	suite.Equal(int64(1), report1.InputEpochApplicationID)
 	suite.Equal(uint64(1), report1.InputIndex)
@@ -333,7 +338,7 @@ func (suite *EspressoReaderTestSuite) TestReport() {
 	expectedRawData, _ = hex.DecodeString("bb02")
 	suite.Equal(expectedRawData, report1.RawData)
 
-	report2, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress, 2)
+	report2, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress.Hex(), 2)
 	suite.Nil(err)
 	suite.Equal(int64(1), report2.InputEpochApplicationID)
 	suite.Equal(uint64(2), report2.InputIndex)
@@ -341,7 +346,7 @@ func (suite *EspressoReaderTestSuite) TestReport() {
 	expectedRawData, _ = hex.DecodeString("aa03")
 	suite.Equal(expectedRawData, report2.RawData)
 
-	report3, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress, 3)
+	report3, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress.Hex(), 3)
 	suite.Nil(err)
 	suite.Equal(int64(1), report3.InputEpochApplicationID)
 	suite.Equal(uint64(3), report3.InputIndex)
@@ -349,7 +354,7 @@ func (suite *EspressoReaderTestSuite) TestReport() {
 	expectedRawData, _ = hex.DecodeString("aa04")
 	suite.Equal(expectedRawData, report3.RawData)
 
-	report4, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress, 4)
+	report4, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress.Hex(), 4)
 	suite.Nil(err)
 	suite.Equal(int64(1), report4.InputEpochApplicationID)
 	suite.Equal(uint64(4), report4.InputIndex)
@@ -357,7 +362,7 @@ func (suite *EspressoReaderTestSuite) TestReport() {
 	expectedRawData, _ = hex.DecodeString("bb05")
 	suite.Equal(expectedRawData, report4.RawData)
 
-	report5, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress, 5)
+	report5, err := suite.database.GetReport(suite.ctx, suite.application.IApplicationAddress.Hex(), 5)
 	suite.Nil(err)
 	suite.Equal(int64(1), report5.InputEpochApplicationID)
 	suite.Equal(uint64(5), report5.InputIndex)
