@@ -3,7 +3,7 @@ set -e
 
 rm -rf ./rollups-node
 
-git clone -b feature/new-build --recurse-submodules https://github.com/cartesi/rollups-node.git
+git clone -b feature/new-build-20250124 --recurse-submodules https://github.com/cartesi/rollups-node.git
 
 docker stop $(docker ps -q) || true
 
