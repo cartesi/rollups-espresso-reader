@@ -9,6 +9,7 @@ import (
 
 	"github.com/cartesi/rollups-espresso-reader/internal/config"
 	"github.com/cartesi/rollups-espresso-reader/internal/espressoreader"
+	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/factory"
 	"github.com/cartesi/rollups-espresso-reader/internal/services/startup"
 
@@ -50,7 +51,8 @@ func run(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	_, err = startup.SetupNodeConfig(ctx, database, c)
+	var nodeConfig model.NodeConfig[model.NodeConfigValue]
+	err = startup.SetupNodeConfig(ctx, database, &nodeConfig)
 	if err != nil {
 		slog.Error("Espresso Reader couldn't connect to the database", "error", err)
 		os.Exit(1)
@@ -59,15 +61,15 @@ func run(cmd *cobra.Command, args []string) {
 	// create Espresso Reader Service
 	service := espressoreader.NewEspressoReaderService(
 		c.BlockchainHttpEndpoint.Value,
-		c.BlockchainHttpEndpoint.Value,
+		c.BlockchainWsEndpoint.Value,
 		database,
 		c.EspressoBaseUrl,
 		c.EspressoStartingBlock,
 		c.EspressoNamespace,
 		c.EvmReaderRetryPolicyMaxRetries,
 		c.EvmReaderRetryPolicyMaxDelay,
-		c.BlockchainID,
-		uint64(c.ContractsInputBoxDeploymentBlockNumber),
+		nodeConfig.Value.ChainID,
+		nodeConfig.Value.InputBoxDeploymentBlock,
 		c.EspressoServiceEndpoint,
 	)
 

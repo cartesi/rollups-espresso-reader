@@ -56,18 +56,19 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 	_, err := suite.database.CreateApplication(suite.ctx, &suite.application)
 	suite.Nil(err)
 
-	startup.SetupNodeConfig(suite.ctx, suite.database, suite.c)
+	var nodeConfig model.NodeConfig[model.NodeConfigValue]
+	startup.SetupNodeConfig(suite.ctx, suite.database, &nodeConfig)
 	service := NewEspressoReaderService(
 		suite.c.BlockchainHttpEndpoint.Value,
-		suite.c.BlockchainHttpEndpoint.Value,
+		suite.c.BlockchainWsEndpoint.Value,
 		suite.database,
 		suite.c.EspressoBaseUrl,
 		suite.c.EspressoStartingBlock,
 		suite.c.EspressoNamespace,
 		suite.c.EvmReaderRetryPolicyMaxRetries,
 		suite.c.EvmReaderRetryPolicyMaxDelay,
-		suite.c.BlockchainID,
-		uint64(suite.c.ContractsInputBoxDeploymentBlockNumber),
+		nodeConfig.Value.ChainID,
+		nodeConfig.Value.InputBoxDeploymentBlock,
 		suite.c.EspressoServiceEndpoint,
 	)
 	go service.Start(suite.ctx, make(chan struct{}, 1))
