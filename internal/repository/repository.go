@@ -5,6 +5,9 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"time"
 
 	. "github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/ethereum/go-ethereum/common"
@@ -98,8 +101,8 @@ type BulkOperationsRepository interface {
 }
 
 type NodeConfigRepository interface {
-	CreateNodeConfig(ctx context.Context, nc *NodeConfig) error
-	GetNodeConfig(ctx context.Context) (*NodeConfig, error)
+	SaveNodeConfigRaw(ctx context.Context, key string, rawJSON []byte) error
+	LoadNodeConfigRaw(ctx context.Context, key string) (rawJSON []byte, createdAt, updatedAt time.Time, err error)
 }
 
 // FIXME: migrate ClaimRow -> Application + Epoch and use the other interfaces
@@ -166,4 +169,41 @@ type Repository interface {
 	ClaimerRepository
 	EspressoRepository
 	// FIXME missing close
+}
+
+func SaveNodeConfig[T any](
+	ctx context.Context,
+	repo NodeConfigRepository,
+	nc *NodeConfig[T],
+) error {
+	data, err := json.Marshal(nc.Value)
+	if err != nil {
+		return fmt.Errorf("marshal node_config value failed: %w", err)
+	}
+	err = repo.SaveNodeConfigRaw(ctx, nc.Key, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func LoadNodeConfig[T any](
+	ctx context.Context,
+	repo NodeConfigRepository,
+	key string,
+) (*NodeConfig[T], error) {
+	raw, createdAt, updatedAt, err := repo.LoadNodeConfigRaw(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	var val T
+	if err := json.Unmarshal(raw, &val); err != nil {
+		return nil, fmt.Errorf("unmarshal node_config value failed: %w", err)
+	}
+	return &NodeConfig[T]{
+		Key:       key,
+		Value:     val,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	}, nil
 }

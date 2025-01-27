@@ -111,7 +111,6 @@ type EvmReader struct {
 	contractFactory         ContractFactory
 	inputBoxDeploymentBlock uint64
 	defaultBlock            DefaultBlock
-	epochLengthCache        map[common.Address]uint64
 	hasEnabledApps          bool
 	shouldModifyIndex       bool // modify index in raw data if the main sequencer is espresso
 	IOAbi                   abi.ABI
@@ -148,8 +147,6 @@ func NewEvmReader(
 		shouldModifyIndex:       shouldModifyIndex,
 		IOAbi:                   ioABI,
 	}
-	// Initialize epochLength cache
-	evmReader.epochLengthCache = make(map[common.Address]uint64)
 	return evmReader
 }
 
@@ -162,7 +159,7 @@ func (r *EvmReader) GetAllRunningApplications(ctx context.Context) ([]*Applicati
 // Also validates if IConsensus configuration matches the blockchain registered one
 func (r *EvmReader) GetAppContracts(app Application,
 ) (ApplicationContract, ConsensusContract, error) {
-	applicationContract, err := r.contractFactory.NewApplication(common.HexToAddress(app.IApplicationAddress))
+	applicationContract, err := r.contractFactory.NewApplication(app.IApplicationAddress)
 	if err != nil {
 		return nil, nil, errors.Join(
 			fmt.Errorf("error building application contract"),
@@ -178,7 +175,7 @@ func (r *EvmReader) GetAppContracts(app Application,
 		)
 	}
 
-	if common.HexToAddress(app.IConsensusAddress) != consensusAddress {
+	if app.IConsensusAddress != consensusAddress {
 		return nil, nil,
 			fmt.Errorf("IConsensus addresses do not match. Deployed: %s. Configured: %s",
 				consensusAddress,
@@ -194,10 +191,6 @@ func (r *EvmReader) GetAppContracts(app Application,
 
 	}
 	return applicationContract, consensus, nil
-}
-
-func (r *EvmReader) GetEpochLengthCache(a common.Address) uint64 {
-	return r.epochLengthCache[a]
 }
 
 func (r *EvmReader) GetEthClient() *EthClient {

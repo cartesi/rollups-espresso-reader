@@ -26,30 +26,14 @@ func (r *EvmReader) ReadAndStoreInputs(
 	endBlock uint64,
 	apps []TypeExportApplication,
 ) error {
-	appsToProcess := []common.Address{}
 
-	for _, app := range apps {
-
-		// Get App EpochLength
-		err := r.AddAppEpochLengthIntoCache(app)
-		if err != nil {
-			slog.Error("evmreader: Error adding epoch length into cache",
-				"app", common.HexToAddress(app.IApplicationAddress),
-				"error", err)
-			continue
-		}
-
-		appsToProcess = append(appsToProcess, common.HexToAddress(app.IApplicationAddress))
-
-	}
-
-	if len(appsToProcess) == 0 {
-		slog.Warn("evmreader: No valid running applications")
+	if len(apps) == 0 {
+		slog.Warn("No valid running applications")
 		return nil
 	}
 
 	// Retrieve Inputs from blockchain
-	appInputsMap, err := r.readInputsFromBlockchain(ctx, appsToProcess, startBlock, endBlock)
+	appInputsMap, err := r.readInputsFromBlockchain(ctx, apps, startBlock, endBlock)
 	if err != nil {
 		return fmt.Errorf("failed to read inputs from block %v to block %v. %w",
 			startBlock,
@@ -57,17 +41,25 @@ func (r *EvmReader) ReadAndStoreInputs(
 			err)
 	}
 
+	addrToApp := mapAddressToApp(apps)
+
 	// Index Inputs into epochs and handle epoch finalization
 	for address, inputs := range appInputsMap {
 
-		epochLength := r.epochLengthCache[address]
+		app, exists := addrToApp[address]
+		if !exists {
+			slog.Error("Application address on input not found",
+				"address", address)
+			continue
+		}
+		epochLength := app.EpochLength
 
 		// Retrieves last open epoch from DB
-		currentEpoch, err := r.repository.GetEpoch(ctx, address.Hex(),
-			CalculateEpochIndex(epochLength, startBlock))
+		currentEpoch, err := r.repository.GetEpoch(ctx, address.String(), CalculateEpochIndex(epochLength, startBlock))
 		if err != nil {
-			slog.Error("evmreader: Error retrieving existing current epoch",
-				"app", address,
+			slog.Error("Error retrieving existing current epoch",
+				"application", app.Name,
+				"address", address,
 				"error", err,
 			)
 			continue
@@ -75,8 +67,9 @@ func (r *EvmReader) ReadAndStoreInputs(
 
 		// Check current epoch status
 		if currentEpoch != nil && currentEpoch.Status != EpochStatus_Open {
-			slog.Error("evmreader: Current epoch is not open",
-				"app", address,
+			slog.Error("Current epoch is not open",
+				"application", app.Name,
+				"address", address,
 				"epoch_index", currentEpoch.Index,
 				"status", currentEpoch.Status,
 			)
@@ -94,8 +87,9 @@ func (r *EvmReader) ReadAndStoreInputs(
 			// If input belongs into a new epoch, close the previous known one
 			if currentEpoch != nil && currentEpoch.Index != inputEpochIndex {
 				currentEpoch.Status = EpochStatus_Closed
-				slog.Info("evmreader: Closing epoch",
-					"app", currentEpoch.ApplicationID,
+				slog.Info("Closing epoch",
+					"application", app.Name,
+					"address", address,
 					"epoch_index", currentEpoch.Index,
 					"start", currentEpoch.FirstBlock,
 					"end", currentEpoch.LastBlock)
@@ -115,8 +109,9 @@ func (r *EvmReader) ReadAndStoreInputs(
 				epochInputMap[currentEpoch] = []*Input{}
 			}
 
-			slog.Info("evmreader: Found new Input",
-				"app", address,
+			slog.Info("Found new Input",
+				"application", app.Name,
+				"address", address,
 				"index", input.Index,
 				"block", input.BlockNumber,
 				"epoch_index", inputEpochIndex)
@@ -149,8 +144,9 @@ func (r *EvmReader) ReadAndStoreInputs(
 		// Indexed all inputs. Check if it is time to close this epoch
 		if currentEpoch != nil && endBlock >= currentEpoch.LastBlock {
 			currentEpoch.Status = EpochStatus_Closed
-			slog.Info("evmreader: Closing epoch",
-				"app", currentEpoch.ApplicationID,
+			slog.Info("Closing epoch",
+				"application", app.Name,
+				"address", address,
 				"epoch_index", currentEpoch.Index,
 				"start", currentEpoch.FirstBlock,
 				"end", currentEpoch.LastBlock)
@@ -163,13 +159,14 @@ func (r *EvmReader) ReadAndStoreInputs(
 
 		err = r.repository.CreateEpochsAndInputs(
 			ctx,
-			address.Hex(),
+			address.String(),
 			epochInputMap,
 			endBlock,
 		)
 		if err != nil {
-			slog.Error("evmreader: Error storing inputs and epochs",
-				"app", address,
+			slog.Error("Error storing inputs and epochs",
+				"application", app.Name,
+				"address", address,
 				"error", err,
 			)
 			continue
@@ -177,45 +174,18 @@ func (r *EvmReader) ReadAndStoreInputs(
 
 		// Store everything
 		if len(epochInputMap) > 0 {
-
-			slog.Debug("evmreader: Inputs and epochs stored successfully",
-				"app", address,
+			slog.Debug("Inputs and epochs stored successfully",
+				"application", app.Name,
+				"address", address,
 				"start-block", startBlock,
 				"end-block", endBlock,
 				"total epochs", len(epochInputMap),
 				"total inputs", len(inputs),
 			)
 		} else {
-			slog.Debug("evmreader: No inputs or epochs to store")
+			slog.Debug("No inputs or epochs to store")
 		}
 
-	}
-
-	return nil
-}
-
-// AddAppEpochLengthIntoCache checks the epoch length cache and read epoch length from IConsensus
-// contract and add it to the cache if needed
-func (r *EvmReader) AddAppEpochLengthIntoCache(app application) error {
-
-	epochLength, ok := r.epochLengthCache[common.HexToAddress(app.IApplicationAddress)]
-	if !ok {
-
-		epochLength, err := getEpochLength(app.ConsensusContract)
-		if err != nil {
-			return errors.Join(
-				fmt.Errorf("error retrieving epoch length from contracts for app %s",
-					common.HexToAddress(app.IApplicationAddress)),
-				err)
-		}
-		r.epochLengthCache[common.HexToAddress(app.IApplicationAddress)] = epochLength
-		slog.Info("evmreader: Got epoch length from IConsensus",
-			"app", common.HexToAddress(app.IApplicationAddress),
-			"epoch length", epochLength)
-	} else {
-		slog.Debug("evmreader: Got epoch length from cache",
-			"app", common.HexToAddress(app.IApplicationAddress),
-			"epoch length", epochLength)
 	}
 
 	return nil
@@ -224,14 +194,16 @@ func (r *EvmReader) AddAppEpochLengthIntoCache(app application) error {
 // readInputsFromBlockchain read the inputs from the blockchain ordered by Input index
 func (r *EvmReader) readInputsFromBlockchain(
 	ctx context.Context,
-	appsAddresses []common.Address,
+	apps []TypeExportApplication,
 	startBlock, endBlock uint64,
 ) (map[common.Address][]*Input, error) {
 
 	// Initialize app input map
 	var appInputsMap = make(map[common.Address][]*Input)
-	for _, appsAddress := range appsAddresses {
-		appInputsMap[appsAddress] = []*Input{}
+	var appsAddresses = []common.Address{}
+	for _, app := range apps {
+		appInputsMap[app.IApplicationAddress] = []*Input{}
+		appsAddresses = append(appsAddresses, app.IApplicationAddress)
 	}
 
 	opts := bind.FilterOpts{
@@ -246,8 +218,8 @@ func (r *EvmReader) readInputsFromBlockchain(
 
 	// Order inputs as order is not enforced by RetrieveInputs method nor the APIs
 	for _, event := range inputsEvents {
-		slog.Debug("evmreader: Received input",
-			"app", event.AppContract,
+		slog.Debug("Received input",
+			"address", event.AppContract,
 			"index", event.Index,
 			"block", event.Raw.BlockNumber)
 		input := &Input{
@@ -255,7 +227,7 @@ func (r *EvmReader) readInputsFromBlockchain(
 			Status:               InputCompletionStatus_None,
 			RawData:              event.Input,
 			BlockNumber:          event.Raw.BlockNumber,
-			TransactionReference: common.BytesToHash(event.Index.Bytes()),
+			TransactionReference: common.BigToHash(event.Index),
 		}
 
 		// Insert Sorted

@@ -14,6 +14,7 @@ import (
 
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader/retrypolicy"
+	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 
 	"github.com/EspressoSystems/espresso-sequencer-go/client"
@@ -86,7 +87,7 @@ func (s *EspressoReaderService) String() string {
 	return "espressoreader"
 }
 
-func (s *EspressoReaderService) setupEvmReader(ctx context.Context, database repository.Repository) *evmreader.EvmReader {
+func (s *EspressoReaderService) setupEvmReader(ctx context.Context, r repository.Repository) *evmreader.EvmReader {
 	client, err := ethclient.DialContext(ctx, s.blockchainHttpEndpoint)
 	if err != nil {
 		slog.Error("eth client http", "error", err)
@@ -99,12 +100,12 @@ func (s *EspressoReaderService) setupEvmReader(ctx context.Context, database rep
 	}
 	defer wsClient.Close()
 
-	config, err := database.GetNodeConfig(ctx)
+	config, err := repository.LoadNodeConfig[model.NodeConfigValue](ctx, r, model.BaseConfigKey)
 	if err != nil {
 		slog.Error("db config", "error", err)
 	}
 
-	inputSource, err := evmreader.NewInputSourceAdapter(common.HexToAddress(config.InputBoxAddress), client)
+	inputSource, err := evmreader.NewInputSourceAdapter(common.HexToAddress(config.Value.InputBoxAddress), client)
 	if err != nil {
 		slog.Error("input source", "error", err)
 	}
@@ -115,9 +116,9 @@ func (s *EspressoReaderService) setupEvmReader(ctx context.Context, database rep
 		retrypolicy.NewEhtClientWithRetryPolicy(client, s.maxRetries, s.maxDelay),
 		retrypolicy.NewEthWsClientWithRetryPolicy(wsClient, s.maxRetries, s.maxDelay),
 		retrypolicy.NewInputSourceWithRetryPolicy(inputSource, s.maxRetries, s.maxDelay),
-		database,
-		config.InputBoxDeploymentBlock,
-		config.DefaultBlock,
+		r,
+		config.Value.InputBoxDeploymentBlock,
+		config.Value.DefaultBlock,
 		contractFactory,
 		true,
 	)

@@ -3,17 +3,9 @@
 package startup
 
 import (
-	"context"
-	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 
-	"github.com/cartesi/rollups-espresso-reader/internal/config"
-	"github.com/cartesi/rollups-espresso-reader/internal/model"
-	"github.com/cartesi/rollups-espresso-reader/internal/repository"
-
-	"github.com/jackc/pgx/v5"
 	"github.com/lmittmann/tint"
 )
 
@@ -29,48 +21,4 @@ func ConfigLogs(logLevel slog.Level, logPrettyEnabled bool) {
 	handler := tint.NewHandler(os.Stdout, opts)
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
-}
-
-// Handles Persistent Config
-func SetupNodeConfig(
-	ctx context.Context,
-	database repository.Repository,
-	config config.NodeConfig,
-) (*model.NodeConfig, error) {
-	nodePersistentConfig, err := database.GetNodeConfig(ctx)
-	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf(
-				"Could not retrieve persistent config from Database. %w",
-				err,
-			)
-		}
-	}
-
-	if nodePersistentConfig == nil {
-		nodePersistentConfig = &model.NodeConfig{
-			DefaultBlock:            config.EvmReaderDefaultBlock,
-			InputBoxDeploymentBlock: uint64(config.ContractsInputBoxDeploymentBlockNumber),
-			InputBoxAddress:         config.ContractsInputBoxAddress,
-			ChainID:                 config.BlockchainID,
-		}
-		slog.Info(
-			"No persistent config found at the database. Setting it up",
-			"persistent config",
-			nodePersistentConfig,
-		)
-
-		err = database.CreateNodeConfig(ctx, nodePersistentConfig)
-		if err != nil {
-			return nil, fmt.Errorf("Couldn't insert database config. Error : %v", err)
-		}
-	} else {
-		slog.Info(
-			"Node was already configured. Using previous persistent config",
-			"persistent config",
-			nodePersistentConfig,
-		)
-	}
-
-	return nodePersistentConfig, nil
 }

@@ -6,43 +6,36 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"strings"
+	"fmt"
+	"time"
 
-	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
+	"github.com/go-jet/jet/v2/postgres"
 )
 
-func (r *postgresRepository) CreateNodeConfig(
-	ctx context.Context,
-	nc *model.NodeConfig,
-) error {
+func (r *postgresRepository) SaveNodeConfigRaw(ctx context.Context, key string, rawJSON []byte) error {
 
 	insertStmt := table.NodeConfig.
 		INSERT(
-			table.NodeConfig.DefaultBlock,
-			table.NodeConfig.InputBoxDeploymentBlock,
-			table.NodeConfig.InputBoxAddress,
-			table.NodeConfig.ChainID,
+			table.NodeConfig.Key,
+			table.NodeConfig.Value,
 		).
 		VALUES(
-			nc.DefaultBlock,
-			nc.InputBoxDeploymentBlock,
-			strings.ToLower(nc.InputBoxAddress),
-			nc.ChainID,
-		)
+			key,
+			postgres.Json(rawJSON),
+		).
+		ON_CONFLICT(table.NodeConfig.Key).
+		DO_UPDATE(postgres.SET(table.NodeConfig.Value.SET(postgres.Json(rawJSON))))
 
 	sqlStr, args := insertStmt.Sql()
 	_, err := r.db.Exec(ctx, sqlStr, args...)
 	return err
 }
 
-func (r *postgresRepository) GetNodeConfig(ctx context.Context) (*model.NodeConfig, error) {
+func (r *postgresRepository) LoadNodeConfigRaw(ctx context.Context, key string) ([]byte, time.Time, time.Time, error) {
 	sel := table.NodeConfig.
 		SELECT(
-			table.NodeConfig.DefaultBlock,
-			table.NodeConfig.InputBoxDeploymentBlock,
-			table.NodeConfig.InputBoxAddress,
-			table.NodeConfig.ChainID,
+			table.NodeConfig.Value,
 			table.NodeConfig.CreatedAt,
 			table.NodeConfig.UpdatedAt,
 		).
@@ -51,20 +44,21 @@ func (r *postgresRepository) GetNodeConfig(ctx context.Context) (*model.NodeConf
 	sqlStr, args := sel.Sql()
 	row := r.db.QueryRow(ctx, sqlStr, args...)
 
-	var nc model.NodeConfig
+	var (
+		value     []byte
+		createdAt time.Time
+		updatedAt time.Time
+	)
 	err := row.Scan(
-		&nc.DefaultBlock,
-		&nc.InputBoxDeploymentBlock,
-		&nc.InputBoxAddress,
-		&nc.ChainID,
-		&nc.CreatedAt,
-		&nc.UpdatedAt,
+		&value,
+		&createdAt,
+		&updatedAt,
 	)
 	if err == sql.ErrNoRows {
-		return nil, nil
+		return nil, time.Time{}, time.Time{}, fmt.Errorf("no node config found for key=%q", key)
 	}
 	if err != nil {
-		return nil, err
+		return nil, time.Time{}, time.Time{}, err
 	}
-	return &nc, nil
+	return value, createdAt, updatedAt, nil
 }

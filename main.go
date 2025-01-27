@@ -3,12 +3,15 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/config"
 	"github.com/cartesi/rollups-espresso-reader/internal/espressoreader"
+	"github.com/cartesi/rollups-espresso-reader/internal/model"
+	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/factory"
 	"github.com/cartesi/rollups-espresso-reader/internal/services/startup"
 
@@ -44,30 +47,43 @@ func run(cmd *cobra.Command, args []string) {
 
 	slog.Info("Starting the Cartesi Rollups Node Espresso Reader", "config", c)
 
+	// connect to database
 	database, err := factory.NewRepositoryFromConnectionString(ctx, c.PostgresEndpoint.Value)
 	if err != nil {
-		slog.Error("EVM Reader couldn't connect to the database", "error", err)
+		slog.Error("Espresso Reader couldn't connect to the database", "error", err)
 		os.Exit(1)
 	}
 
-	_, err = startup.SetupNodeConfig(ctx, database, c)
+	// load node configuration
+	max_attempts := 10
+	var config *model.NodeConfig[model.NodeConfigValue]
+	for i := 1; i <= max_attempts; i++ {
+		config, err = repository.LoadNodeConfig[model.NodeConfigValue](ctx, database, model.BaseConfigKey)
+		if err == nil {
+			break
+		}
+		slog.Warn("Failed to load configuration, retrying...", "attempt", i, "error", err)
+		if i < max_attempts {
+			time.Sleep(3 * time.Second)
+		}
+	}
 	if err != nil {
-		slog.Error("EVM Reader couldn't connect to the database", "error", err)
+		slog.Error(fmt.Sprintf("Failed to load configuration after %d attempts", max_attempts), "error", err)
 		os.Exit(1)
 	}
 
 	// create Espresso Reader Service
 	service := espressoreader.NewEspressoReaderService(
 		c.BlockchainHttpEndpoint.Value,
-		c.BlockchainHttpEndpoint.Value,
+		c.BlockchainWsEndpoint.Value,
 		database,
 		c.EspressoBaseUrl,
 		c.EspressoStartingBlock,
 		c.EspressoNamespace,
 		c.EvmReaderRetryPolicyMaxRetries,
 		c.EvmReaderRetryPolicyMaxDelay,
-		c.BlockchainID,
-		uint64(c.ContractsInputBoxDeploymentBlockNumber),
+		config.Value.ChainID,
+		config.Value.InputBoxDeploymentBlock,
 		c.EspressoServiceEndpoint,
 	)
 

@@ -240,18 +240,6 @@ func GetBlockchainHttpEndpoint() string {
 	return val
 }
 
-func GetBlockchainId() uint64 {
-	s, ok := os.LookupEnv("CARTESI_BLOCKCHAIN_ID")
-	if !ok {
-		panic("missing env var CARTESI_BLOCKCHAIN_ID")
-	}
-	val, err := toUint64(s)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse CARTESI_BLOCKCHAIN_ID: %v", err))
-	}
-	return val
-}
-
 func GetBlockchainWsEndpoint() string {
 	s, ok := os.LookupEnv("CARTESI_BLOCKCHAIN_WS_ENDPOINT")
 	if !ok {
@@ -284,30 +272,6 @@ func GetLegacyBlockchainEnabled() bool {
 	val, err := toBool(s)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse CARTESI_LEGACY_BLOCKCHAIN_ENABLED: %v", err))
-	}
-	return val
-}
-
-func GetContractsInputBoxAddress() string {
-	s, ok := os.LookupEnv("CARTESI_CONTRACTS_INPUT_BOX_ADDRESS")
-	if !ok {
-		panic("missing env var CARTESI_CONTRACTS_INPUT_BOX_ADDRESS")
-	}
-	val, err := toString(s)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse CARTESI_CONTRACTS_INPUT_BOX_ADDRESS: %v", err))
-	}
-	return val
-}
-
-func GetContractsInputBoxDeploymentBlockNumber() int64 {
-	s, ok := os.LookupEnv("CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER")
-	if !ok {
-		panic("missing env var CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER")
-	}
-	val, err := toInt64(s)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER: %v", err))
 	}
 	return val
 }

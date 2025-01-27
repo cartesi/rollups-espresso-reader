@@ -64,7 +64,7 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 			apps := e.getAppsForEvmReader(ctx)
 			if len(apps) > 0 {
 				for _, app := range apps {
-					lastProcessedEspressoBlock, err := e.repository.GetLastProcessedEspressoBlock(ctx, app.Application.IApplicationAddress)
+					lastProcessedEspressoBlock, err := e.repository.GetLastProcessedEspressoBlock(ctx, app.Application.IApplicationAddress.Hex())
 					if err != nil {
 						slog.Error("failed reading lastProcessedEspressoBlock", "error", err)
 						continue
@@ -92,7 +92,7 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 						}
 
 						// update lastProcessedEspressoBlock in db
-						err = e.repository.UpdateLastProcessedEspressoBlock(ctx, app.Application.IApplicationAddress, latestBlockHeight)
+						err = e.repository.UpdateLastProcessedEspressoBlock(ctx, app.Application.IApplicationAddress.Hex(), latestBlockHeight)
 						if err != nil {
 							slog.Error("failed updating last processed espresso block", "error", err)
 						}
@@ -108,7 +108,7 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 							e.readEspresso(ctx, app, currentBlockHeight, lastProcessedL1Block, l1FinalizedTimestamp)
 
 							// update lastProcessedEspressoBlock in db
-							err = e.repository.UpdateLastProcessedEspressoBlock(ctx, app.Application.IApplicationAddress, latestBlockHeight)
+							err = e.repository.UpdateLastProcessedEspressoBlock(ctx, app.Application.IApplicationAddress.Hex(), latestBlockHeight)
 							if err != nil {
 								slog.Error("failed updating last processed espresso block", "error", err)
 							}
@@ -225,7 +225,7 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 			continue
 		}
 		appAddress := common.HexToAddress(appAddressStr)
-		if strings.ToLower(appAddressStr) != strings.ToLower(app) {
+		if strings.ToLower(appAddressStr) != strings.ToLower(app.Hex()) {
 			slog.Debug("skipping... Looking for txs for", "app", app, "found tx for app", appAddressStr)
 			continue
 		}
@@ -278,19 +278,9 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		// build epochInputMap
 		// Initialize epochs inputs map
 		var epochInputMap = make(map[*model.Epoch][]*model.Input)
-		// get epoch length and last open epoch
-		epochLength := e.evmReader.GetEpochLengthCache(appAddress)
-		if epochLength == 0 {
-			err = e.evmReader.AddAppEpochLengthIntoCache(appEvmType)
-			epochLength = e.evmReader.GetEpochLengthCache(appAddress)
-			if err != nil || epochLength == 0 {
-				slog.Error("could not obtain epoch length")
-				continue
-			}
-		}
 		// if currect epoch is not nil, the epoch is open
 		// espresso inputs do not close epoch
-		epochIndex := evmreader.CalculateEpochIndex(epochLength, l1FinalizedLatestHeight)
+		epochIndex := evmreader.CalculateEpochIndex(appEvmType.EpochLength, l1FinalizedLatestHeight)
 		currentEpoch, err := e.repository.GetEpoch(ctx,
 			appAddressStr, epochIndex)
 		if err != nil {
@@ -300,8 +290,8 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		if currentEpoch == nil {
 			currentEpoch = &model.Epoch{
 				Index:      epochIndex,
-				FirstBlock: epochIndex * epochLength,
-				LastBlock:  (epochIndex * epochLength) + epochLength - 1,
+				FirstBlock: epochIndex * appEvmType.EpochLength,
+				LastBlock:  (epochIndex * appEvmType.EpochLength) + appEvmType.EpochLength - 1,
 				Status:     model.EpochStatus_Open,
 			}
 		}
