@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -46,15 +47,29 @@ func run(cmd *cobra.Command, args []string) {
 
 	slog.Info("Starting the Cartesi Rollups Node Espresso Reader", "config", c)
 
+	// connect to database
 	database, err := factory.NewRepositoryFromConnectionString(ctx, c.PostgresEndpoint.Value)
 	if err != nil {
 		slog.Error("Espresso Reader couldn't connect to the database", "error", err)
 		os.Exit(1)
 	}
 
-	config, err := repository.LoadNodeConfig[model.NodeConfigValue](ctx, database, model.BaseConfigKey)
+	// load node configuration
+	max_attempts := 10
+	var config *model.NodeConfig[model.NodeConfigValue]
+	for i := 1; i <= max_attempts; i++ {
+		config, err = repository.LoadNodeConfig[model.NodeConfigValue](ctx, database, model.BaseConfigKey)
+		if err == nil {
+			break
+		}
+		slog.Warn("Failed to load configuration, retrying...", "attempt", i, "error", err)
+		if i < max_attempts {
+			time.Sleep(3 * time.Second)
+		}
+	}
 	if err != nil {
-		slog.Error("db config", "error", err)
+		slog.Error(fmt.Sprintf("Failed to load configuration after %d attempts", max_attempts), "error", err)
+		os.Exit(1)
 	}
 
 	// create Espresso Reader Service
