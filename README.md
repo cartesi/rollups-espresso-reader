@@ -21,7 +21,7 @@ Check the [architecture](docs/architecture.md) page for more details about how t
 
 Check the [development](docs/development.md) page for details about how to develop Cartesi applications using Espresso.
 
-## Building
+## Building and Running
 
 To build:
 
@@ -29,21 +29,24 @@ To build:
 go build
 ```
 
-To run:
+To run, first you need to run the appropriate version of the Cartesi Rollups Node from its [repository](https://github.com/cartesi/rollups-node/tree/feature/new-build-20250124):
+
+```bash
+cd <path-to-cartesi-rollups-node>
+make run-postgres && make migrate
+./cartesi-rollups-node
+```
+
+Then, run the Espresso Reader to read inputs from Espresso and write them to the Node's database (make sure to have configured the Node with an appropriate application, such as the `echo-dapp`):
 
 ```bash
 eval $(make env)
 make migrate
-./espresso-reader
+./rollups-espresso-reader
 ```
 
-To run automated integrated tests, 
-```
-(cartesi-rollups-node)
-make run-postgres && make migrate
-./cartesi-rollups-node
+Alternatively, to run automated integration tests:
 
-(rollups-espresso-reader)
-make migrate
+```bash
 go test github.com/cartesi/rollups-espresso-reader/internal/espressoreader -v
 ```
