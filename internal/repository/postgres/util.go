@@ -6,6 +6,7 @@ package postgres
 import (
 	"regexp"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-jet/jet/v2/postgres"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
@@ -21,7 +22,8 @@ func getWhereClauseFromNameOrAddress(nameOrAddress string) (postgres.BoolExpress
 
 	var whereClause postgres.BoolExpression
 	if isHexAddress(nameOrAddress) {
-		whereClause = table.Application.IapplicationAddress.EQ(postgres.LOWER(postgres.String(nameOrAddress)))
+		address := common.HexToAddress(nameOrAddress)
+		whereClause = table.Application.IapplicationAddress.EQ(postgres.Bytea(address.Bytes()))
 	} else {
 		// treat as name
 		whereClause = table.Application.Name.EQ(postgres.String(nameOrAddress))

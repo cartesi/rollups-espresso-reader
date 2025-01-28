@@ -3,13 +3,9 @@
 package startup
 
 import (
-	"context"
 	"log/slog"
 	"os"
 
-	"github.com/cartesi/rollups-espresso-reader/internal/model"
-	"github.com/cartesi/rollups-espresso-reader/internal/repository"
-	"github.com/jackc/pgx/v4"
 	"github.com/lmittmann/tint"
 )
 
@@ -25,24 +21,4 @@ func ConfigLogs(logLevel slog.Level, logPrettyEnabled bool) {
 	handler := tint.NewHandler(os.Stdout, opts)
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
-}
-
-func SetupNodeConfig(
-	ctx context.Context,
-	r repository.Repository,
-	c *model.NodeConfig[model.NodeConfigValue],
-) error {
-	_, err := repository.LoadNodeConfig[model.NodeConfigValue](ctx, r, model.BaseConfigKey)
-	if err == pgx.ErrNoRows {
-		slog.Debug("Initializing node config", "config", c)
-		err = repository.SaveNodeConfig(ctx, r, c)
-		if err != nil {
-			return err
-		}
-	} else if err == nil {
-		slog.Warn("Node was already configured. Using previous persistent config", "config", c.Value)
-	} else {
-		slog.Error("Could not retrieve persistent config from Database. %w", "error", err)
-	}
-	return err
 }

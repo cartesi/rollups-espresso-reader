@@ -21,9 +21,17 @@ func CalculateEpochIndex(epochLength uint64, blockNumber uint64) uint64 {
 func appsToAddresses(apps []application) []common.Address {
 	var addresses []common.Address
 	for _, app := range apps {
-		addresses = append(addresses, common.HexToAddress(app.IApplicationAddress))
+		addresses = append(addresses, app.IApplicationAddress)
 	}
 	return addresses
+}
+
+func mapAddressToApp(apps []application) map[common.Address]application {
+	result := make(map[common.Address]application)
+	for _, app := range apps {
+		result[app.IApplicationAddress] = app
+	}
+	return result
 }
 
 // sortByInputIndex is a compare function that orders Inputs

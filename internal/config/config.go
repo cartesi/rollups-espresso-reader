@@ -13,32 +13,29 @@ import (
 // NodeConfig contains all the Node variables.
 // See the corresponding environment variable for the variable documentation.
 type NodeConfig struct {
-	LogLevel                               LogLevel
-	LogPrettyEnabled                       bool
-	BlockchainID                           uint64
-	BlockchainHttpEndpoint                 Redacted[string]
-	BlockchainWsEndpoint                   Redacted[string]
-	LegacyBlockchainEnabled                bool
-	EvmReaderDefaultBlock                  DefaultBlock
-	EvmReaderRetryPolicyMaxRetries         uint64
-	EvmReaderRetryPolicyMaxDelay           Duration
-	BlockchainBlockTimeout                 int
-	ContractsInputBoxAddress               string
-	ContractsInputBoxDeploymentBlockNumber int64
-	SnapshotDir                            string
-	PostgresEndpoint                       Redacted[string]
-	HttpAddress                            string
-	HttpPort                               int
-	FeatureClaimSubmissionEnabled          bool
-	FeatureMachineHashCheckEnabled         bool
-	Auth                                   Auth
-	AdvancerPollingInterval                Duration
-	ValidatorPollingInterval               Duration
-	ClaimerPollingInterval                 Duration
-	EspressoBaseUrl                        string
-	EspressoStartingBlock                  uint64
-	EspressoNamespace                      uint64
-	EspressoServiceEndpoint                string
+	LogLevel                       LogLevel
+	LogPrettyEnabled               bool
+	BlockchainHttpEndpoint         Redacted[string]
+	BlockchainWsEndpoint           Redacted[string]
+	LegacyBlockchainEnabled        bool
+	EvmReaderDefaultBlock          DefaultBlock
+	EvmReaderRetryPolicyMaxRetries uint64
+	EvmReaderRetryPolicyMaxDelay   Duration
+	BlockchainBlockTimeout         int
+	SnapshotDir                    string
+	PostgresEndpoint               Redacted[string]
+	HttpAddress                    string
+	HttpPort                       int
+	FeatureClaimSubmissionEnabled  bool
+	FeatureMachineHashCheckEnabled bool
+	Auth                           Auth
+	AdvancerPollingInterval        Duration
+	ValidatorPollingInterval       Duration
+	ClaimerPollingInterval         Duration
+	EspressoBaseUrl                string
+	EspressoStartingBlock          uint64
+	EspressoNamespace              uint64
+	EspressoServiceEndpoint        string
 }
 
 // Auth is used to sign transactions.
@@ -75,7 +72,6 @@ func FromEnv() NodeConfig {
 	var config NodeConfig
 	config.LogLevel = GetLogLevel()
 	config.LogPrettyEnabled = GetLogPrettyEnabled()
-	config.BlockchainID = GetBlockchainId()
 	config.BlockchainHttpEndpoint = Redacted[string]{GetBlockchainHttpEndpoint()}
 	config.BlockchainWsEndpoint = Redacted[string]{GetBlockchainWsEndpoint()}
 	config.LegacyBlockchainEnabled = GetLegacyBlockchainEnabled()
@@ -83,8 +79,6 @@ func FromEnv() NodeConfig {
 	config.EvmReaderRetryPolicyMaxRetries = GetEvmReaderRetryPolicyMaxRetries()
 	config.EvmReaderRetryPolicyMaxDelay = GetEvmReaderRetryPolicyMaxDelay()
 	config.BlockchainBlockTimeout = GetBlockchainBlockTimeout()
-	config.ContractsInputBoxAddress = GetContractsInputBoxAddress()
-	config.ContractsInputBoxDeploymentBlockNumber = GetContractsInputBoxDeploymentBlockNumber()
 	config.SnapshotDir = GetSnapshotDir()
 	config.PostgresEndpoint = Redacted[string]{GetPostgresEndpoint()}
 	config.HttpAddress = GetHttpAddress()

@@ -70,11 +70,6 @@ How many seconds the node will wait before querying the database for new claims.
 # Blockchain
 #
 
-[blockchain.CARTESI_BLOCKCHAIN_ID]
-go-type = "uint64"
-description = """
-An unique identifier representing a blockchain network."""
-
 [blockchain.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT]
 go-type = "string"
 description = """
@@ -104,21 +99,6 @@ default = "60"
 go-type = "int"
 description = """
 Block subscription timeout in seconds."""
-
-#
-# Contracts
-#
-
-[contracts.CARTESI_CONTRACTS_INPUT_BOX_ADDRESS]
-go-type = "string"
-description = """
-Address of the InputBox contract."""
-
-[contracts.CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER]
-go-type = "int64"
-description = """
-The deployment block for the input box contract.
-The node will begin to read blockchain events from this block."""
 
 #
 # Snapshot

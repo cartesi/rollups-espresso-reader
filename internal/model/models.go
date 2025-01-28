@@ -13,10 +13,11 @@ import (
 type Application struct {
 	ID                   int64 `sql:"primary_key"`
 	Name                 string
-	IApplicationAddress  string
-	IConsensusAddress    string
+	IApplicationAddress  common.Address
+	IConsensusAddress    common.Address
 	TemplateHash         common.Hash
 	TemplateURI          string
+	EpochLength          uint64
 	State                ApplicationState
 	Reason               *string
 	LastProcessedBlock   uint64
