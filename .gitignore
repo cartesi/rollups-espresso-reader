@@ -1,4 +1,4 @@
-/internal/repository/postgres/db/
 /rollups-espresso-reader
 /rollups-node
 /cartesi-rollups-*
+.vscode
