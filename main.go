@@ -51,10 +51,22 @@ func run(cmd *cobra.Command, args []string) {
 		slog.Error("Espresso Reader couldn't connect to the database", "error", err)
 		os.Exit(1)
 	}
+	max_attempts := 10
+	var config *model.NodeConfig[model.NodeConfigValue]
+	for i := 1; i <= max_attempts; i++ {
+		config, err = repository.LoadNodeConfig[model.NodeConfigValue](ctx, database, model.BaseConfigKey)
+		if err == nil {
+			break
+		}
+		slog.Warn("Failed to load configuration, retrying...", "attempt", i, "error", err)
+		if i < max_attempts {
+			time.Sleep(3 * time.Second)
+		}
+	}
 
-	config, err := repository.LoadNodeConfig[model.NodeConfigValue](ctx, database, model.BaseConfigKey)
 	if err != nil {
-		slog.Error("db config", "error", err)
+		slog.Error("Failed to load configuration after 10 attempts", "error", err)
+		os.Exit(1)
 	}
 
 	// create Espresso Reader Service
