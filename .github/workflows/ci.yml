@@ -392,9 +392,11 @@ jobs:
             -e CARTESI_BLOCKCHAIN_WS_ENDPOINT=$CARTESI_BLOCKCHAIN_WS_ENDPOINT --rm --network=host --name c_espresso espresso
 
       - name: Register Echo App
+        env:
+          CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
         run: |
           docker logs --timestamps c_espresso
-          docker exec c_espresso cartesi-rollups-cli app register -v -c 0x48F176733DBdEc10EC4d1692e98403E0927E869C -a 0x5a205Fcb6947e200615B75C409ac0aa486D77649 -n echo-dapp -t applications/echo-dapp/
+          docker exec c_espresso cartesi-rollups-cli app register -v -c 0x48F176733DBdEc10EC4d1692e98403E0927E869C -a 0x5a205Fcb6947e200615B75C409ac0aa486D77649 -r $CARTESI_BLOCKCHAIN_HTTP_ENDPOINT -n echo-dapp -t applications/echo-dapp/
 
       - name: Send input transaction
         env:
