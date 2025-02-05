@@ -36,18 +36,6 @@ the snapshot matches the hash in the Application contract."""
 # Rollups
 #
 
-[rollups.CARTESI_EVM_READER_RETRY_POLICY_MAX_RETRIES]
-default = "3"
-go-type = "uint64"
-description = """
-How many times some functions should be retried after an error."""
-
-[rollups.CARTESI_EVM_READER_RETRY_POLICY_MAX_DELAY]
-default = "3"
-go-type = "Duration"
-description = """
-How many seconds the retry policy will wait between retries."""
-
 [rollups.CARTESI_ADVANCER_POLLING_INTERVAL]
 default = "7"
 go-type = "Duration"
@@ -223,6 +211,18 @@ default = "localhost:8080"
 go-type = "string"
 description = """
 URL to Espresso nonce and submit service"""
+
+[espresso.RETRY_POLICY_MAX_RETRIES]
+default = "10"
+go-type = "uint64"
+description = """
+How many times some functions should be retried after an error."""
+
+[rollups.RETRY_POLICY_MAX_DELAY]
+default = "2"
+go-type = "Duration"
+description = """
+How many seconds the retry policy will wait between retries."""
 
 #
 # Temporary

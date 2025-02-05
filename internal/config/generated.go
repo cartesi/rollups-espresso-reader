@@ -324,6 +324,18 @@ func GetStartingBlock() uint64 {
 	return val
 }
 
+func GetPolicyMaxRetries() uint64 {
+	s, ok := os.LookupEnv("RETRY_POLICY_MAX_RETRIES")
+	if !ok {
+		s = "10"
+	}
+	val, err := toUint64(s)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse RETRY_POLICY_MAX_RETRIES: %v", err))
+	}
+	return val
+}
+
 func GetFeatureClaimSubmissionEnabled() bool {
 	s, ok := os.LookupEnv("CARTESI_FEATURE_CLAIM_SUBMISSION_ENABLED")
 	if !ok {
@@ -432,30 +444,6 @@ func GetClaimerPollingInterval() Duration {
 	return val
 }
 
-func GetEvmReaderRetryPolicyMaxDelay() Duration {
-	s, ok := os.LookupEnv("CARTESI_EVM_READER_RETRY_POLICY_MAX_DELAY")
-	if !ok {
-		s = "3"
-	}
-	val, err := toDuration(s)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse CARTESI_EVM_READER_RETRY_POLICY_MAX_DELAY: %v", err))
-	}
-	return val
-}
-
-func GetEvmReaderRetryPolicyMaxRetries() uint64 {
-	s, ok := os.LookupEnv("CARTESI_EVM_READER_RETRY_POLICY_MAX_RETRIES")
-	if !ok {
-		s = "3"
-	}
-	val, err := toUint64(s)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse CARTESI_EVM_READER_RETRY_POLICY_MAX_RETRIES: %v", err))
-	}
-	return val
-}
-
 func GetValidatorPollingInterval() Duration {
 	s, ok := os.LookupEnv("CARTESI_VALIDATOR_POLLING_INTERVAL")
 	if !ok {
@@ -464,6 +452,18 @@ func GetValidatorPollingInterval() Duration {
 	val, err := toDuration(s)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse CARTESI_VALIDATOR_POLLING_INTERVAL: %v", err))
+	}
+	return val
+}
+
+func GetPolicyMaxDelay() Duration {
+	s, ok := os.LookupEnv("RETRY_POLICY_MAX_DELAY")
+	if !ok {
+		s = "2"
+	}
+	val, err := toDuration(s)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse RETRY_POLICY_MAX_DELAY: %v", err))
 	}
 	return val
 }

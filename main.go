@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/factory"
+	"github.com/cartesi/rollups-espresso-reader/internal/services/retry"
 	"github.com/cartesi/rollups-espresso-reader/internal/services/startup"
 
 	"github.com/spf13/cobra"
@@ -33,6 +35,12 @@ var Cmd = &cobra.Command{
 	Short: "Runs Espresso Reader",
 	Long:  `Runs Espresso Reader`,
 	Run:   run,
+}
+
+type loadNodeConfigArgs struct {
+	ctx       context.Context
+	database  repository.Repository
+	configKey string
 }
 
 func run(cmd *cobra.Command, args []string) {
@@ -57,16 +65,17 @@ func run(cmd *cobra.Command, args []string) {
 	// load node configuration
 	max_attempts := 10
 	var config *model.NodeConfig[model.NodeConfigValue]
-	for i := 1; i <= max_attempts; i++ {
-		config, err = repository.LoadNodeConfig[model.NodeConfigValue](ctx, database, model.BaseConfigKey)
-		if err == nil {
-			break
-		}
-		slog.Warn("Failed to load configuration, retrying...", "attempt", i, "error", err)
-		if i < max_attempts {
-			time.Sleep(3 * time.Second)
-		}
-	}
+	config, err = retry.CallFunctionWithRetryPolicy(
+		loadNodeConfig,
+		loadNodeConfigArgs{
+			ctx:       ctx,
+			database:  database,
+			configKey: model.BaseConfigKey,
+		},
+		c.MaxRetries,
+		c.MaxDelay,
+		"Main::LoadNodeConfig",
+	)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Failed to load configuration after %d attempts", max_attempts), "error", err)
 		os.Exit(1)
@@ -80,11 +89,11 @@ func run(cmd *cobra.Command, args []string) {
 		c.EspressoBaseUrl,
 		c.EspressoStartingBlock,
 		c.EspressoNamespace,
-		c.EvmReaderRetryPolicyMaxRetries,
-		c.EvmReaderRetryPolicyMaxDelay,
 		config.Value.ChainID,
 		config.Value.InputBoxDeploymentBlock,
 		c.EspressoServiceEndpoint,
+		c.MaxRetries,
+		c.MaxDelay,
 	)
 
 	// logs startup time
@@ -103,6 +112,10 @@ func run(cmd *cobra.Command, args []string) {
 		slog.Error("Espresso Reader exited with an error", "error", err)
 		os.Exit(1)
 	}
+}
+
+func loadNodeConfig(args loadNodeConfigArgs) (*model.NodeConfig[model.NodeConfigValue], error) {
+	return repository.LoadNodeConfig[model.NodeConfigValue](args.ctx, args.database, args.configKey)
 }
 
 func main() {

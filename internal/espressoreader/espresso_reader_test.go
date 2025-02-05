@@ -69,11 +69,11 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 		suite.c.EspressoBaseUrl,
 		suite.c.EspressoStartingBlock,
 		suite.c.EspressoNamespace,
-		suite.c.EvmReaderRetryPolicyMaxRetries,
-		suite.c.EvmReaderRetryPolicyMaxDelay,
 		config.Value.ChainID,
 		config.Value.InputBoxDeploymentBlock,
 		suite.c.EspressoServiceEndpoint,
+		suite.c.MaxRetries,
+		suite.c.MaxDelay,
 	)
 	go service.Start(suite.ctx, make(chan struct{}, 1))
 	// let reader run for some time
