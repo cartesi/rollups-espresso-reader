@@ -48,11 +48,11 @@ func NewEspressoReaderService(
 	EspressoBaseUrl string,
 	EspressoStartingBlock uint64,
 	EspressoNamespace uint64,
-	maxRetries uint64,
-	maxDelay time.Duration,
 	chainId uint64,
 	inputBoxDeploymentBlock uint64,
 	espressoServiceEndpoint string,
+	maxRetries uint64,
+	maxDelay time.Duration,
 ) *EspressoReaderService {
 	return &EspressoReaderService{
 		blockchainHttpEndpoint:  blockchainHttpEndpoint,
@@ -61,11 +61,11 @@ func NewEspressoReaderService(
 		EspressoBaseUrl:         EspressoBaseUrl,
 		EspressoStartingBlock:   EspressoStartingBlock,
 		EspressoNamespace:       EspressoNamespace,
-		maxRetries:              maxRetries,
-		maxDelay:                maxDelay,
 		chainId:                 chainId,
 		inputBoxDeploymentBlock: inputBoxDeploymentBlock,
 		espressoServiceEndpoint: espressoServiceEndpoint,
+		maxRetries:              maxRetries,
+		maxDelay:                maxDelay,
 	}
 }
 
@@ -76,7 +76,7 @@ func (s *EspressoReaderService) Start(
 
 	evmReader := s.setupEvmReader(ctx, s.database)
 
-	espressoReader := NewEspressoReader(s.EspressoBaseUrl, s.EspressoStartingBlock, s.EspressoNamespace, s.database, evmReader, s.chainId, s.inputBoxDeploymentBlock)
+	espressoReader := NewEspressoReader(s.EspressoBaseUrl, s.EspressoStartingBlock, s.EspressoNamespace, s.database, evmReader, s.chainId, s.inputBoxDeploymentBlock, s.maxRetries, uint64(s.maxDelay))
 
 	go s.setupNonceHttpServer()
 
