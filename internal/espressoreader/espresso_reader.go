@@ -83,15 +83,15 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 					if lastProcessedL1Block < e.inputBoxDeploymentBlock {
 						lastProcessedL1Block = e.inputBoxDeploymentBlock - 1
 					}
+					if lastProcessedEspressoBlock == 0 {
+						if e.startingBlock != 0 {
+							lastProcessedEspressoBlock = e.startingBlock - 1
+						} else {
+							lastProcessedEspressoBlock = latestBlockHeight - 1
+						}
+					}
 					// bootstrap if there are more than 100 blocks to catch up
 					if latestBlockHeight-lastProcessedEspressoBlock > 100 {
-						if lastProcessedEspressoBlock == 0 {
-							if e.startingBlock != 0 {
-								lastProcessedEspressoBlock = e.startingBlock - 1
-							} else {
-								lastProcessedEspressoBlock = latestBlockHeight - 1
-							}
-						}
 						// bootstrap
 						slog.Debug("bootstrapping:", "app", appAddress, "from-block", lastProcessedEspressoBlock+1, "to-block", latestBlockHeight)
 						err = e.bootstrap(ctx, app, lastProcessedEspressoBlock, latestBlockHeight, lastProcessedL1Block)
