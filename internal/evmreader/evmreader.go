@@ -86,14 +86,6 @@ type ContractFactory interface {
 	NewIConsensus(address common.Address) (ConsensusContract, error)
 }
 
-type SubscriptionError struct {
-	Cause error
-}
-
-func (e *SubscriptionError) Error() string {
-	return fmt.Sprintf("Subscription error : %v", e.Cause)
-}
-
 // Internal struct to hold application and it's contracts together
 type application struct {
 	Application

@@ -64,7 +64,6 @@ type ApplicationRepository interface {
 
 type EpochRepository interface {
 	CreateEpoch(ctx context.Context, nameOrAddress string, e *Epoch) error
-	// FIXME move to BulkOperationsRepository
 	CreateEpochsAndInputs(ctx context.Context, nameOrAddress string, epochInputMap map[*Epoch][]*Input, blockNumber uint64) error
 
 	GetEpoch(ctx context.Context, nameOrAddress string, index uint64) (*Epoch, error)
@@ -95,37 +94,9 @@ type ReportRepository interface {
 	ListReports(ctx context.Context, nameOrAddress string, f ReportFilter, p Pagination) ([]*Report, error)
 }
 
-type BulkOperationsRepository interface {
-	StoreAdvanceResult(ctx context.Context, appId int64, ar *AdvanceResult) error
-	StoreClaimAndProofs(ctx context.Context, epoch *Epoch, outputs []*Output) error
-}
-
 type NodeConfigRepository interface {
 	SaveNodeConfigRaw(ctx context.Context, key string, rawJSON []byte) error
 	LoadNodeConfigRaw(ctx context.Context, key string) (rawJSON []byte, createdAt, updatedAt time.Time, err error)
-}
-
-// FIXME: migrate ClaimRow -> Application + Epoch and use the other interfaces
-type ClaimerRepository interface {
-	SelectOldestComputedClaimPerApp(ctx context.Context) (
-		map[common.Address]*ClaimRow,
-		error,
-	)
-	SelectNewestAcceptedClaimPerApp(ctx context.Context) (
-		map[common.Address]*ClaimRow,
-		error,
-	)
-	SelectClaimPairsPerApp(ctx context.Context) (
-		map[common.Address]*ClaimRow,
-		map[common.Address]*ClaimRow,
-		error,
-	)
-	UpdateEpochWithSubmittedClaim(
-		ctx context.Context,
-		application_id int64,
-		index uint64,
-		transaction_hash common.Hash,
-	) error
 }
 
 type EspressoRepository interface {
@@ -164,11 +135,8 @@ type Repository interface {
 	InputRepository
 	OutputRepository
 	ReportRepository
-	BulkOperationsRepository
 	NodeConfigRepository
-	ClaimerRepository
 	EspressoRepository
-	// FIXME missing close
 }
 
 func SaveNodeConfig[T any](
