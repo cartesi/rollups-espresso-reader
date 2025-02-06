@@ -219,7 +219,7 @@ description = """
 Espresso namespace."""
 
 [espresso.ESPRESSO_SERVICE_ENDPOINT]
-default = "localhost:8080"
+default = "0.0.0.0:8080"
 go-type = "string"
 description = """
 URL to Espresso nonce and submit service"""
