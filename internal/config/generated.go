@@ -303,7 +303,7 @@ func GetNamespace() uint64 {
 func GetServiceEndpoint() string {
 	s, ok := os.LookupEnv("ESPRESSO_SERVICE_ENDPOINT")
 	if !ok {
-		s = "localhost:8080"
+		s = "0.0.0.0:8080"
 	}
 	val, err := toString(s)
 	if err != nil {
