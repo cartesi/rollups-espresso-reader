@@ -16,45 +16,6 @@ description = """
 If set to true, the node will add colors to its log output."""
 
 #
-# Features
-#
-
-[features.CARTESI_FEATURE_CLAIM_SUBMISSION_ENABLED]
-default = "true"
-go-type = "bool"
-description = """
-If set to false, the node will not submit claims (reader mode)."""
-
-[features.CARTESI_FEATURE_MACHINE_HASH_CHECK_ENABLED]
-default = "true"
-go-type = "bool"
-description = """
-If set to false, the node will *not* check whether the Cartesi machine hash from
-the snapshot matches the hash in the Application contract."""
-
-#
-# Rollups
-#
-
-[rollups.CARTESI_ADVANCER_POLLING_INTERVAL]
-default = "7"
-go-type = "Duration"
-description = """
-How many seconds the node will wait before querying the database for new inputs."""
-
-[rollups.CARTESI_VALIDATOR_POLLING_INTERVAL]
-default = "7"
-go-type = "Duration"
-description = """
-How many seconds the node will wait before trying to finish epochs for all applications."""
-
-[rollups.CARTESI_CLAIMER_POLLING_INTERVAL]
-default = "7"
-go-type = "Duration"
-description = """
-How many seconds the node will wait before querying the database for new claims."""
-
-#
 # Blockchain
 #
 
@@ -67,88 +28,6 @@ HTTP endpoint for the blockchain RPC provider."""
 go-type = "string"
 description = """
 WebSocket endpoint for the blockchain RPC provider."""
-
-[blockchain.CARTESI_LEGACY_BLOCKCHAIN_ENABLED]
-default = "false"
-go-type = "bool"
-description = """
-If set to true the node will send transactions using the legacy gas fee model
-(instead of EIP-1559)."""
-
-[blockchain.CARTESI_EVM_READER_DEFAULT_BLOCK]
-default = "finalized"
-go-type = "DefaultBlock"
-description = """
-The default block to be used by EVM Reader when requesting new blocks.
-One of 'latest', 'pending', 'safe', 'finalized'"""
-
-[blockchain.CARTESI_BLOCKCHAIN_BLOCK_TIMEOUT]
-default = "60"
-go-type = "int"
-description = """
-Block subscription timeout in seconds."""
-
-#
-# Snapshot
-#
-
-[snapshot.CARTESI_SNAPSHOT_DIR]
-default = "/var/lib/cartesi-rollups-node/snapshots"
-go-type = "string"
-description = """
-Path to the directory with the cartesi-machine snapshot that will be loaded by the node."""
-
-#
-# Auth
-#
-
-[auth.CARTESI_AUTH_KIND]
-default = "mnemonic"
-go-type = "AuthKind"
-description = """
-One of "private_key", "private_key_file", "mnemonic", "mnemonic_file", "aws"."""
-
-[auth.CARTESI_AUTH_PRIVATE_KEY]
-go-type = "string"
-description = """
-The node will use this private key to sign transactions."""
-
-[auth.CARTESI_AUTH_PRIVATE_KEY_FILE]
-go-type = "string"
-description = """
-The node will use the private key contained in this file to sign transactions."""
-
-[auth.CARTESI_AUTH_MNEMONIC]
-go-type = "string"
-description = """
-The node will use the private key generated from this mnemonic to sign transactions."""
-
-[auth.CARTESI_AUTH_MNEMONIC_FILE]
-go-type = "string"
-description = """
-The node will use the private key generated from the mnemonic contained in this file
-to sign transactions."""
-
-[auth.CARTESI_AUTH_MNEMONIC_ACCOUNT_INDEX]
-default = "0"
-go-type = "int"
-description = """
-When using mnemonics to sign transactions,
-the node will use this account index to generate the private key."""
-
-[auth.CARTESI_AUTH_AWS_KMS_KEY_ID]
-go-type = "string"
-description = """
-If set, the node will use the AWS KMS service with this key ID to sign transactions.
-
-Must be set alongside `CARTESI_AUTH_AWS_KMS_REGION`."""
-
-[auth.CARTESI_AUTH_AWS_KMS_REGION]
-go-type = "string"
-description = """
-An AWS KMS Region.
-
-Must be set alongside `CARTESI_AUTH_AWS_KMS_KEY_ID`."""
 
 #
 # Postgres
@@ -166,23 +45,6 @@ See [this](https://www.postgresql.org/docs/current/libpq-envars.html) for more i
 It is also possible to set the endpoint without a password and load it from Postgres' passfile.
 See [this](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-PASSFILE)
 for more information."""
-
-#
-# HTTP
-#
-
-[http.CARTESI_HTTP_ADDRESS]
-default = "127.0.0.1"
-go-type = "string"
-description = """
-HTTP address for the node."""
-
-[http.CARTESI_HTTP_PORT]
-default = "10000"
-go-type = "int"
-description = """
-HTTP port for the node.
-The node will also use the 20 ports after this one for internal services."""
 
 #
 # Espresso
@@ -224,12 +86,3 @@ go-type = "Duration"
 description = """
 How many seconds the retry policy will wait between retries."""
 
-#
-# Temporary
-#
-
-[temp.CARTESI_MACHINE_SERVER_VERBOSITY]
-default = "info"
-go-type = "string"
-description = """
-TODO."""
