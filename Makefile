@@ -19,7 +19,7 @@ env:
 	@echo export CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=""
 	@echo export CARTESI_BLOCKCHAIN_WS_ENDPOINT=""
 	@echo export CARTESI_POSTGRES_ENDPOINT="postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
-	@echo export PATH=$(CURDIR):$$PATH
+	@echo export PATH=\"$(CURDIR):$$PATH\"
 	@echo export ESPRESSO_BASE_URL="https://query.decaf.testnet.espresso.network"
 	@echo export ESPRESSO_STARTING_BLOCK="1490657"
 	@echo export ESPRESSO_NAMESPACE="55555"
