@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -63,7 +62,6 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	// load node configuration
-	max_attempts := 10
 	var config *model.NodeConfig[model.NodeConfigValue]
 	config, err = retry.CallFunctionWithRetryPolicy(
 		loadNodeConfig,
@@ -77,7 +75,7 @@ func run(cmd *cobra.Command, args []string) {
 		"Main::LoadNodeConfig",
 	)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to load configuration after %d attempts", max_attempts), "error", err)
+		slog.Error("Failed to load configuration", "error", err)
 		os.Exit(1)
 	}
 

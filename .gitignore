@@ -1,4 +1,2 @@
-/rollups-espresso-reader
-/rollups-node
-/cartesi-rollups-*
-.vscode
+rollups-espresso-reader
+docs

@@ -55,6 +55,9 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 	suite.c = config.FromEnv()
 	suite.database, _ = factory.NewRepositoryFromConnectionString(suite.ctx, suite.c.PostgresEndpoint.Value)
 	_, err := suite.database.CreateApplication(suite.ctx, &suite.application)
+	if err != nil {
+		slog.Error("create application", "error", err)
+	}
 	suite.Nil(err)
 
 	config, err := repository.LoadNodeConfig[model.NodeConfigValue](suite.ctx, suite.database, model.BaseConfigKey)
