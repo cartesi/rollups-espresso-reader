@@ -104,7 +104,6 @@ func (r *postgresRepository) GetApplication(
 			table.Application.TemplateURI,
 			table.Application.EpochLength,
 			table.Application.State,
-			table.Application.Reason,
 			table.Application.LastProcessedBlock,
 			table.Application.LastClaimCheckBlock,
 			table.Application.LastOutputCheckBlock,
@@ -112,7 +111,6 @@ func (r *postgresRepository) GetApplication(
 			table.Application.CreatedAt,
 			table.Application.UpdatedAt,
 			table.ExecutionParameters.ApplicationID,
-			table.ExecutionParameters.SnapshotPolicy,
 			table.ExecutionParameters.SnapshotRetention,
 			table.ExecutionParameters.AdvanceIncCycles,
 			table.ExecutionParameters.AdvanceMaxCycles,
@@ -150,7 +148,6 @@ func (r *postgresRepository) GetApplication(
 		&app.TemplateURI,
 		&app.EpochLength,
 		&app.State,
-		&app.Reason,
 		&app.LastProcessedBlock,
 		&app.LastClaimCheckBlock,
 		&app.LastOutputCheckBlock,
@@ -158,7 +155,6 @@ func (r *postgresRepository) GetApplication(
 		&app.CreatedAt,
 		&app.UpdatedAt,
 		&app.ExecutionParameters.ApplicationID,
-		&app.ExecutionParameters.SnapshotPolicy,
 		&app.ExecutionParameters.SnapshotRetention,
 		&app.ExecutionParameters.AdvanceIncCycles,
 		&app.ExecutionParameters.AdvanceMaxCycles,
@@ -200,7 +196,6 @@ func (r *postgresRepository) UpdateApplication(
 			table.Application.TemplateURI,
 			table.Application.EpochLength,
 			table.Application.State,
-			table.Application.Reason,
 			table.Application.LastProcessedBlock,
 			table.Application.LastClaimCheckBlock,
 			table.Application.LastOutputCheckBlock,
@@ -214,7 +209,6 @@ func (r *postgresRepository) UpdateApplication(
 			app.TemplateURI,
 			app.EpochLength,
 			app.State,
-			app.Reason,
 			app.LastProcessedBlock,
 			app.LastClaimCheckBlock,
 			app.LastOutputCheckBlock,
@@ -235,11 +229,9 @@ func (r *postgresRepository) UpdateApplicationState(
 	updateStmt := table.Application.
 		UPDATE(
 			table.Application.State,
-			table.Application.Reason,
 		).
 		SET(
 			app.State,
-			app.Reason,
 		).
 		WHERE(table.Application.ID.EQ(postgres.Int(app.ID)))
 
@@ -280,7 +272,6 @@ func (r *postgresRepository) ListApplications(
 			table.Application.TemplateURI,
 			table.Application.EpochLength,
 			table.Application.State,
-			table.Application.Reason,
 			table.Application.LastProcessedBlock,
 			table.Application.LastClaimCheckBlock,
 			table.Application.LastOutputCheckBlock,
@@ -288,7 +279,6 @@ func (r *postgresRepository) ListApplications(
 			table.Application.CreatedAt,
 			table.Application.UpdatedAt,
 			table.ExecutionParameters.ApplicationID,
-			table.ExecutionParameters.SnapshotPolicy,
 			table.ExecutionParameters.SnapshotRetention,
 			table.ExecutionParameters.AdvanceIncCycles,
 			table.ExecutionParameters.AdvanceMaxCycles,
@@ -354,15 +344,13 @@ func (r *postgresRepository) ListApplications(
 			&app.TemplateURI,
 			&app.EpochLength,
 			&app.State,
-			&app.Reason,
 			&app.LastProcessedBlock,
+			&app.ProcessedInputs,
 			&app.LastClaimCheckBlock,
 			&app.LastOutputCheckBlock,
-			&app.ProcessedInputs,
 			&app.CreatedAt,
 			&app.UpdatedAt,
 			&app.ExecutionParameters.ApplicationID,
-			&app.ExecutionParameters.SnapshotPolicy,
 			&app.ExecutionParameters.SnapshotRetention,
 			&app.ExecutionParameters.AdvanceIncCycles,
 			&app.ExecutionParameters.AdvanceMaxCycles,
@@ -386,114 +374,4 @@ func (r *postgresRepository) ListApplications(
 	}
 
 	return apps, nil
-}
-
-func (r *postgresRepository) GetExecutionParameters(
-	ctx context.Context,
-	applicationID int64,
-) (*model.ExecutionParameters, error) {
-
-	stmt := table.ExecutionParameters.
-		SELECT(
-			table.ExecutionParameters.ApplicationID,
-			table.ExecutionParameters.SnapshotPolicy,
-			table.ExecutionParameters.SnapshotRetention,
-			table.ExecutionParameters.AdvanceIncCycles,
-			table.ExecutionParameters.AdvanceMaxCycles,
-			table.ExecutionParameters.InspectIncCycles,
-			table.ExecutionParameters.InspectMaxCycles,
-			table.ExecutionParameters.AdvanceIncDeadline,
-			table.ExecutionParameters.AdvanceMaxDeadline,
-			table.ExecutionParameters.InspectIncDeadline,
-			table.ExecutionParameters.InspectMaxDeadline,
-			table.ExecutionParameters.LoadDeadline,
-			table.ExecutionParameters.StoreDeadline,
-			table.ExecutionParameters.FastDeadline,
-			table.ExecutionParameters.MaxConcurrentInspects,
-			table.ExecutionParameters.CreatedAt,
-			table.ExecutionParameters.UpdatedAt,
-		).
-		WHERE(table.ExecutionParameters.ApplicationID.EQ(postgres.Int(applicationID)))
-
-	sqlStr, args := stmt.Sql()
-	row := r.db.QueryRow(ctx, sqlStr, args...)
-
-	var ep model.ExecutionParameters
-	err := row.Scan(
-		&ep.ApplicationID,
-		&ep.SnapshotPolicy,
-		&ep.SnapshotRetention,
-		&ep.AdvanceIncCycles,
-		&ep.AdvanceMaxCycles,
-		&ep.InspectIncCycles,
-		&ep.InspectMaxCycles,
-		&ep.AdvanceIncDeadline,
-		&ep.AdvanceMaxDeadline,
-		&ep.InspectIncDeadline,
-		&ep.InspectMaxDeadline,
-		&ep.LoadDeadline,
-		&ep.StoreDeadline,
-		&ep.FastDeadline,
-		&ep.MaxConcurrentInspects,
-		&ep.CreatedAt,
-		&ep.UpdatedAt,
-	)
-	if err == sql.ErrNoRows {
-		return nil, nil // not found
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &ep, nil
-}
-
-func (r *postgresRepository) UpdateExecutionParameters(
-	ctx context.Context,
-	ep *model.ExecutionParameters,
-) error {
-
-	upd := table.ExecutionParameters.
-		UPDATE(
-			table.ExecutionParameters.SnapshotPolicy,
-			table.ExecutionParameters.SnapshotRetention,
-			table.ExecutionParameters.AdvanceIncCycles,
-			table.ExecutionParameters.AdvanceMaxCycles,
-			table.ExecutionParameters.InspectIncCycles,
-			table.ExecutionParameters.InspectMaxCycles,
-			table.ExecutionParameters.AdvanceIncDeadline,
-			table.ExecutionParameters.AdvanceMaxDeadline,
-			table.ExecutionParameters.InspectIncDeadline,
-			table.ExecutionParameters.InspectMaxDeadline,
-			table.ExecutionParameters.LoadDeadline,
-			table.ExecutionParameters.StoreDeadline,
-			table.ExecutionParameters.FastDeadline,
-			table.ExecutionParameters.MaxConcurrentInspects,
-		).
-		SET(
-			ep.SnapshotPolicy,
-			ep.SnapshotRetention,
-			ep.AdvanceIncCycles,
-			ep.AdvanceMaxCycles,
-			ep.InspectIncCycles,
-			ep.InspectMaxCycles,
-			ep.AdvanceIncDeadline,
-			ep.AdvanceMaxDeadline,
-			ep.InspectIncDeadline,
-			ep.InspectMaxDeadline,
-			ep.LoadDeadline,
-			ep.StoreDeadline,
-			ep.FastDeadline,
-			ep.MaxConcurrentInspects,
-		).
-		WHERE(table.ExecutionParameters.ApplicationID.EQ(postgres.Int(ep.ApplicationID)))
-
-	sqlStr, args := upd.Sql()
-	cmd, err := r.db.Exec(ctx, sqlStr, args...)
-	if err != nil {
-		return err
-	}
-	if cmd.RowsAffected() == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
 }

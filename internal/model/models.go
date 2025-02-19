@@ -19,7 +19,6 @@ type Application struct {
 	TemplateURI          string
 	EpochLength          uint64
 	State                ApplicationState
-	Reason               *string
 	LastProcessedBlock   uint64
 	LastClaimCheckBlock  uint64
 	LastOutputCheckBlock uint64
@@ -72,52 +71,8 @@ func (e ApplicationState) String() string {
 	return string(e)
 }
 
-type SnapshotPolicy string
-
-const (
-	SnapshotPolicy_None      SnapshotPolicy = "NONE"
-	SnapshotPolicy_EachInput SnapshotPolicy = "EACH_INPUT"
-	SnapshotPolicy_EachEpoch SnapshotPolicy = "EACH_EPOCH"
-)
-
-var SnapshotPolicyAllValues = []SnapshotPolicy{
-	SnapshotPolicy_None,
-	SnapshotPolicy_EachInput,
-	SnapshotPolicy_EachEpoch,
-}
-
-func (e *SnapshotPolicy) Scan(value interface{}) error {
-	var enumValue string
-	switch val := value.(type) {
-	case string:
-		enumValue = val
-	case []byte:
-		enumValue = string(val)
-	default:
-		return errors.New("Invalid scan value for SnapshotPolicy enum. Enum value has to be of type string or []byte")
-	}
-
-	switch enumValue {
-	case "NONE":
-		*e = SnapshotPolicy_None
-	case "EACH_INPUT":
-		*e = SnapshotPolicy_EachInput
-	case "EACH_EPOCH":
-		*e = SnapshotPolicy_EachEpoch
-	default:
-		return errors.New("Invalid scan value '" + enumValue + "' for SnapshotPolicy enum")
-	}
-
-	return nil
-}
-
-func (e SnapshotPolicy) String() string {
-	return string(e)
-}
-
 type ExecutionParameters struct {
 	ApplicationID         int64 `sql:"primary_key"`
-	SnapshotPolicy        SnapshotPolicy
 	SnapshotRetention     uint64
 	AdvanceIncCycles      uint64
 	AdvanceMaxCycles      uint64
@@ -320,34 +275,9 @@ type NodeConfig[T any] struct {
 
 type NodeConfigValue struct {
 	DefaultBlock            DefaultBlock
-	InputReaderEnabled      bool
-	ClaimSubmissionEnabled  bool
 	InputBoxDeploymentBlock uint64
 	InputBoxAddress         string
 	ChainID                 uint64
-}
-
-type AdvanceResult struct {
-	InputIndex  uint64
-	Status      InputCompletionStatus
-	Outputs     [][]byte
-	Reports     [][]byte
-	OutputsHash common.Hash
-	MachineHash *common.Hash
-}
-
-type InspectResult struct {
-	ProcessedInputs uint64
-	Accepted        bool
-	Reports         [][]byte
-	Error           error
-}
-
-// FIXME: remove this type. Migrate claim to use Application + Epoch
-type ClaimRow struct {
-	Epoch
-	IApplicationAddress common.Address
-	IConsensusAddress   common.Address
 }
 
 type DefaultBlock string
