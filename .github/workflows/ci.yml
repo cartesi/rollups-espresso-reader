@@ -54,6 +54,10 @@ jobs:
           make migrate
           make generate-db
 
+      - name: Create Migration Binary
+        run: |
+          go build -o espresso-db-migration ./dev/migrate/main.go
+
       - name: Deps and Cartesi Machine
         run: |
           export CARTESI_MACHINE_VERSION=0.18.1
@@ -97,11 +101,14 @@ jobs:
           name: docker-images
           path: docker-*
   
-      - name: Upload database dump
+      - name: Upload database dump and migration binary
         uses: actions/upload-artifact@v4
         with:
           name: db-dump
-          path: rollupsdb-*
+          path: |
+            rollupsdb-*
+            espresso-db-migration
+
   
   integration_test:
     name: Integration tests
@@ -453,3 +460,4 @@ jobs:
           files: |
             cartesi-*
             rollupsdb-*
+            espresso-db-migration
