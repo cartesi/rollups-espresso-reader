@@ -101,17 +101,14 @@ jobs:
           name: docker-images
           path: docker-*
   
-      - name: Upload database dump
+      - name: Upload database dump and migration binary
         uses: actions/upload-artifact@v4
         with:
           name: db-dump
-          path: rollupsdb-*
+          path: |
+            rollupsdb-*
+            espresso-db-migration
 
-      - name: Upload migration binary cli
-        uses: actions/upload-artifact@v4
-        with:
-          name: db-dump
-          path: espresso-db-migration
   
   integration_test:
     name: Integration tests
