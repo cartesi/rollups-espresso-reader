@@ -6,7 +6,6 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/go-jet/jet/v2/postgres"
@@ -72,84 +71,6 @@ func (r *postgresRepository) GetOutput(
 		return nil, err
 	}
 	return &o, nil
-}
-
-func (r *postgresRepository) UpdateOutputsExecution(
-	ctx context.Context,
-	nameOrAddress string,
-	outputs []*model.Output,
-	lastOutputCheckBlock uint64,
-) error {
-
-	whereClause, err := getWhereClauseFromNameOrAddress(nameOrAddress)
-	if err != nil {
-		return err
-	}
-
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, o := range outputs {
-		if o.ExecutionTransactionHash == nil {
-			return errors.Join(
-				fmt.Errorf("output ExecutionTransactionHash must be not nil when updating app %s output %d", nameOrAddress, o.Index),
-				tx.Rollback(ctx),
-			)
-		}
-		updStmt := table.Output.
-			UPDATE(
-				table.Output.ExecutionTransactionHash,
-			).
-			SET(
-				postgres.Bytea(o.ExecutionTransactionHash),
-			).
-			FROM(
-				table.Application,
-			).
-			WHERE(
-				whereClause.
-					AND(table.Output.InputEpochApplicationID.EQ(table.Application.ID)).
-					AND(table.Output.Index.EQ(postgres.RawFloat(fmt.Sprintf("%d", o.Index)))),
-			)
-
-		sqlStr, args := updStmt.Sql()
-		cmd, err := r.db.Exec(ctx, sqlStr, args...)
-		if err != nil {
-			return errors.Join(err, tx.Rollback(ctx))
-		}
-		if cmd.RowsAffected() != 1 {
-			return errors.Join(
-				fmt.Errorf("no row affected when updating app %s epoch %d", nameOrAddress, o.Index),
-				tx.Rollback(ctx),
-			)
-		}
-	}
-
-	// Update last claim check block
-	appUpdateStmt := table.Application.
-		UPDATE(
-			table.Application.LastOutputCheckBlock,
-		).
-		SET(
-			postgres.RawFloat(fmt.Sprintf("%d", lastOutputCheckBlock)),
-		).
-		WHERE(whereClause)
-
-	sqlStr, args := appUpdateStmt.Sql()
-	_, err = tx.Exec(ctx, sqlStr, args...)
-	if err != nil {
-		return errors.Join(err, tx.Rollback(ctx))
-	}
-
-	// Commit transaction
-	err = tx.Commit(ctx)
-	if err != nil {
-		return errors.Join(err, tx.Rollback(ctx))
-	}
-
-	return nil
 }
 
 func (r *postgresRepository) ListOutputs(
