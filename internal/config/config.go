@@ -19,8 +19,6 @@ type NodeConfig struct {
 	BlockchainWsEndpoint           Redacted[string]
 	LegacyBlockchainEnabled        bool
 	EvmReaderDefaultBlock          DefaultBlock
-	EvmReaderRetryPolicyMaxRetries uint64
-	EvmReaderRetryPolicyMaxDelay   Duration
 	BlockchainBlockTimeout         int
 	SnapshotDir                    string
 	PostgresEndpoint               Redacted[string]
@@ -36,6 +34,8 @@ type NodeConfig struct {
 	EspressoStartingBlock          uint64
 	EspressoNamespace              uint64
 	EspressoServiceEndpoint        string
+	MaxRetries                     uint64
+	MaxDelay                       Duration
 }
 
 // Auth is used to sign transactions.
@@ -76,8 +76,6 @@ func FromEnv() NodeConfig {
 	config.BlockchainWsEndpoint = Redacted[string]{GetBlockchainWsEndpoint()}
 	config.LegacyBlockchainEnabled = GetLegacyBlockchainEnabled()
 	config.EvmReaderDefaultBlock = GetEvmReaderDefaultBlock()
-	config.EvmReaderRetryPolicyMaxRetries = GetEvmReaderRetryPolicyMaxRetries()
-	config.EvmReaderRetryPolicyMaxDelay = GetEvmReaderRetryPolicyMaxDelay()
 	config.BlockchainBlockTimeout = GetBlockchainBlockTimeout()
 	config.SnapshotDir = GetSnapshotDir()
 	config.PostgresEndpoint = Redacted[string]{GetPostgresEndpoint()}
@@ -95,6 +93,8 @@ func FromEnv() NodeConfig {
 	config.EspressoStartingBlock = GetStartingBlock()
 	config.EspressoNamespace = GetNamespace()
 	config.EspressoServiceEndpoint = GetServiceEndpoint()
+	config.MaxRetries = GetPolicyMaxRetries()
+	config.MaxDelay = GetPolicyMaxDelay()
 	return config
 }
 

@@ -22,6 +22,7 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
+	"github.com/cartesi/rollups-espresso-reader/internal/services/retry"
 
 	"github.com/EspressoSystems/espresso-sequencer-go/client"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,11 +38,13 @@ type EspressoReader struct {
 	evmReader               *evmreader.EvmReader
 	chainId                 uint64
 	inputBoxDeploymentBlock uint64
+	maxRetries              uint64
+	maxDelay                uint64
 }
 
-func NewEspressoReader(url string, startingBlock uint64, namespace uint64, repository repository.Repository, evmReader *evmreader.EvmReader, chainId uint64, inputBoxDeploymentBlock uint64) EspressoReader {
+func NewEspressoReader(url string, startingBlock uint64, namespace uint64, repository repository.Repository, evmReader *evmreader.EvmReader, chainId uint64, inputBoxDeploymentBlock uint64, maxRetries uint64, maxDelay uint64) EspressoReader {
 	client := client.NewClient(url)
-	return EspressoReader{url: url, client: *client, startingBlock: startingBlock, namespace: namespace, repository: repository, evmReader: evmReader, chainId: chainId, inputBoxDeploymentBlock: inputBoxDeploymentBlock}
+	return EspressoReader{url: url, client: *client, startingBlock: startingBlock, namespace: namespace, repository: repository, evmReader: evmReader, chainId: chainId, inputBoxDeploymentBlock: inputBoxDeploymentBlock, maxRetries: maxRetries, maxDelay: maxDelay}
 }
 
 func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
@@ -54,10 +57,16 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 			return ctx.Err()
 		default:
 			// fetch latest espresso block height
-			latestBlockHeight, err := e.client.FetchLatestBlockHeight(ctx)
+			latestBlockHeight, err := retry.CallFunctionWithRetryPolicy(
+				e.client.FetchLatestBlockHeight,
+				ctx,
+				e.maxRetries,
+				time.Duration(e.maxDelay),
+				"EspressoReader::FetchLatestBlockHeight",
+			)
 			if err != nil {
 				slog.Error("failed fetching latest espresso block height", "error", err)
-				continue
+				return err
 			}
 			slog.Debug("Espresso:", "latestBlockHeight", latestBlockHeight)
 
@@ -74,15 +83,15 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 					if lastProcessedL1Block < e.inputBoxDeploymentBlock {
 						lastProcessedL1Block = e.inputBoxDeploymentBlock - 1
 					}
+					if lastProcessedEspressoBlock == 0 {
+						if e.startingBlock != 0 {
+							lastProcessedEspressoBlock = e.startingBlock - 1
+						} else {
+							lastProcessedEspressoBlock = latestBlockHeight - 1
+						}
+					}
 					// bootstrap if there are more than 100 blocks to catch up
 					if latestBlockHeight-lastProcessedEspressoBlock > 100 {
-						if lastProcessedEspressoBlock == 0 {
-							if e.startingBlock != 0 {
-								lastProcessedEspressoBlock = e.startingBlock - 1
-							} else {
-								lastProcessedEspressoBlock = latestBlockHeight - 1
-							}
-						}
 						// bootstrap
 						slog.Debug("bootstrapping:", "app", appAddress, "from-block", lastProcessedEspressoBlock+1, "to-block", latestBlockHeight)
 						err = e.bootstrap(ctx, app, lastProcessedEspressoBlock, latestBlockHeight, lastProcessedL1Block)
@@ -368,6 +377,7 @@ func (e *EspressoReader) getL1FinalizedHeight(ctx context.Context, espressoBlock
 			if len(espressoHeader) == 0 {
 				slog.Error("error fetching espresso header", "at height", espressoBlockHeight, "header", espressoHeader)
 				slog.Error("retrying fetching header")
+				time.Sleep(time.Duration(e.maxDelay))
 				continue
 			}
 
@@ -375,14 +385,14 @@ func (e *EspressoReader) getL1FinalizedHeight(ctx context.Context, espressoBlock
 			l1FinalizedTimestampStr := gjson.Get(espressoHeader, "fields.l1_finalized.timestamp").Str
 			if len(l1FinalizedTimestampStr) < 2 {
 				slog.Debug("Espresso header not ready. Retry fetching", "height", espressoBlockHeight)
-				var delay time.Duration = 3000
-				time.Sleep(delay * time.Millisecond)
+				time.Sleep(time.Duration(e.maxDelay))
 				continue
 			}
 			l1FinalizedTimestampInt, err := strconv.ParseInt(l1FinalizedTimestampStr[2:], 16, 64)
 			if err != nil {
 				slog.Error("hex to int conversion failed", "err", err)
 				slog.Error("retrying")
+				time.Sleep(time.Duration(e.maxDelay))
 				continue
 			}
 			l1FinalizedTimestamp := uint64(l1FinalizedTimestampInt)
@@ -403,12 +413,14 @@ func (e *EspressoReader) readEspressoHeadersByRange(ctx context.Context, from ui
 			if err != nil {
 				slog.Error("error making http request", "err", err)
 				slog.Error("retrying")
+				time.Sleep(time.Duration(e.maxDelay))
 				continue
 			}
 			resBody, err := io.ReadAll(res.Body)
 			if err != nil {
 				slog.Error("could not read response body", "err", err)
 				slog.Error("retrying")
+				time.Sleep(time.Duration(e.maxDelay))
 				continue
 			}
 
