@@ -55,7 +55,7 @@ func (r *EvmReader) ReadAndStoreInputs(
 		epochLength := app.EpochLength
 
 		// Retrieves last open epoch from DB
-		currentEpoch, err := r.repository.GetEpoch(ctx, address.String(), CalculateEpochIndex(epochLength, startBlock))
+		currentEpoch, err := r.repository.GetEpoch(ctx, address.String(), CalculateEpochIndex(epochLength, startBlock-1))
 		if err != nil {
 			slog.Error("Error retrieving existing current epoch",
 				"application", app.Name,
