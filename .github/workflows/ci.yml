@@ -258,7 +258,7 @@ jobs:
           git clone --recurse-submodules https://github.com/Calindra/nonodo.git
           cd nonodo/eip712-client-js
           npm i
-          APP_ADDRESS=0x36B9E60ACb181da458aa8870646395CD27cD0E6E node index.js || true
+          APP_ADDRESS=0x36B9E60ACb181da458aa8870646395CD27cD0E6E INPUT=0xdeadbeefdeadbeef node index.js || true
           sleep 10
           docker logs --timestamps c_espresso
 
@@ -273,7 +273,7 @@ jobs:
           MAX_RETRIES=30
           for i in $(seq 1 $MAX_RETRIES); do
             RESULT=$(docker exec -i postgres psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.output;")
-            if [[ "$RESULT" =~ "deadbeef" ]]; then
+            if [[ "$RESULT" =~ "deadbeefdeadbeef" ]]; then
               echo "Result found: $RESULT"
               exit 0
             fi
