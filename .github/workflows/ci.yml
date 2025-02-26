@@ -223,7 +223,7 @@ jobs:
             --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
       
       - name: Wait for a while
-        run: sleep 30
+        run: sleep 15
 
       - name: Run Espresso Reader image (Default input disabled)
         env:
