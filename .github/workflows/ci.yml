@@ -9,7 +9,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-
+    env:
+      CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
     services:
       postgres:
         image: postgres:16
@@ -42,6 +43,33 @@ jobs:
           echo "PostgreSQL did not become ready in time";
           exit 1;
 
+      - name: Install go migrate cli
+        run: |
+          GO_MIGRATE_VERSION=4.18.2
+          ARCH=$(dpkg --print-architecture || uname -m)
+          case "$ARCH" in
+              amd64|x86_64)
+                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-amd64.deb"
+                  ;;
+              arm64|aarch64)
+                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-arm64.deb"
+                  ;;
+              armhf|armv7l)
+                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-armv7.deb"
+                  ;;
+              i386)
+                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-386.deb"
+                  ;;
+              *)
+                  echo "Unsupported architecture: $ARCH"
+                  exit 1
+                  ;;
+          esac
+          curl -fsSL "$MIGRATE_URL" -o /tmp/migrate.deb
+          sudo dpkg -i /tmp/migrate.deb
+          rm /tmp/migrate.deb
+          migrate --version
+
       - name: Migrate Node V2 DB
         run: |
           cd rollups-node
@@ -50,6 +78,7 @@ jobs:
       
       - name: Migrate Espresso DB
         run: |
+          # migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_POSTGRES_ENDPOINT" up
           eval $(make env)
           make migrate
           make generate-db
@@ -103,8 +132,152 @@ jobs:
           name: db-dump
           path: rollupsdb-*
   
+  local_e2e_test:
+    name: e2e tests (Espresso Local)
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5433:5432 # Warn: I changed it to not crash with internal espresso-dev-ode
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: rollupsdb
+        options: --name postgres
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Download DB files
+        uses: actions/download-artifact@v4
+        with:
+          name: db-dump
+
+      - name: Restore DB bindings
+        run: |
+          docker ps
+          mkdir -p internal/repository/postgres/db/
+          tar -xzf rollupsdb-postgres-bindings.tar.gz
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5433 -U postgres; then
+              echo "PostgreSQL is ready";
+              exit 0;
+            fi;
+            sleep 2;
+          done;
+          echo "PostgreSQL did not become ready in time";
+          exit 1;
+  
+      - name: Restore database
+        env:
+          PGPASSWORD: password
+        run: |
+          psql -h localhost -U postgres -d rollupsdb --port 5433 < rollupsdb-dump.sql
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-images
+  
+      - name: Load Docker image
+        run: |
+          docker load -i docker-devnet-image.tar
+          docker load -i docker-espresso-image.tar
+      
+      - name: Run devnet (Anvil)
+        run: |
+          docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
+
+      - name: Run Espresso dev node
+        run: |
+          docker run -d --network=host -e ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/ -e ESPRESSO_SEQUENCER_API_PORT=24000 --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
+      
+      - name: Wait 1.5 min
+        run: sleep 90
+
+      - name: Run Espresso Reader image (Default input disabled)
+        env:
+          CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
+          CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
+          CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
+          CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable'
+        run: |
+          docker run -d --env-file ./ci/env.nodev2-espressolocal \
+            -e CARTESI_POSTGRES_ENDPOINT=$CARTESI_POSTGRES_ENDPOINT \
+            --rm --network=host \
+            --name c_espresso espresso
+          sleep 10
+          docker logs --timestamps c_espresso
+      # - name: Run integration tests
+      #   env:
+      #     CARTESI_CONTRACTS_INPUT_BOX_ADDRESS: '0x593E5BCf894D6829Dd26D0810DA7F064406aebB6'
+      #     CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER: '10'
+      #     CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable'
+      #     ESPRESSO_BASE_URL: 'http://localhost:24000'
+      #     ESPRESSO_STARTING_BLOCK: '1490657'
+      #     ESPRESSO_NAMESPACE: '55555'
+      #     ESPRESSO_SERVICE_ENDPOINT: '0.0.0.0:8080'
+      #   run: |
+      #     export $(cat ./ci/env.nodev2-espressolocal | grep -v '^#') 
+      #     go test --timeout 1m -p 1 ./...
+
+      - name: Deploy Echo Dapp
+        env:
+          ACCOUNT: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+          PRIVATE_KEY: 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
+          RPC_URL: 'http://localhost:8545'
+        run: |
+          docker exec c_espresso \
+            cartesi-rollups-cli app deploy -v -n echo-dapp -o $ACCOUNT -O $ACCOUNT -k $PRIVATE_KEY -r $RPC_URL -t applications/echo-dapp/ \
+            -p "postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable"
+          sleep 10
+          docker logs --timestamps c_espresso
+
+      - name: Send input transaction
+        env:
+          SENDER_PRIVATE_KEY: ${{ secrets.SENDER_PRIVATE_KEY }}
+        run: |
+          git clone --recurse-submodules https://github.com/Calindra/nonodo.git
+          cd nonodo/eip712-client-js
+          npm i
+          APP_ADDRESS=0x36B9E60ACb181da458aa8870646395CD27cD0E6E node index.js || true
+          sleep 10
+          docker logs --timestamps c_espresso
+
+      - name: Espresso dev node logs
+        run: docker logs --timestamps espresso-dev-node
+
+      - name: Espresso dev node debug hotshot.header
+        run: docker exec -i espresso-dev-node psql -U root -d root -t -c "SELECT height, timestamp FROM hotshot.header ORDER BY height;"
+
+      - name: Query Database for Output
+        run: |
+          MAX_RETRIES=30
+          for i in $(seq 1 $MAX_RETRIES); do
+            RESULT=$(docker exec -i postgres psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.output;")
+            if [[ "$RESULT" =~ "deadbeef" ]]; then
+              echo "Result found: $RESULT"
+              exit 0
+            fi
+            echo "Result: $RESULT"
+            echo "Waiting for result... attempt $i"
+            sleep 5
+          done
+          echo "Timeout reached: result not found"
+          docker logs --timestamps c_espresso
+          exit 1
+
   integration_test:
-    name: Integration tests
+    name: Integration tests (Decaf)
     runs-on: ubuntu-latest
     needs: [build]
 
