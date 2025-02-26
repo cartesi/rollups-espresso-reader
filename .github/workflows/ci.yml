@@ -199,7 +199,12 @@ jobs:
 
       - name: Run Espresso dev node
         run: |
-          docker run -d --network=host -e ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/ -e ESPRESSO_SEQUENCER_API_PORT=24000 --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
+          docker run -d --network=host \
+            -e ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/ \
+            -e ESPRESSO_SEQUENCER_API_PORT=24000 \
+            -e ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL=1s \
+            -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
+            --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
       
       - name: Wait 1.5 min
         run: sleep 90
