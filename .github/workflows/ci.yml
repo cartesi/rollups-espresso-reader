@@ -217,18 +217,6 @@ jobs:
             --name c_espresso espresso
           sleep 10
           docker logs --timestamps c_espresso
-      # - name: Run integration tests
-      #   env:
-      #     CARTESI_CONTRACTS_INPUT_BOX_ADDRESS: '0x593E5BCf894D6829Dd26D0810DA7F064406aebB6'
-      #     CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER: '10'
-      #     CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable'
-      #     ESPRESSO_BASE_URL: 'http://localhost:24000'
-      #     ESPRESSO_STARTING_BLOCK: '1490657'
-      #     ESPRESSO_NAMESPACE: '55555'
-      #     ESPRESSO_SERVICE_ENDPOINT: '0.0.0.0:8080'
-      #   run: |
-      #     export $(cat ./ci/env.nodev2-espressolocal | grep -v '^#') 
-      #     go test --timeout 1m -p 1 ./...
 
       - name: Deploy Echo Dapp
         env:
@@ -274,6 +262,8 @@ jobs:
           done
           echo "Timeout reached: result not found"
           docker logs --timestamps c_espresso
+          echo "Debug: hotshot.header table"
+          docker exec -i espresso-dev-node psql -U root -d root -t -c "SELECT height, timestamp FROM hotshot.header ORDER BY height;"
           exit 1
 
   integration_test:
