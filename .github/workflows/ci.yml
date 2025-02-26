@@ -196,6 +196,22 @@ jobs:
       - name: Run devnet (Anvil)
         run: |
           docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
+      
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Check if Anvil is running
+        run: |
+          for i in {1..10}; do
+            if cast block-number --rpc-url http://localhost:8545; then
+              echo "Anvil is running!"
+              exit 0
+            fi
+            echo "Waiting for Anvil to start..."
+            sleep 2
+          done
+          echo "Anvil did not start in time!" >&2
+          exit 1
 
       - name: Run Espresso dev node
         run: |
