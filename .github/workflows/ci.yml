@@ -222,8 +222,8 @@ jobs:
             -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
             --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
       
-      - name: Wait 1.5 min
-        run: sleep 90
+      - name: Wait for a while
+        run: sleep 5
 
       - name: Run Espresso Reader image (Default input disabled)
         env:
