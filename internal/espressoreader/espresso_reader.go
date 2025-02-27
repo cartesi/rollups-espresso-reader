@@ -25,13 +25,26 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/services/retry"
 
 	"github.com/EspressoSystems/espresso-sequencer-go/client"
+	"github.com/EspressoSystems/espresso-sequencer-go/types"
+	espresso "github.com/EspressoSystems/espresso-sequencer-go/types/common"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tidwall/gjson"
 )
 
+type EspressoClient interface {
+	FetchVidCommonByHeight(ctx context.Context, blockHeight uint64) (espresso.VidCommon, error)
+	FetchLatestBlockHeight(ctx context.Context) (uint64, error)
+	FetchHeaderByHeight(ctx context.Context, blockHeight uint64) (types.HeaderImpl, error)
+	FetchHeadersByRange(ctx context.Context, from uint64, until uint64) ([]types.HeaderImpl, error)
+	FetchTransactionByHash(ctx context.Context, hash *types.TaggedBase64) (types.TransactionQueryData, error)
+	FetchBlockMerkleProof(ctx context.Context, rootHeight uint64, hotshotHeight uint64) (types.HotShotBlockMerkleProof, error)
+	FetchTransactionsInBlock(ctx context.Context, blockHeight uint64, namespace uint64) (client.TransactionsInBlock, error)
+	SubmitTransaction(ctx context.Context, tx types.Transaction) (*types.TaggedBase64, error)
+}
+
 type EspressoReader struct {
 	url                     string
-	client                  client.Client
+	client                  EspressoClient
 	startingBlock           uint64
 	namespace               uint64
 	repository              repository.Repository
@@ -44,7 +57,7 @@ type EspressoReader struct {
 
 func NewEspressoReader(url string, startingBlock uint64, namespace uint64, repository repository.Repository, evmReader *evmreader.EvmReader, chainId uint64, inputBoxDeploymentBlock uint64, maxRetries uint64, maxDelay uint64) EspressoReader {
 	client := client.NewClient(url)
-	return EspressoReader{url: url, client: *client, startingBlock: startingBlock, namespace: namespace, repository: repository, evmReader: evmReader, chainId: chainId, inputBoxDeploymentBlock: inputBoxDeploymentBlock, maxRetries: maxRetries, maxDelay: maxDelay}
+	return EspressoReader{url: url, client: client, startingBlock: startingBlock, namespace: namespace, repository: repository, evmReader: evmReader, chainId: chainId, inputBoxDeploymentBlock: inputBoxDeploymentBlock, maxRetries: maxRetries, maxDelay: maxDelay}
 }
 
 func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {

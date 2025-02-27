@@ -1,5 +1,13 @@
 # Dev 2 Dev
 
+## Run just one test
+
+```sh
+watchexec --exts go --watch . 'go test -p 1 ./... -testify.m ^TestReadEspresso$'
+```
+
+## Run all integrated
+
 Run the database
 
 ```sh
