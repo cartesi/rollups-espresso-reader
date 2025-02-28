@@ -188,7 +188,7 @@ func (e *EspressoReader) readL1(ctx context.Context, app evmreader.TypeExportApp
 		apps = append(apps, app) // make app into 1-element array
 
 		// start reading from the block after the prev height
-		e.evmReader.ReadAndStoreInputs(ctx, lastProcessedL1Block+1, l1FinalizedLatestHeight, apps)
+		e.evmReader.ReadAndStoreInputs(ctx, lastProcessedL1Block, l1FinalizedLatestHeight, apps)
 		// check for claim status and output execution
 		// e.evmReader.CheckForClaimStatus(ctx, apps, l1FinalizedLatestHeight) // checked by the node
 		// e.evmReader.CheckForOutputExecution(ctx, apps, l1FinalizedLatestHeight) // checked by the node
