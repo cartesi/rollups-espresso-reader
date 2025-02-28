@@ -209,6 +209,151 @@ func (e *EspressoReader) readL1(ctx context.Context, app evmreader.TypeExportApp
 	return l1FinalizedLatestHeight, l1FinalizedTimestamp
 }
 
+type EspressoInput struct {
+	app       string
+	data      []byte
+	nonce     uint64
+	msgSender common.Address
+	sigHash   string
+}
+
+func (e *EspressoReader) readEspressoInput(transaction espresso.Bytes) (*EspressoInput, error) {
+	msgSender, typedData, sigHash, err := ExtractSigAndData(string(transaction))
+	if err != nil {
+		slog.Error("failed to extract espresso tx", "error", err)
+		return nil, err
+	}
+
+	var nonce uint64
+	nonceFloat64, ok := typedData.Message["nonce"].(float64)
+	if !ok {
+		slog.Error("failed to cast nonce to float")
+		return nil, err
+	} else {
+		nonce = uint64(nonceFloat64)
+	}
+	payload, ok := typedData.Message["data"].(string)
+	if !ok {
+		slog.Error("failed to cast data to string")
+		return nil, err
+	}
+	appAddressStr, ok := typedData.Message["app"].(string)
+	if !ok {
+		slog.Error("failed to cast app address to string")
+		return nil, err
+	}
+
+	slog.Info("Espresso input", "msgSender", msgSender, "nonce", nonce, "payload", payload, "appAddrss", appAddressStr, "tx-id", sigHash)
+
+	payloadBytes := []byte(payload)
+	if strings.HasPrefix(payload, "0x") {
+		payload = payload[2:] // remove 0x
+		payloadBytes, err = hex.DecodeString(payload)
+		if err != nil {
+			slog.Error("failed to decode hex string", "error", err)
+			return nil, err
+		}
+	}
+	espressoInput := EspressoInput{
+		app:       strings.ToLower(appAddressStr),
+		data:      payloadBytes,
+		nonce:     nonce,
+		msgSender: msgSender,
+		sigHash:   sigHash,
+	}
+
+	return &espressoInput, nil
+}
+
+func (e *EspressoReader) encodeEvmAdvance(espressoInput *EspressoInput, chainId *big.Int, app common.Address,
+	indexUint64 uint64, l1FinalizedLatestHeightBig *big.Int, l1FinalizedTimestampBig *big.Int,
+	prevRandao *big.Int,
+) ([]byte, error) {
+	payloadBytes := espressoInput.data
+	index := &big.Int{}
+	index.SetUint64(indexUint64)
+	payloadAbi, err := e.evmReader.IOAbi.Pack("EvmAdvance", chainId, app, espressoInput.msgSender, l1FinalizedLatestHeightBig, l1FinalizedTimestampBig, prevRandao, index, payloadBytes)
+	if err != nil {
+		slog.Error("failed to abi encode", "error", err)
+		return nil, err
+	}
+	return payloadAbi, nil
+}
+
+func toBigInt(value uint64) *big.Int {
+	bigInt := &big.Int{}
+	bigInt.SetUint64(value)
+	return bigInt
+}
+
+func (e *EspressoReader) buildInput(ctx context.Context,
+	espressoInput *EspressoInput, chainId *big.Int,
+	app common.Address,
+	l1FinalizedLatestHeightBig *big.Int,
+	l1FinalizedTimestampBig *big.Int,
+	prevRandao *big.Int,
+	l1FinalizedLatestHeight uint64,
+) (*model.Input, error) {
+	indexUint64, err := e.repository.GetInputIndex(ctx, espressoInput.app)
+	if err != nil {
+		slog.Error("failed to read index", "app", espressoInput.app, "error", err)
+	}
+
+	// abi encode payload
+	payloadAbi, err := e.encodeEvmAdvance(espressoInput, chainId, app, indexUint64, l1FinalizedLatestHeightBig, l1FinalizedTimestampBig, prevRandao)
+	if err != nil {
+		slog.Error("failed to abi encode", "error", err)
+		return nil, err
+	}
+	// build input
+	sigHashHexBytes, err := hex.DecodeString(espressoInput.sigHash[2:])
+	if err != nil {
+		slog.Error("could not obtain bytes for tx-id", "err", err)
+		return nil, err
+	}
+	input := model.Input{
+		Index:                indexUint64,
+		Status:               model.InputCompletionStatus_None,
+		RawData:              payloadAbi,
+		BlockNumber:          l1FinalizedLatestHeight,
+		TransactionReference: common.BytesToHash(sigHashHexBytes),
+	}
+	return &input, nil
+}
+
+func (e *EspressoReader) isNonceValid(ctx context.Context, espressoInput *EspressoInput) (bool, error) {
+	nonceInDb, err := e.repository.GetEspressoNonce(ctx, espressoInput.msgSender.Hex(), espressoInput.app)
+	if err != nil {
+		slog.Error("failed to get espresso nonce from db", "error", err)
+		return false, err
+	}
+	if espressoInput.nonce != nonceInDb {
+		slog.Error("Espresso nonce is incorrect. May be a duplicate tx", "nonce from espresso", espressoInput.nonce, "nonce in db", nonceInDb)
+		return false, nil
+	}
+	return true, nil
+}
+
+func (e *EspressoReader) findOrBuildNewEpoch(ctx context.Context, appEvmType evmreader.TypeExportApplication, readingAppAddress string, l1FinalizedLatestHeight uint64) (*model.Epoch, error) {
+	// if current epoch is not nil, the epoch is open
+	// espresso inputs do not close epoch
+	epochIndex := evmreader.CalculateEpochIndex(appEvmType.EpochLength, l1FinalizedLatestHeight)
+	currentEpoch, err := e.repository.GetEpoch(ctx, readingAppAddress, epochIndex)
+	if err != nil {
+		slog.Error("could not obtain current epoch", "err", err)
+		return nil, err
+	}
+	if currentEpoch == nil {
+		currentEpoch = &model.Epoch{
+			Index:      epochIndex,
+			FirstBlock: epochIndex * appEvmType.EpochLength,
+			LastBlock:  (epochIndex * appEvmType.EpochLength) + appEvmType.EpochLength - 1,
+			Status:     model.EpochStatus_Open,
+		}
+	}
+	return currentEpoch, nil
+}
+
 func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.TypeExportApplication, currentBlockHeight uint64, l1FinalizedLatestHeight uint64, l1FinalizedTimestamp uint64) {
 	app := appEvmType.Application.IApplicationAddress
 	transactions, err := e.client.FetchTransactionsInBlock(ctx, currentBlockHeight, e.namespace)
@@ -216,151 +361,76 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		slog.Error("failed fetching espresso tx", "error", err)
 		return
 	}
-
+	readingAppAddress := strings.ToLower(app.Hex())
+	chainId := toBigInt(e.chainId)
+	l1FinalizedLatestHeightBig := toBigInt(l1FinalizedLatestHeight)
+	l1FinalizedTimestampBig := toBigInt(l1FinalizedTimestamp)
+	prevRandao, err := readPrevRandao(ctx, l1FinalizedLatestHeight, e.evmReader.GetEthClient())
+	if err != nil {
+		slog.Error("failed to read prevrandao", "error", err)
+	}
 	numTx := len(transactions.Transactions)
-
 	for i := 0; i < numTx; i++ {
 		transaction := transactions.Transactions[i]
-
-		msgSender, typedData, sigHash, err := ExtractSigAndData(string(transaction))
+		espressoInput, err := e.readEspressoInput(transaction)
 		if err != nil {
 			slog.Error("failed to extract espresso tx", "error", err)
 			continue
 		}
-
-		var nonce uint64
-		nonceFloat64, ok := typedData.Message["nonce"].(float64)
-		if !ok {
-			slog.Error("failed to cast nonce to float")
-			continue
-		} else {
-			nonce = uint64(nonceFloat64)
-		}
-		payload, ok := typedData.Message["data"].(string)
-		if !ok {
-			slog.Error("failed to cast data to string")
-			continue
-		}
-		appAddressStr, ok := typedData.Message["app"].(string)
-		if !ok {
-			slog.Error("failed to cast app address to string")
-			continue
-		}
-		appAddress := common.HexToAddress(appAddressStr)
-		if strings.ToLower(appAddressStr) != strings.ToLower(app.Hex()) {
-			slog.Debug("skipping... Looking for txs for", "app", app, "found tx for app", appAddressStr)
-			continue
-		}
-		slog.Info("Espresso input", "msgSender", msgSender, "nonce", nonce, "payload", payload, "appAddrss", appAddress, "tx-id", sigHash)
-
-		// validate nonce
-		nonceInDb, err := e.repository.GetEspressoNonce(ctx, msgSender.Hex(), appAddressStr)
-		if err != nil {
-			slog.Error("failed to get espresso nonce from db", "error", err)
-			continue
-		}
-		if nonce != nonceInDb {
-			slog.Error("Espresso nonce is incorrect. May be a duplicate tx", "nonce from espresso", nonce, "nonce in db", nonceInDb)
+		if espressoInput.app != readingAppAddress {
+			slog.Debug("skipping... Looking for txs for", "app", app, "found tx for app", espressoInput.app)
 			continue
 		}
 
-		payloadBytes := []byte(payload)
-		if strings.HasPrefix(payload, "0x") {
-			payload = payload[2:] // remove 0x
-			payloadBytes, err = hex.DecodeString(payload)
-			if err != nil {
-				slog.Error("failed to decode hex string", "error", err)
-				continue
-			}
+		nonceValid, err := e.isNonceValid(ctx, espressoInput)
+		if !nonceValid || err != nil {
+			continue
 		}
-		// abi encode payload
-		abiObject := e.evmReader.IOAbi
-		chainId := &big.Int{}
-		chainId.SetInt64(int64(e.chainId))
-		l1FinalizedLatestHeightBig := &big.Int{}
-		l1FinalizedLatestHeightBig.SetUint64(l1FinalizedLatestHeight)
-		l1FinalizedTimestampBig := &big.Int{}
-		l1FinalizedTimestampBig.SetUint64(l1FinalizedTimestamp)
-		prevRandao, err := readPrevRandao(ctx, l1FinalizedLatestHeight, e.evmReader.GetEthClient())
+
+		input, err := e.buildInput(ctx, espressoInput, chainId, app, l1FinalizedLatestHeightBig, l1FinalizedTimestampBig, prevRandao, l1FinalizedLatestHeight)
 		if err != nil {
-			slog.Error("failed to read prevrandao", "error", err)
+			slog.Error("failed to build input", "error", err)
+			continue
 		}
-		index := &big.Int{}
-		indexUint64, err := e.repository.GetInputIndex(ctx, appAddressStr)
+
+		currentEpoch, err := e.findOrBuildNewEpoch(ctx, appEvmType, readingAppAddress, l1FinalizedLatestHeight)
 		if err != nil {
-			slog.Error("failed to read index", "app", appAddress, "error", err)
-		}
-		index.SetUint64(indexUint64)
-		payloadAbi, err := abiObject.Pack("EvmAdvance", chainId, appAddress, msgSender, l1FinalizedLatestHeightBig, l1FinalizedTimestampBig, prevRandao, index, payloadBytes)
-		if err != nil {
-			slog.Error("failed to abi encode", "error", err)
+			slog.Error("could not obtain current epoch", "err", err)
 			continue
 		}
 
 		// build epochInputMap
 		// Initialize epochs inputs map
 		var epochInputMap = make(map[*model.Epoch][]*model.Input)
-		// if currect epoch is not nil, the epoch is open
-		// espresso inputs do not close epoch
-		epochIndex := evmreader.CalculateEpochIndex(appEvmType.EpochLength, l1FinalizedLatestHeight)
-		currentEpoch, err := e.repository.GetEpoch(ctx,
-			appAddressStr, epochIndex)
-		if err != nil {
-			slog.Error("could not obtain current epoch", "err", err)
-			continue
-		}
-		if currentEpoch == nil {
-			currentEpoch = &model.Epoch{
-				Index:      epochIndex,
-				FirstBlock: epochIndex * appEvmType.EpochLength,
-				LastBlock:  (epochIndex * appEvmType.EpochLength) + appEvmType.EpochLength - 1,
-				Status:     model.EpochStatus_Open,
-			}
-		}
-		// build input
-		sigHashHexBytes, err := hex.DecodeString(sigHash[2:])
-		if err != nil {
-			slog.Error("could not obtain bytes for tx-id", "err", err)
-			continue
-		}
-		input := model.Input{
-			Index:                indexUint64,
-			Status:               model.InputCompletionStatus_None,
-			RawData:              payloadAbi,
-			BlockNumber:          l1FinalizedLatestHeight,
-			TransactionReference: common.BytesToHash(sigHashHexBytes),
-		}
 		currentInputs, ok := epochInputMap[currentEpoch]
 		if !ok {
 			currentInputs = []*model.Input{}
 		}
-		epochInputMap[currentEpoch] = append(currentInputs, &input)
+		epochInputMap[currentEpoch] = append(currentInputs, input)
 
 		// Store everything
 		// future optimization: bundle tx by address to fully utilize `epochInputMap``
-		if len(epochInputMap) > 0 {
-			err = e.repository.CreateEpochsAndInputs(
-				ctx,
-				appAddressStr,
-				epochInputMap,
-				l1FinalizedLatestHeight,
-			)
-			if err != nil {
-				slog.Error("could not store Espresso input", "err", err)
-				continue
-			}
+		err = e.repository.CreateEpochsAndInputs(
+			ctx,
+			readingAppAddress,
+			epochInputMap,
+			l1FinalizedLatestHeight,
+		)
+		if err != nil {
+			slog.Error("could not store Espresso input", "err", err)
+			continue
 		}
 
 		// update nonce
-		err = e.repository.UpdateEspressoNonce(ctx, msgSender.Hex(), appAddressStr)
+		err = e.repository.UpdateEspressoNonce(ctx, espressoInput.msgSender.Hex(), readingAppAddress)
 		if err != nil {
 			slog.Error("!!!could not update Espresso nonce!!!", "err", err)
 			continue
 		}
 		// update input index
-		err = e.repository.UpdateInputIndex(ctx, appAddressStr)
+		err = e.repository.UpdateInputIndex(ctx, readingAppAddress)
 		if err != nil {
-			slog.Error("failed to update index", "app", appAddress, "error", err)
+			slog.Error("failed to update index", "app", readingAppAddress, "error", err)
 		}
 	}
 }

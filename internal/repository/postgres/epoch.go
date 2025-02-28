@@ -112,7 +112,9 @@ func (r *postgresRepository) CreateEpochsAndInputs(
 	epochInputsMap map[*model.Epoch][]*model.Input,
 	blockNumber uint64,
 ) error {
-
+	if len(epochInputsMap) == 0 {
+		return nil
+	}
 	whereClause, err := getWhereClauseFromNameOrAddress(nameOrAddress)
 	if err != nil {
 		return err
