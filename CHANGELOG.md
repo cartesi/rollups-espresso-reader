@@ -6,11 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.3-node-20250128]
 
 ### Changed
 
 - Improved epoch closure procedure (avoids edge case that can lead to skipping L1 blocks)
+- Added CI e2e tests with local environment using espresso-dev-node
 
 ## [0.2.2-node-20250128]
 
@@ -45,7 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 <!-- markdownlint-disable MD053 -->
-[Unreleased]: https://github.com/cartesi/rollups-espresso-reader/compare/v0.2.2-node-20250128...HEAD
+[Unreleased]: https://github.com/cartesi/rollups-espresso-reader/compare/v0.2.3-node-20250128...HEAD
+[0.2.3-node-20250128]: https://github.com/cartesi/rollups-espresso-reader/releases/tag/v0.2.3-node-20250128
 [0.2.2-node-20250128]: https://github.com/cartesi/rollups-espresso-reader/releases/tag/v0.2.2-node-20250128
 [0.2.1-node-20250128]: https://github.com/cartesi/rollups-espresso-reader/releases/tag/v0.2.1-node-20250128
 [0.2.0-node-20250128]: https://github.com/cartesi/rollups-espresso-reader/releases/tag/v0.2.0-node-20250128
