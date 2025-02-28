@@ -324,6 +324,7 @@ func (e *EspressoReader) buildInput(ctx context.Context,
 func (e *EspressoReader) isNonceValid(ctx context.Context, espressoInput *EspressoInput) (bool, error) {
 	nonceInDb, err := e.repository.GetEspressoNonce(ctx, espressoInput.msgSender.Hex(), espressoInput.app)
 	if err != nil {
+		// Here, I maintain the same behavior, but it's better to handle the error by retrying or halting.
 		slog.Error("failed to get espresso nonce from db", "error", err)
 		return false, err
 	}
@@ -401,6 +402,7 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 
 		// build epochInputMap
 		// Initialize epochs inputs map
+		// -> It always has only one input
 		var epochInputMap = make(map[*model.Epoch][]*model.Input)
 		currentInputs, ok := epochInputMap[currentEpoch]
 		if !ok {
@@ -409,7 +411,8 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		epochInputMap[currentEpoch] = append(currentInputs, input)
 
 		// Store everything
-		// future optimization: bundle tx by address to fully utilize `epochInputMap``
+		// future optimization: bundle tx by address to fully utilize `epochInputMap`
+		// -> begin db transaction
 		err = e.repository.CreateEpochsAndInputs(
 			ctx,
 			readingAppAddress,
@@ -432,6 +435,7 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		if err != nil {
 			slog.Error("failed to update index", "app", readingAppAddress, "error", err)
 		}
+		// -> end db transaction
 	}
 }
 
