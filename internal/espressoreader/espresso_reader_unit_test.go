@@ -23,12 +23,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type EspressoReaderUnitTestSuite struct {
-	suite.Suite
-}
-
+type EpochInputMap = map[*model.Epoch][]*model.Input
 type MockRepository struct {
 	mock.Mock
+	inputs []model.Input
 }
 
 // CreateApplication implements repository.Repository.
@@ -43,6 +41,11 @@ func (m *MockRepository) CreateEpoch(ctx context.Context, nameOrAddress string, 
 
 // CreateEpochsAndInputs implements repository.Repository.
 func (m *MockRepository) CreateEpochsAndInputs(ctx context.Context, nameOrAddress string, epochInputMap map[*model.Epoch][]*model.Input, blockNumber uint64) error {
+	for e := range epochInputMap {
+		for _, input := range epochInputMap[e] {
+			m.inputs = append(m.inputs, *input)
+		}
+	}
 	args := m.Called(ctx, nameOrAddress, epochInputMap, blockNumber)
 	return args.Error(0)
 }
@@ -117,27 +120,27 @@ func (m *MockRepository) GetReport(ctx context.Context, nameOrAddress string, re
 }
 
 // ListApplications implements repository.Repository.
-func (MockRepository) ListApplications(ctx context.Context, f repository.ApplicationFilter, p repository.Pagination) ([]*model.Application, error) {
+func (m *MockRepository) ListApplications(ctx context.Context, f repository.ApplicationFilter, p repository.Pagination) ([]*model.Application, error) {
 	panic("unimplemented")
 }
 
 // ListEpochs implements repository.Repository.
-func (MockRepository) ListEpochs(ctx context.Context, nameOrAddress string, f repository.EpochFilter, p repository.Pagination) ([]*model.Epoch, error) {
+func (m *MockRepository) ListEpochs(ctx context.Context, nameOrAddress string, f repository.EpochFilter, p repository.Pagination) ([]*model.Epoch, error) {
 	panic("unimplemented")
 }
 
 // ListInputs implements repository.Repository.
-func (MockRepository) ListInputs(ctx context.Context, nameOrAddress string, f repository.InputFilter, p repository.Pagination) ([]*model.Input, error) {
+func (m *MockRepository) ListInputs(ctx context.Context, nameOrAddress string, f repository.InputFilter, p repository.Pagination) ([]*model.Input, error) {
 	panic("unimplemented")
 }
 
 // ListOutputs implements repository.Repository.
-func (MockRepository) ListOutputs(ctx context.Context, nameOrAddress string, f repository.OutputFilter, p repository.Pagination) ([]*model.Output, error) {
+func (m *MockRepository) ListOutputs(ctx context.Context, nameOrAddress string, f repository.OutputFilter, p repository.Pagination) ([]*model.Output, error) {
 	panic("unimplemented")
 }
 
 // ListReports implements repository.Repository.
-func (MockRepository) ListReports(ctx context.Context, nameOrAddress string, f repository.ReportFilter, p repository.Pagination) ([]*model.Report, error) {
+func (m *MockRepository) ListReports(ctx context.Context, nameOrAddress string, f repository.ReportFilter, p repository.Pagination) ([]*model.Report, error) {
 	panic("unimplemented")
 }
 
@@ -288,7 +291,15 @@ func (m *MockEthClient) HeaderByNumber(ctx context.Context, number *big.Int) (*e
 	return &header, args.Error(1)
 }
 
-func (suite *EspressoReaderUnitTestSuite) TestReadEspresso() {
+type EspressoReaderUnitTestSuite struct {
+	suite.Suite
+	espressoReader     EspressoReader
+	mockEspressoClient *MockEspressoClient
+	mockDatabase       *MockRepository
+	mockEthClient      *MockEthClient
+}
+
+func (s *EspressoReaderUnitTestSuite) SetupSuite() {
 	espressoApiURL := ""
 	startingBlock := 1
 	namespace := 55555
@@ -301,7 +312,7 @@ func (suite *EspressoReaderUnitTestSuite) TestReadEspresso() {
 	evmReader := evmreader.NewEvmReader(
 		mockEthClient, nil, nil, nil, uint64(inputBoxDeploymentBlock), "0", nil, false,
 	)
-	espressoReader := NewEspressoReader(
+	s.espressoReader = NewEspressoReader(
 		espressoApiURL,
 		uint64(startingBlock),
 		uint64(namespace),
@@ -313,6 +324,13 @@ func (suite *EspressoReaderUnitTestSuite) TestReadEspresso() {
 		uint64(maxDelay),
 	)
 	mockEspressoClient := new(MockEspressoClient)
+	s.mockEthClient = mockEthClient
+	s.mockEspressoClient = mockEspressoClient
+	s.mockDatabase = mockDatabase
+	s.espressoReader.client = mockEspressoClient
+}
+
+func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 	transaction := `{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":11155111,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x5a205fcb6947e200615b75c409ac0aa486d77649","nonce":0,"data":"0xdeadbeef","max_gas_price":"10"}},"account":"0x04dd244dd1a881f29e59a14139691540c55799f070d1cb3ed133a5d0b6ed0004e237d974f007aad1d2fb333169f0fee69bd93e6f36b4531d41a0e23a963a65f28f","signature":"0x73f1c93f1a9bea6675d2271432878f2705119cec63a8d5d8c1275155c845a17a6699d21cb568910429a8eb53b11cc3cedc196f323e06bb72f83f09bf2ed113371c"}`
 	transactions := []types.Bytes{
 		[]byte(transaction),
@@ -324,61 +342,61 @@ func (suite *EspressoReaderUnitTestSuite) TestReadEspresso() {
 	ctx := context.Background()
 
 	currentBlockHeight := 10
-	l1FinalizedLatestHeight := 1
+	l1FinalizedLatestHeight := 3
 	l1FinalizedTimestamp := 17
+	currentInputIndex := 0
 
-	mockEspressoClient.On(
+	s.mockEspressoClient.On(
 		"FetchTransactionsInBlock",
 		mock.Anything, // context.Context
 		mock.Anything, // blockHeight
 		mock.Anything, // namespace
 	).Return(transactionsInBlock, nil)
 
-	mockDatabase.On("GetEspressoNonce",
+	s.mockDatabase.On("GetEspressoNonce",
 		mock.Anything, // context.Context
 		mock.Anything, // msgSender
 		mock.Anything, // appAddressStr
 	).Return(0, nil)
 
-	mockDatabase.On("GetInputIndex",
+	s.mockDatabase.On("GetInputIndex",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
-	).Return(0, nil)
+	).Return(currentInputIndex, nil)
 
-	mockDatabase.On("GetEpoch",
+	s.mockDatabase.On("GetEpoch",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
 		mock.Anything, // index
 	).Return(model.Epoch{}, nil)
 
-	mockDatabase.On("CreateEpochsAndInputs",
+	s.mockDatabase.On("CreateEpochsAndInputs",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
 		mock.Anything, // epochInputMap
 		mock.Anything, // blockNumber
 	).Return(nil)
 
-	mockDatabase.On("UpdateEspressoNonce",
+	s.mockDatabase.On("UpdateEspressoNonce",
 		mock.Anything, // context.Context
 		mock.Anything, // senderAddress
 		mock.Anything, // nameOrAddress
 	).Return(nil)
 
-	mockDatabase.On("UpdateInputIndex",
+	s.mockDatabase.On("UpdateInputIndex",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
 	).Return(nil)
 
-	mockEthClient.On("HeaderByNumber",
+	s.mockEthClient.On("HeaderByNumber",
 		mock.Anything, // context.Context
 		mock.Anything, // number
 	).Return(eth_types.Header{
 		MixDigest: common.Hash{},
 	}, nil)
 
-	espressoReader.client = mockEspressoClient
-
 	application := model.Application{
+		ID:                  33331,
 		IApplicationAddress: common.HexToAddress("0x5a205fcb6947e200615b75c409ac0aa486d77649"),
 		EpochLength:         10, // cannot be zero
 	}
@@ -386,11 +404,19 @@ func (suite *EspressoReaderUnitTestSuite) TestReadEspresso() {
 		Application: application,
 	}
 
-	espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
+	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
 
-	mockEspressoClient.AssertExpectations(suite.T())
-	mockDatabase.AssertExpectations(suite.T())
-	mockEthClient.AssertExpectations(suite.T())
+	s.Equal(1, len(s.mockDatabase.inputs))
+	input := s.mockDatabase.inputs[0]
+	s.Equal(currentInputIndex, int(input.Index))
+	s.Equal(l1FinalizedLatestHeight, int(input.BlockNumber))
+	s.Equal("415bf3630000000000000000000000000000000000000000000000000000000000007a690000000000000000000000005a205fcb6947e200615b75c409ac0aa486d77649000000000000000000000000b5c1674c0527b6c31a5019fd04a6c1529396da37000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000004deadbeef00000000000000000000000000000000000000000000000000000000", common.Bytes2Hex(input.RawData))
+	s.Equal(model.InputCompletionStatus("NONE"), input.Status)
+	s.Equal("0xc355ddfeeedb4498f328c5bce91a1160af9a5d052b2b23ee2e339111cecf1aba", input.TransactionReference.Hex())
+
+	s.mockEspressoClient.AssertExpectations(s.T())
+	s.mockDatabase.AssertExpectations(s.T())
+	s.mockEthClient.AssertExpectations(s.T())
 }
 
 func TestEspressoReaderUnitTestSuite(t *testing.T) {
