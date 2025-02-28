@@ -22,8 +22,8 @@ type TypeExportApplication = application
 // them into epochs and store the indexed inputs and epochs
 func (r *EvmReader) ReadAndStoreInputs(
 	ctx context.Context,
-	startBlock uint64,
-	endBlock uint64,
+	lastProcessedBlock uint64,
+	mostRecentBlockNumber uint64,
 	apps []TypeExportApplication,
 ) error {
 
@@ -33,11 +33,12 @@ func (r *EvmReader) ReadAndStoreInputs(
 	}
 
 	// Retrieve Inputs from blockchain
-	appInputsMap, err := r.readInputsFromBlockchain(ctx, apps, startBlock, endBlock)
+	nextSearchBlock := lastProcessedBlock + 1
+	appInputsMap, err := r.readInputsFromBlockchain(ctx, apps, nextSearchBlock, mostRecentBlockNumber)
 	if err != nil {
 		return fmt.Errorf("failed to read inputs from block %v to block %v. %w",
-			startBlock,
-			endBlock,
+			nextSearchBlock,
+			mostRecentBlockNumber,
 			err)
 	}
 
@@ -55,7 +56,7 @@ func (r *EvmReader) ReadAndStoreInputs(
 		epochLength := app.EpochLength
 
 		// Retrieves last open epoch from DB
-		currentEpoch, err := r.repository.GetEpoch(ctx, address.String(), CalculateEpochIndex(epochLength, startBlock-1))
+		currentEpoch, err := r.repository.GetEpoch(ctx, address.String(), CalculateEpochIndex(epochLength, lastProcessedBlock))
 		if err != nil {
 			slog.Error("Error retrieving existing current epoch",
 				"application", app.Name,
@@ -65,39 +66,49 @@ func (r *EvmReader) ReadAndStoreInputs(
 			continue
 		}
 
-		// Check current epoch status
-		if currentEpoch != nil && currentEpoch.Status != EpochStatus_Open {
-			slog.Error("Current epoch is not open",
-				"application", app.Name,
-				"address", address,
-				"epoch_index", currentEpoch.Index,
-				"status", currentEpoch.Status,
-			)
-			continue
-		}
-
 		// Initialize epochs inputs map
 		var epochInputMap = make(map[*Epoch][]*Input)
-
 		// Index Inputs into epochs
 		for _, input := range inputs {
 
 			inputEpochIndex := CalculateEpochIndex(epochLength, input.BlockNumber)
 
 			// If input belongs into a new epoch, close the previous known one
-			if currentEpoch != nil && currentEpoch.Index != inputEpochIndex {
-				currentEpoch.Status = EpochStatus_Closed
-				slog.Info("Closing epoch",
+			if currentEpoch != nil {
+				slog.Debug("Current epoch and new input",
 					"application", app.Name,
 					"address", address,
 					"epoch_index", currentEpoch.Index,
-					"start", currentEpoch.FirstBlock,
-					"end", currentEpoch.LastBlock)
-				_, ok := epochInputMap[currentEpoch]
-				if !ok {
-					epochInputMap[currentEpoch] = []*Input{}
+					"epoch_status", currentEpoch.Status,
+					"input_epoch_index", inputEpochIndex,
+				)
+				if currentEpoch.Index == inputEpochIndex {
+					// Input can only be added to open epochs
+					if currentEpoch.Status != EpochStatus_Open {
+						slog.Error("Current epoch is not open",
+							"application", app.Name,
+							"address", address,
+							"epoch_index", currentEpoch.Index,
+							"status", currentEpoch.Status,
+						)
+						return fmt.Errorf("Current epoch is not open. Should never happen")
+					}
+				} else {
+					if currentEpoch.Status == EpochStatus_Open {
+						currentEpoch.Status = EpochStatus_Closed
+						slog.Info("Closing epoch",
+							"application", app.Name,
+							"address", address,
+							"epoch_index", currentEpoch.Index,
+							"start", currentEpoch.FirstBlock,
+							"end", currentEpoch.LastBlock)
+						_, ok := epochInputMap[currentEpoch]
+						if !ok {
+							epochInputMap[currentEpoch] = []*Input{}
+						}
+					}
+					currentEpoch = nil
 				}
-				currentEpoch = nil
 			}
 			if currentEpoch == nil {
 				currentEpoch = &Epoch{
@@ -141,8 +152,9 @@ func (r *EvmReader) ReadAndStoreInputs(
 
 		}
 
-		// Indexed all inputs. Check if it is time to close this epoch
-		if currentEpoch != nil && endBlock >= currentEpoch.LastBlock {
+		// Indexed all inputs. Check if it is time to close the last epoch
+		if currentEpoch != nil && currentEpoch.Status == EpochStatus_Open &&
+			mostRecentBlockNumber >= currentEpoch.LastBlock {
 			currentEpoch.Status = EpochStatus_Closed
 			slog.Info("Closing epoch",
 				"application", app.Name,
@@ -161,7 +173,7 @@ func (r *EvmReader) ReadAndStoreInputs(
 			ctx,
 			address.String(),
 			epochInputMap,
-			endBlock,
+			mostRecentBlockNumber,
 		)
 		if err != nil {
 			slog.Error("Error storing inputs and epochs",
@@ -177,8 +189,8 @@ func (r *EvmReader) ReadAndStoreInputs(
 			slog.Debug("Inputs and epochs stored successfully",
 				"application", app.Name,
 				"address", address,
-				"start-block", startBlock,
-				"end-block", endBlock,
+				"start-block", nextSearchBlock,
+				"end-block", mostRecentBlockNumber,
 				"total epochs", len(epochInputMap),
 				"total inputs", len(inputs),
 			)
