@@ -227,7 +227,14 @@ func (e *EspressoReader) readEspressoInput(transaction espresso.Bytes) (*Espress
 	var nonce uint64
 	nonceFloat64, ok := typedData.Message["nonce"].(float64)
 	if !ok {
-		return nil, fmt.Errorf("failed to cast nonce to float")
+		nonceStr, ok := typedData.Message["nonce"].(string)
+		if !ok {
+			nonceU64, err := strconv.ParseUint(nonceStr, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("failed to cast nonce to float: %s", err)
+			}
+			nonce = nonceU64
+		}
 	} else {
 		nonce = uint64(nonceFloat64)
 	}
@@ -367,6 +374,7 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 	if err != nil {
 		slog.Error("failed to read prevrandao", "error", err)
 	}
+
 	numTx := len(transactions.Transactions)
 	for i := 0; i < numTx; i++ {
 		transaction := transactions.Transactions[i]
@@ -434,6 +442,7 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		}
 		// -> end db transaction
 	}
+
 }
 
 func (e *EspressoReader) readEspressoHeader(espressoBlockHeight uint64) string {

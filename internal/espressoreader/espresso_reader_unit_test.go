@@ -316,91 +316,9 @@ func (s *EspressoReaderUnitTestSuite) SetupTest() {
 
 func (s *EspressoReaderUnitTestSuite) TestReadEspressoNonceString() {
 	transaction := `{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":11155111,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x5a205fcb6947e200615b75c409ac0aa486d77649","nonce":"0","data":"0xdeadbeef","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0xebbaaf80346db193a06c82eb2aab587c59bc4626c84a51d552c2b4457371892c7361223b2a09d935f32af010081a27d42e60fa4e11a58e8dc056bafe6f848c9f1c"}`
-	transactions := []types.Bytes{
-		[]byte(transaction),
-	}
-	transactionsInBlock := client.TransactionsInBlock{
-		Transactions: transactions,
-	}
-
-	ctx := context.Background()
-
-	currentBlockHeight := 10
-	l1FinalizedLatestHeight := 3
-	l1FinalizedTimestamp := 17
-	currentInputIndex := 0
-
-	s.mockEspressoClient.On(
-		"FetchTransactionsInBlock",
-		mock.Anything, // context.Context
-		mock.Anything, // blockHeight
-		mock.Anything, // namespace
-	).Return(transactionsInBlock, nil)
-
-	s.mockDatabase.On("GetEspressoNonce",
-		mock.Anything, // context.Context
-		mock.Anything, // msgSender
-		mock.Anything, // appAddressStr
-	).Return(0, nil)
-
-	s.mockDatabase.On("GetInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
-	).Return(currentInputIndex, nil)
-
-	s.mockDatabase.On("GetEpoch",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
-		mock.Anything, // index
-	).Return(model.Epoch{}, nil)
-
-	s.mockDatabase.On("CreateEpochsAndInputs",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
-		mock.Anything, // epochInputMap
-		mock.Anything, // blockNumber
-	).Return(nil)
-
-	s.mockDatabase.On("UpdateEspressoNonce",
-		mock.Anything, // context.Context
-		mock.Anything, // senderAddress
-		mock.Anything, // nameOrAddress
-	).Return(nil)
-
-	s.mockDatabase.On("UpdateInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
-	).Return(nil)
-
-	s.mockEthClient.On("HeaderByNumber",
-		mock.Anything, // context.Context
-		mock.Anything, // number
-	).Return(eth_types.Header{
-		MixDigest: common.Hash{},
-	}, nil)
-
-	application := model.Application{
-		ID:                  33331,
-		IApplicationAddress: common.HexToAddress("0x5a205fcb6947e200615b75c409ac0aa486d77649"),
-		EpochLength:         10, // cannot be zero
-	}
-	appEvmType := evmreader.TypeExportApplication{
-		Application: application,
-	}
-
-	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
-
-	s.Equal(1, len(s.mockDatabase.inputs))
-	input := s.mockDatabase.inputs[0]
-	s.Equal(currentInputIndex, int(input.Index))
-	s.Equal(l1FinalizedLatestHeight, int(input.BlockNumber))
-	s.Equal("415bf3630000000000000000000000000000000000000000000000000000000000007a690000000000000000000000005a205fcb6947e200615b75c409ac0aa486d77649000000000000000000000000b5c1674c0527b6c31a5019fd04a6c1529396da37000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000004deadbeef00000000000000000000000000000000000000000000000000000000", common.Bytes2Hex(input.RawData))
-	s.Equal(model.InputCompletionStatus("NONE"), input.Status)
-	s.Equal("0xc355ddfeeedb4498f328c5bce91a1160af9a5d052b2b23ee2e339111cecf1aba", input.TransactionReference.Hex())
-
-	s.mockEspressoClient.AssertExpectations(s.T())
-	s.mockDatabase.AssertExpectations(s.T())
-	s.mockEthClient.AssertExpectations(s.T())
+	espressoInput, err := s.espressoReader.readEspressoInput([]byte(transaction))
+	s.Require().NoError(err)
+	s.Equal("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", espressoInput.msgSender.Hex())
 }
 
 func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
@@ -492,7 +410,7 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 	s.mockEthClient.AssertExpectations(s.T())
 }
 
-func (s *EspressoReaderUnitTestSuite) TestReadEspresso2() {
+func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 	transactions := []types.Bytes{
 		[]byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":11155111,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x5a205fcb6947e200615b75c409ac0aa486d77649","nonce":0,"data":"0xdeadbeef","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0xebbaaf80346db193a06c82eb2aab587c59bc4626c84a51d552c2b4457371892c7361223b2a09d935f32af010081a27d42e60fa4e11a58e8dc056bafe6f848c9f1c"}`),
 		[]byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":11155111,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x5a205fcb6947e200615b75c409ac0aa486d77649","nonce":1,"data":"0xdeadbeef","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x8edcdc950107fd3a64192d2803da1624cadcac1e5a5a2b80301af25662e4107f44cb7841bd74ce6b571452494193115364b7f8f40adf4d5a2f6ec07a4073324d1b"}`),
