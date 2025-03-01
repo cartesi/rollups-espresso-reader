@@ -26,7 +26,9 @@ import (
 type EpochInputMap = map[*model.Epoch][]*model.Input
 type MockRepository struct {
 	mock.Mock
-	inputs []model.Input
+	inputs     []model.Input
+	nonce      int
+	inputIndex int
 }
 
 // CreateApplication implements repository.Repository.
@@ -75,7 +77,7 @@ func (m *MockRepository) GetEpochByVirtualIndex(ctx context.Context, nameOrAddre
 // GetEspressoNonce implements repository.Repository.
 func (m *MockRepository) GetEspressoNonce(ctx context.Context, senderAddress string, nameOrAddress string) (uint64, error) {
 	args := m.Called(ctx, senderAddress, nameOrAddress)
-	return uint64(args.Int(0)), args.Error(1)
+	return uint64(m.nonce), args.Error(1)
 }
 
 // GetExecutionParameters implements repository.Repository.
@@ -96,7 +98,7 @@ func (m *MockRepository) GetInputByTxReference(ctx context.Context, nameOrAddres
 // GetInputIndex implements repository.Repository.
 func (m *MockRepository) GetInputIndex(ctx context.Context, nameOrAddress string) (uint64, error) {
 	args := m.Called(ctx, nameOrAddress)
-	return uint64(args.Int(0)), args.Error(1)
+	return uint64(m.inputIndex), args.Error(1)
 }
 
 // GetLastInput implements repository.Repository.
@@ -192,6 +194,7 @@ func (m *MockRepository) UpdateEpochsInputsProcessed(ctx context.Context, nameOr
 // UpdateEspressoNonce implements repository.Repository.
 func (m *MockRepository) UpdateEspressoNonce(ctx context.Context, senderAddress string, nameOrAddress string) error {
 	args := m.Called(ctx, senderAddress, nameOrAddress)
+	m.nonce++
 	return args.Error(0)
 }
 
@@ -203,6 +206,7 @@ func (m *MockRepository) UpdateExecutionParameters(ctx context.Context, ep *mode
 // UpdateInputIndex implements repository.Repository.
 func (m *MockRepository) UpdateInputIndex(ctx context.Context, nameOrAddress string) error {
 	args := m.Called(ctx, nameOrAddress)
+	m.inputIndex++
 	return args.Error(0)
 }
 
@@ -279,7 +283,7 @@ type EspressoReaderUnitTestSuite struct {
 	mockEthClient      *MockEthClient
 }
 
-func (s *EspressoReaderUnitTestSuite) SetupSuite() {
+func (s *EspressoReaderUnitTestSuite) SetupTest() {
 	espressoApiURL := ""
 	startingBlock := 1
 	namespace := 55555
@@ -310,8 +314,8 @@ func (s *EspressoReaderUnitTestSuite) SetupSuite() {
 	s.espressoReader.client = mockEspressoClient
 }
 
-func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
-	transaction := `{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":11155111,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x5a205fcb6947e200615b75c409ac0aa486d77649","nonce":0,"data":"0xdeadbeef","max_gas_price":"10"}},"account":"0x04dd244dd1a881f29e59a14139691540c55799f070d1cb3ed133a5d0b6ed0004e237d974f007aad1d2fb333169f0fee69bd93e6f36b4531d41a0e23a963a65f28f","signature":"0x73f1c93f1a9bea6675d2271432878f2705119cec63a8d5d8c1275155c845a17a6699d21cb568910429a8eb53b11cc3cedc196f323e06bb72f83f09bf2ed113371c"}`
+func (s *EspressoReaderUnitTestSuite) TestReadEspressoNonceString() {
+	transaction := `{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":11155111,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x5a205fcb6947e200615b75c409ac0aa486d77649","nonce":"0","data":"0xdeadbeef","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0xebbaaf80346db193a06c82eb2aab587c59bc4626c84a51d552c2b4457371892c7361223b2a09d935f32af010081a27d42e60fa4e11a58e8dc056bafe6f848c9f1c"}`
 	transactions := []types.Bytes{
 		[]byte(transaction),
 	}
@@ -393,6 +397,191 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 	s.Equal("415bf3630000000000000000000000000000000000000000000000000000000000007a690000000000000000000000005a205fcb6947e200615b75c409ac0aa486d77649000000000000000000000000b5c1674c0527b6c31a5019fd04a6c1529396da37000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000004deadbeef00000000000000000000000000000000000000000000000000000000", common.Bytes2Hex(input.RawData))
 	s.Equal(model.InputCompletionStatus("NONE"), input.Status)
 	s.Equal("0xc355ddfeeedb4498f328c5bce91a1160af9a5d052b2b23ee2e339111cecf1aba", input.TransactionReference.Hex())
+
+	s.mockEspressoClient.AssertExpectations(s.T())
+	s.mockDatabase.AssertExpectations(s.T())
+	s.mockEthClient.AssertExpectations(s.T())
+}
+
+func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
+	transaction := `{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":11155111,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x5a205fcb6947e200615b75c409ac0aa486d77649","nonce":0,"data":"0xdeadbeef","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0xebbaaf80346db193a06c82eb2aab587c59bc4626c84a51d552c2b4457371892c7361223b2a09d935f32af010081a27d42e60fa4e11a58e8dc056bafe6f848c9f1c"}`
+	transactions := []types.Bytes{
+		[]byte(transaction),
+	}
+	transactionsInBlock := client.TransactionsInBlock{
+		Transactions: transactions,
+	}
+
+	ctx := context.Background()
+
+	currentBlockHeight := 10
+	l1FinalizedLatestHeight := 3
+	l1FinalizedTimestamp := 17
+	currentInputIndex := 0
+
+	s.mockEspressoClient.On(
+		"FetchTransactionsInBlock",
+		mock.Anything, // context.Context
+		mock.Anything, // blockHeight
+		mock.Anything, // namespace
+	).Return(transactionsInBlock, nil)
+
+	s.mockDatabase.On("GetEspressoNonce",
+		mock.Anything, // context.Context
+		mock.Anything, // msgSender
+		mock.Anything, // appAddressStr
+	).Return(0, nil)
+
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
+	s.mockDatabase.On("GetEpoch",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+		mock.Anything, // index
+	).Return(model.Epoch{}, nil)
+
+	s.mockDatabase.On("CreateEpochsAndInputs",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+		mock.Anything, // epochInputMap
+		mock.Anything, // blockNumber
+	).Return(nil)
+
+	s.mockDatabase.On("UpdateEspressoNonce",
+		mock.Anything, // context.Context
+		mock.Anything, // senderAddress
+		mock.Anything, // nameOrAddress
+	).Return(nil)
+
+	s.mockDatabase.On("UpdateInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+	).Return(nil)
+
+	s.mockEthClient.On("HeaderByNumber",
+		mock.Anything, // context.Context
+		mock.Anything, // number
+	).Return(eth_types.Header{
+		MixDigest: common.Hash{},
+	}, nil)
+
+	application := model.Application{
+		ID:                  33331,
+		IApplicationAddress: common.HexToAddress("0x5a205fcb6947e200615b75c409ac0aa486d77649"),
+		EpochLength:         10, // cannot be zero
+	}
+	appEvmType := evmreader.TypeExportApplication{
+		Application: application,
+	}
+
+	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
+
+	s.Equal(1, len(s.mockDatabase.inputs))
+	input := s.mockDatabase.inputs[0]
+	s.Equal(currentInputIndex, int(input.Index))
+	s.Equal(l1FinalizedLatestHeight, int(input.BlockNumber))
+	s.Equal("415bf3630000000000000000000000000000000000000000000000000000000000007a690000000000000000000000005a205fcb6947e200615b75c409ac0aa486d77649000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000004deadbeef00000000000000000000000000000000000000000000000000000000", common.Bytes2Hex(input.RawData))
+	s.Equal(model.InputCompletionStatus("NONE"), input.Status)
+	s.Equal("0x0ba026185fb624135e746f7ecae1734085f2a2483b5a0b18b34332e47a88a02e", input.TransactionReference.Hex())
+
+	s.mockEspressoClient.AssertExpectations(s.T())
+	s.mockDatabase.AssertExpectations(s.T())
+	s.mockEthClient.AssertExpectations(s.T())
+}
+
+func (s *EspressoReaderUnitTestSuite) TestReadEspresso2() {
+	transactions := []types.Bytes{
+		[]byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":11155111,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x5a205fcb6947e200615b75c409ac0aa486d77649","nonce":0,"data":"0xdeadbeef","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0xebbaaf80346db193a06c82eb2aab587c59bc4626c84a51d552c2b4457371892c7361223b2a09d935f32af010081a27d42e60fa4e11a58e8dc056bafe6f848c9f1c"}`),
+		[]byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":11155111,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x5a205fcb6947e200615b75c409ac0aa486d77649","nonce":1,"data":"0xdeadbeef","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x8edcdc950107fd3a64192d2803da1624cadcac1e5a5a2b80301af25662e4107f44cb7841bd74ce6b571452494193115364b7f8f40adf4d5a2f6ec07a4073324d1b"}`),
+	}
+	transactionsInBlock := client.TransactionsInBlock{
+		Transactions: transactions,
+	}
+
+	ctx := context.Background()
+
+	currentBlockHeight := 10
+	l1FinalizedLatestHeight := 3
+	l1FinalizedTimestamp := 17
+	currentInputIndex := 0
+
+	s.mockEspressoClient.On(
+		"FetchTransactionsInBlock",
+		mock.Anything, // context.Context
+		mock.Anything, // blockHeight
+		mock.Anything, // namespace
+	).Return(transactionsInBlock, nil)
+
+	s.mockDatabase.On("GetEspressoNonce",
+		mock.Anything, // context.Context
+		mock.Anything, // msgSender
+		mock.Anything, // appAddressStr
+	).Return(0, nil)
+
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
+	s.mockDatabase.On("GetEpoch",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+		mock.Anything, // index
+	).Return(model.Epoch{}, nil)
+
+	s.mockDatabase.On("CreateEpochsAndInputs",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+		mock.Anything, // epochInputMap
+		mock.Anything, // blockNumber
+	).Return(nil)
+
+	s.mockDatabase.On("UpdateEspressoNonce",
+		mock.Anything, // context.Context
+		mock.Anything, // senderAddress
+		mock.Anything, // nameOrAddress
+	).Return(nil)
+
+	s.mockDatabase.On("UpdateInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+	).Return(nil)
+
+	s.mockEthClient.On("HeaderByNumber",
+		mock.Anything, // context.Context
+		mock.Anything, // number
+	).Return(eth_types.Header{
+		MixDigest: common.Hash{},
+	}, nil)
+
+	application := model.Application{
+		ID:                  33331,
+		IApplicationAddress: common.HexToAddress("0x5a205fcb6947e200615b75c409ac0aa486d77649"),
+		EpochLength:         10, // cannot be zero
+	}
+	appEvmType := evmreader.TypeExportApplication{
+		Application: application,
+	}
+
+	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
+
+	s.Equal(2, len(s.mockDatabase.inputs))
+	input := s.mockDatabase.inputs[0]
+	s.Equal(0, int(input.Index))
+	s.Equal(l1FinalizedLatestHeight, int(input.BlockNumber))
+	s.Equal("415bf3630000000000000000000000000000000000000000000000000000000000007a690000000000000000000000005a205fcb6947e200615b75c409ac0aa486d77649000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000004deadbeef00000000000000000000000000000000000000000000000000000000", common.Bytes2Hex(input.RawData))
+	s.Equal(model.InputCompletionStatus("NONE"), input.Status)
+	s.Equal("0x0ba026185fb624135e746f7ecae1734085f2a2483b5a0b18b34332e47a88a02e", input.TransactionReference.Hex())
+
+	input2 := s.mockDatabase.inputs[1]
+	s.Equal(1, int(input2.Index))
+	s.Equal(l1FinalizedLatestHeight, int(input2.BlockNumber))
+	s.Equal("415bf3630000000000000000000000000000000000000000000000000000000000007a690000000000000000000000005a205fcb6947e200615b75c409ac0aa486d77649000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000004deadbeef00000000000000000000000000000000000000000000000000000000", common.Bytes2Hex(input.RawData))
+	s.Equal(model.InputCompletionStatus("NONE"), input2.Status)
+	s.Equal("0xfa89de5b3417b7abb60eaf2ca208459a46611eae5d81a4bf120e721dd1ad5e5c", input2.TransactionReference.Hex())
 
 	s.mockEspressoClient.AssertExpectations(s.T())
 	s.mockDatabase.AssertExpectations(s.T())

@@ -227,20 +227,17 @@ func (e *EspressoReader) readEspressoInput(transaction espresso.Bytes) (*Espress
 	var nonce uint64
 	nonceFloat64, ok := typedData.Message["nonce"].(float64)
 	if !ok {
-		slog.Error("failed to cast nonce to float")
-		return nil, err
+		return nil, fmt.Errorf("failed to cast nonce to float")
 	} else {
 		nonce = uint64(nonceFloat64)
 	}
 	payload, ok := typedData.Message["data"].(string)
 	if !ok {
-		slog.Error("failed to cast data to string")
-		return nil, err
+		return nil, fmt.Errorf("failed to cast data to string")
 	}
 	appAddressStr, ok := typedData.Message["app"].(string)
 	if !ok {
-		slog.Error("failed to cast app address to string")
-		return nil, err
+		return nil, fmt.Errorf("failed to cast app address to string")
 	}
 
 	slog.Info("Espresso input", "msgSender", msgSender, "nonce", nonce, "payload", payload, "appAddrss", appAddressStr, "tx-id", sigHash)
