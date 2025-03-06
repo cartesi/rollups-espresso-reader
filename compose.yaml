@@ -7,8 +7,21 @@ services:
       POSTGRES_DB: rollupsdb
     ports:
       - 5433:5432
+  db-migration:
     volumes:
-      - ./rollupsdb-dump.sql:/docker-entrypoint-initdb.d/rollupsdb-dump.sql
+      - data-node:/usr/share/app/rollups-node:ro
+    environment:
+      CARTESI_POSTGRES_ENDPOINT: postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
+      CGO_CFLAGS: "-D_GNU_SOURCE -D__USE_MISC"
+    build:
+      args:
+        GO_MIGRATE_VERSION: 4.18.2
+        GO_MIGRATE_HASH: sha256:c30e3cdd5dc25ed16b8094bfe70397aade7df9b2c76cbe2238986615aece0845
+      context: .
+      dockerfile: Dockerfile.node
+    depends_on:
+      - db
+
   db-espresso:
     image: postgres:16
     environment:
@@ -19,14 +32,14 @@ services:
       - 5432:5432
   devnet:
     container_name: devnet
-    build:
-      context: ./rollups-node/test/devnet
-      dockerfile: Dockerfile
+    build: https://github.com/cartesi/rollups-node#2.0.0-dev-20250128:test/devnet
     ports:
       - 8545:8545
-    volumes:
-      - ./rollups-node/deployment.json:/usr/share/devnet/deployment.json
-      - ./rollups-node/anvil_state.json:/usr/share/devnet/anvil_state.json
+    # volumes:
+    #   - ./rollups-node/deployment.json:/usr/share/devnet/deployment.json
+    #   - ./rollups-node/anvil_state.json:/usr/share/devnet/anvil_state.json
+    depends_on:
+      - db-migration
   espresso-dev-node:
     image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
     environment:
@@ -60,3 +73,5 @@ services:
       ESPRESSO_BASE_URL: http://espresso-dev-node:24000
     depends_on:
       - espresso-dev-node
+volumes:
+  data-node:
