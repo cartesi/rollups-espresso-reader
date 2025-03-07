@@ -66,6 +66,7 @@ services:
       - ./ci/env.nodev2-espressolocal
     ports:
       - 10000:10000
+      - 8080:8080
     environment:
       CARTESI_POSTGRES_ENDPOINT: postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
       CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: http://devnet:8545/
