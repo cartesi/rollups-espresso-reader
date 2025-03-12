@@ -18,7 +18,7 @@ env:
 	@echo export CARTESI_LOG_LEVEL="debug"
 	@echo export CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=""
 	@echo export CARTESI_BLOCKCHAIN_WS_ENDPOINT=""
-	@echo export CARTESI_POSTGRES_ENDPOINT="postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
+	@echo export CARTESI_DATABASE_CONNECTION="postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
 	@echo export PATH=\"$(CURDIR):$$PATH\"
 	@echo export ESPRESSO_BASE_URL="https://query.decaf.testnet.espresso.network"
 	@echo export ESPRESSO_STARTING_BLOCK="1490657"
@@ -31,9 +31,9 @@ migrate: ## Run migration on development database
 generate-db: ## Generate repository/db with Jet
 	@echo "Generating internal/repository/db with jet"
 	@rm -rf internal/repository/postgres/db
-	@go run github.com/go-jet/jet/v2/cmd/jet -dsn=$$CARTESI_POSTGRES_ENDPOINT -schema=public -path=./internal/repository/postgres/db
+	@go run github.com/go-jet/jet/v2/cmd/jet -dsn=$$CARTESI_DATABASE_CONNECTION -schema=public -path=./internal/repository/postgres/db
 	@rm -rf internal/repository/postgres/db/rollupsdb/public/model
-	@go run github.com/go-jet/jet/v2/cmd/jet -dsn=$$CARTESI_POSTGRES_ENDPOINT -schema=espresso -path=./internal/repository/postgres/db
+	@go run github.com/go-jet/jet/v2/cmd/jet -dsn=$$CARTESI_DATABASE_CONNECTION -schema=espresso -path=./internal/repository/postgres/db
 	@rm -rf internal/repository/postgres/db/rollupsdb/espresso/model
 
 generate:

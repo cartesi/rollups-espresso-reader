@@ -28,13 +28,13 @@ type Schema struct {
 	migrate *mig.Migrate
 }
 
-func New(postgresEndpoint string) (*Schema, error) {
+func New(databaseConnection string) (*Schema, error) {
 	driver, err := iofs.New(content, "migrations")
 	if err != nil {
 		return nil, err
 	}
 
-	migrate, err := mig.NewWithSourceInstance("iofs", driver, postgresEndpoint)
+	migrate, err := mig.NewWithSourceInstance("iofs", driver, databaseConnection)
 	if err != nil {
 		return nil, err
 	}

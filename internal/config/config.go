@@ -14,7 +14,7 @@ type NodeConfig struct {
 	BlockchainWsEndpoint    Redacted[string]
 	EvmReaderDefaultBlock   DefaultBlock
 	BlockchainBlockTimeout  int
-	PostgresEndpoint        Redacted[string]
+	DatabaseConnection      Redacted[string]
 	EspressoBaseUrl         string
 	EspressoStartingBlock   uint64
 	EspressoNamespace       uint64
@@ -40,7 +40,7 @@ func FromEnv() NodeConfig {
 	config.BlockchainHttpEndpoint = Redacted[string]{GetBlockchainHttpEndpoint()}
 	config.BlockchainWsEndpoint = Redacted[string]{GetBlockchainWsEndpoint()}
 	config.EvmReaderDefaultBlock = GetEvmReaderDefaultBlock()
-	config.PostgresEndpoint = Redacted[string]{GetPostgresEndpoint()}
+	config.DatabaseConnection = Redacted[string]{GetDatabaseConnection()}
 	config.EspressoBaseUrl = GetBaseUrl() + "/v0"
 	config.EspressoStartingBlock = GetStartingBlock()
 	config.EspressoNamespace = GetNamespace()

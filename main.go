@@ -55,7 +55,7 @@ func run(cmd *cobra.Command, args []string) {
 	slog.Info("Starting the Cartesi Rollups Node Espresso Reader", "config", c)
 
 	// connect to database
-	database, err := factory.NewRepositoryFromConnectionString(ctx, c.PostgresEndpoint.Value)
+	database, err := factory.NewRepositoryFromConnectionString(ctx, c.DatabaseConnection.Value)
 	if err != nil {
 		slog.Error("Espresso Reader couldn't connect to the database", "error", err)
 		os.Exit(1)
