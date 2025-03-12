@@ -240,14 +240,14 @@ func GetLogPrettyEnabled() bool {
 	return val
 }
 
-func GetPostgresEndpoint() string {
-	s, ok := os.LookupEnv("CARTESI_POSTGRES_ENDPOINT")
+func GetDatabaseConnection() string {
+	s, ok := os.LookupEnv("CARTESI_DATABASE_CONNECTION")
 	if !ok {
 		s = ""
 	}
 	val, err := toString(s)
 	if err != nil {
-		panic(fmt.Sprintf("failed to parse CARTESI_POSTGRES_ENDPOINT: %v", err))
+		panic(fmt.Sprintf("failed to parse CARTESI_DATABASE_CONNECTION: %v", err))
 	}
 	return val
 }

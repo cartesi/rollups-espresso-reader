@@ -10,7 +10,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     env:
-      CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
+      CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
     services:
       postgres:
         image: postgres:16
@@ -75,10 +75,10 @@ jobs:
           cd rollups-node
           eval $(make env)
           make migrate
-      
+
       - name: Migrate Espresso DB
         run: |
-          # migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_POSTGRES_ENDPOINT" up
+          # migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_DATABASE_CONNECTION" up
           eval $(make env)
           make migrate
           make generate-db
@@ -91,7 +91,7 @@ jobs:
           wget https://github.com/cartesi/machine-emulator/releases/download/v0.18.1/cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
           sudo dpkg -i ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
           rm ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_amd64.deb
-      
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
@@ -100,7 +100,7 @@ jobs:
           cd rollups-node
           make devnet
           make run-devnet
-      
+
       - name: Build Espresso image
         run: |
           docker build -t espresso -f ./ci/Dockerfile .
@@ -125,13 +125,13 @@ jobs:
         with:
           name: docker-images
           path: docker-*
-  
+
       - name: Upload database dump
         uses: actions/upload-artifact@v4
         with:
           name: db-dump
           path: rollupsdb-*
-  
+
   local_e2e_test:
     name: e2e tests (Espresso Local)
     runs-on: ubuntu-latest
@@ -147,7 +147,7 @@ jobs:
           POSTGRES_PASSWORD: password
           POSTGRES_DB: rollupsdb
         options: --name postgres
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -176,7 +176,7 @@ jobs:
           done;
           echo "PostgreSQL did not become ready in time";
           exit 1;
-  
+
       - name: Restore database
         env:
           PGPASSWORD: password
@@ -187,16 +187,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: docker-images
-  
+
       - name: Load Docker image
         run: |
           docker load -i docker-devnet-image.tar
           docker load -i docker-espresso-image.tar
-      
+
       - name: Run devnet (Anvil)
         run: |
           docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
-      
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
@@ -221,7 +221,7 @@ jobs:
             -e ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL=1s \
             -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
             --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
-      
+
       - name: Wait for a while
         run: sleep 15
 
@@ -230,10 +230,10 @@ jobs:
           CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
           CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
           CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
-          CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable'
+          CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable'
         run: |
           docker run -d --env-file ./ci/env.nodev2-espressolocal \
-            -e CARTESI_POSTGRES_ENDPOINT=$CARTESI_POSTGRES_ENDPOINT \
+            -e CARTESI_DATABASE_CONNECTION=$CARTESI_DATABASE_CONNECTION \
             --rm --network=host \
             --name c_espresso espresso
           sleep 10
@@ -330,7 +330,7 @@ jobs:
           done;
           echo "PostgreSQL did not become ready in time";
           exit 1;
-  
+
       - name: Restore database
         env:
           PGPASSWORD: password
@@ -341,12 +341,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: docker-images
-  
+
       - name: Load Docker image
         run: |
           docker load -i docker-devnet-image.tar
           docker load -i docker-espresso-image.tar
-      
+
       - name: Run devnet (Anvil)
         run: |
           docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
@@ -372,7 +372,7 @@ jobs:
           CARTESI_BLOCKCHAIN_ID: '11155111'
           CARTESI_CONTRACTS_INPUT_BOX_ADDRESS: '0x593E5BCf894D6829Dd26D0810DA7F064406aebB6'
           CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER: '6850934'
-          CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
+          CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
           ESPRESSO_BASE_URL: 'https://query.decaf.testnet.espresso.network'
           ESPRESSO_STARTING_BLOCK: '1490657'
           ESPRESSO_NAMESPACE: '55555'
@@ -416,11 +416,11 @@ jobs:
         run: |
           docker load -i docker-devnet-image.tar
           docker load -i docker-espresso-image.tar
-      
+
       - name: Run devnet (Anvil)
         run: |
           docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
-  
+
       - name: Wait for PostgreSQL to be ready
         run: |
           for i in {1..30}; do
@@ -536,11 +536,11 @@ jobs:
         run: |
           docker load -i docker-devnet-image.tar
           docker load -i docker-espresso-image.tar
-      
+
       - name: Run devnet (Anvil)
         run: |
           docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
-  
+
       - name: Wait for PostgreSQL to be ready
         run: |
           for i in {1..30}; do
