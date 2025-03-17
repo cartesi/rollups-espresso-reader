@@ -296,12 +296,34 @@ func (m *MockInputSource) RetrieveInputs(opts *bind.FilterOpts, appAddresses []c
 	return nil, nil
 }
 
+type MockEspressoHelper struct {
+	mock.Mock
+}
+
+func (m *MockEspressoHelper) getL1FinalizedHeight(ctx context.Context, espressoBlockHeight uint64, delay uint64, url string) (uint64, uint64) {
+	args := m.Called(ctx, espressoBlockHeight, delay, url)
+	return uint64(args.Int(0)), uint64(args.Int(1))
+}
+
+func (m *MockEspressoHelper) readEspressoHeadersByRange(ctx context.Context, from uint64, until uint64, delay uint64, url string) string {
+	panic("unimplemented")
+}
+
+func (m *MockEspressoHelper) getNSTableByRange(ctx context.Context, from uint64, until uint64, delay uint64, url string) (string, error) {
+	panic("unimplemented")
+}
+
+func (m *MockEspressoHelper) extractNS(nsTable []byte) []uint32 {
+	panic("unimplemented")
+}
+
 type EspressoReaderUnitTestSuite struct {
 	suite.Suite
 	espressoReader     EspressoReader
 	mockEspressoClient *MockEspressoClient
 	mockDatabase       *MockRepository
 	mockEthClient      *MockEthClient
+	mockEspressoHelper *MockEspressoHelper
 }
 
 var transactions = []types.Bytes{
@@ -339,6 +361,9 @@ func (s *EspressoReaderUnitTestSuite) SetupTest() {
 	s.mockEspressoClient = mockEspressoClient
 	s.mockDatabase = mockDatabase
 	s.espressoReader.client = mockEspressoClient
+	mockEspressoHelper := new(MockEspressoHelper)
+	s.mockEspressoHelper = mockEspressoHelper
+	s.espressoReader.espressoHelper = mockEspressoHelper
 }
 
 func ignoreError(val interface{}, _ error) interface{} {
@@ -587,13 +612,6 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 		Status:     model.EpochStatus_Open,
 	}, nil)
 
-	// To test the buggy version, may need the following
-	// s.mockDatabase.On("GetEpoch",
-	// 	mock.Anything, // context.Context
-	// 	mock.Anything, // nameOrAddress
-	// 	uint64(1),     // index
-	// ).Return(model.Epoch{}, nil)
-
 	s.mockDatabase.On("CreateEpochsAndInputs",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
@@ -619,6 +637,13 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 		MixDigest: common.Hash{},
 	}, nil)
 
+	s.mockEspressoHelper.On("getL1FinalizedHeight",
+		mock.Anything, // context.Context,
+		mock.Anything, // espressoBlockHeight
+		mock.Anything, // delay
+		mock.Anything, // url
+	).Return(l1FinalizedLatestHeight, l1FinalizedLatestHeight)
+
 	application := model.Application{
 		ID:                  33331,
 		IApplicationAddress: common.HexToAddress("0x5a205fcb6947e200615b75c409ac0aa486d77649"),
@@ -631,15 +656,15 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(lastProcessedBlock), uint64(l1FinalizedTimestamp))
 	var apps []evmreader.TypeExportApplication
 	apps = append(apps, appEvmType)
-	// for the buggy version, call:
-	// s.espressoReader.evmReader.ReadAndStoreInputs(ctx, uint64(lastProcessedBlock+1), uint64(l1FinalizedLatestHeight), apps)
-	s.espressoReader.evmReader.ReadAndStoreInputs(ctx, uint64(lastProcessedBlock), uint64(l1FinalizedLatestHeight), apps)
+
+	s.espressoReader.readL1(ctx, appEvmType, uint64(currentBlockHeight), uint64(lastProcessedBlock))
 
 	s.Equal(model.EpochStatus_Closed, s.mockDatabase.epochs[0].Status)
 
 	s.mockEspressoClient.AssertExpectations(s.T())
 	s.mockDatabase.AssertExpectations(s.T())
 	s.mockEthClient.AssertExpectations(s.T())
+	s.mockEspressoHelper.AssertExpectations(s.T())
 }
 
 func TestEspressoReaderUnitTestSuite(t *testing.T) {
