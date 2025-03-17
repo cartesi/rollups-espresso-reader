@@ -6,14 +6,11 @@ package espressoreader
 import (
 	"context"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"math/big"
-	"net/http"
 	"slices"
 	"strconv"
 	"strings"
@@ -28,7 +25,6 @@ import (
 	"github.com/EspressoSystems/espresso-sequencer-go/types"
 	espresso "github.com/EspressoSystems/espresso-sequencer-go/types/common"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tidwall/gjson"
 )
 
 type EspressoClient interface {
@@ -42,9 +38,17 @@ type EspressoClient interface {
 	SubmitTransaction(ctx context.Context, tx types.Transaction) (*types.TaggedBase64, error)
 }
 
+type EspressoHelperInterface interface {
+	getL1FinalizedHeight(ctx context.Context, espressoBlockHeight uint64, delay uint64, url string) (uint64, uint64)
+	readEspressoHeadersByRange(ctx context.Context, from uint64, until uint64, delay uint64, url string) string
+	getNSTableByRange(ctx context.Context, from uint64, until uint64, delay uint64, url string) (string, error)
+	extractNS(nsTable []byte) []uint32
+}
+
 type EspressoReader struct {
 	url                     string
 	client                  EspressoClient
+	espressoHelper          EspressoHelperInterface
 	startingBlock           uint64
 	namespace               uint64
 	repository              repository.Repository
@@ -57,7 +61,8 @@ type EspressoReader struct {
 
 func NewEspressoReader(url string, startingBlock uint64, namespace uint64, repository repository.Repository, evmReader *evmreader.EvmReader, chainId uint64, inputBoxDeploymentBlock uint64, maxRetries uint64, maxDelay uint64) EspressoReader {
 	client := client.NewClient(url)
-	return EspressoReader{url: url, client: client, startingBlock: startingBlock, namespace: namespace, repository: repository, evmReader: evmReader, chainId: chainId, inputBoxDeploymentBlock: inputBoxDeploymentBlock, maxRetries: maxRetries, maxDelay: maxDelay}
+	espressoHelper := &EspressoHelper{}
+	return EspressoReader{url: url, client: client, espressoHelper: espressoHelper, startingBlock: startingBlock, namespace: namespace, repository: repository, evmReader: evmReader, chainId: chainId, inputBoxDeploymentBlock: inputBoxDeploymentBlock, maxRetries: maxRetries, maxDelay: maxDelay}
 }
 
 func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
@@ -164,7 +169,7 @@ func (e *EspressoReader) bootstrap(ctx context.Context, app evmreader.TypeExport
 			} else {
 				batchEndingBlock = batchStartingBlock + batchLimit
 			}
-			nsTable, err := e.getNSTableByRange(ctx, batchStartingBlock, batchEndingBlock)
+			nsTable, err := e.espressoHelper.getNSTableByRange(ctx, batchStartingBlock, batchEndingBlock, e.maxDelay, e.url)
 			if err != nil {
 				return err
 			}
@@ -175,7 +180,7 @@ func (e *EspressoReader) bootstrap(ctx context.Context, app evmreader.TypeExport
 			} else {
 				for index, nsTable := range nsTables {
 					nsTableBytes, _ := base64.StdEncoding.DecodeString(nsTable)
-					ns := e.extractNS(nsTableBytes)
+					ns := e.espressoHelper.extractNS(nsTableBytes)
 					if slices.Contains(ns, uint32(e.namespace)) {
 						currentEspressoBlock := batchStartingBlock + uint64(index)
 						slog.Debug("found namespace contained in", "block", currentEspressoBlock)
@@ -192,7 +197,7 @@ func (e *EspressoReader) bootstrap(ctx context.Context, app evmreader.TypeExport
 }
 
 func (e *EspressoReader) readL1(ctx context.Context, app evmreader.TypeExportApplication, currentBlockHeight uint64, lastProcessedL1Block uint64) (uint64, uint64) {
-	l1FinalizedLatestHeight, l1FinalizedTimestamp := e.getL1FinalizedHeight(ctx, currentBlockHeight)
+	l1FinalizedLatestHeight, l1FinalizedTimestamp := e.espressoHelper.getL1FinalizedHeight(ctx, currentBlockHeight, e.maxDelay, e.url)
 	// read L1 if there might be update
 	if l1FinalizedLatestHeight > lastProcessedL1Block {
 		slog.Debug("L1 finalized", "app", app.Application.IApplicationAddress, "from", lastProcessedL1Block, "to", l1FinalizedLatestHeight)
@@ -443,114 +448,6 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		// -> end db transaction
 	}
 
-}
-
-func (e *EspressoReader) readEspressoHeader(espressoBlockHeight uint64) string {
-	requestURL := fmt.Sprintf("%s/availability/header/%d", e.url, espressoBlockHeight)
-	res, err := http.Get(requestURL)
-	if err != nil {
-		slog.Error("error making http request", "err", err)
-	}
-	resBody, err := io.ReadAll(res.Body)
-	if err != nil {
-		slog.Error("could not read response body", "err", err)
-	}
-
-	return string(resBody)
-}
-
-func (e *EspressoReader) getL1FinalizedHeight(ctx context.Context, espressoBlockHeight uint64) (uint64, uint64) {
-	for {
-		select {
-		case <-ctx.Done():
-			slog.Info("exiting espresso reader")
-			return 0, 0
-		default:
-			espressoHeader := e.readEspressoHeader(espressoBlockHeight)
-			if len(espressoHeader) == 0 {
-				slog.Error("error fetching espresso header", "at height", espressoBlockHeight, "header", espressoHeader)
-				slog.Error("retrying fetching header")
-				time.Sleep(time.Duration(e.maxDelay))
-				continue
-			}
-
-			l1FinalizedNumber := gjson.Get(espressoHeader, "fields.l1_finalized.number").Uint()
-			l1FinalizedTimestampStr := gjson.Get(espressoHeader, "fields.l1_finalized.timestamp").Str
-			if len(l1FinalizedTimestampStr) < 2 {
-				slog.Debug("Espresso header not ready. Retry fetching", "height", espressoBlockHeight)
-				time.Sleep(time.Duration(e.maxDelay))
-				continue
-			}
-			l1FinalizedTimestampInt, err := strconv.ParseInt(l1FinalizedTimestampStr[2:], 16, 64)
-			if err != nil {
-				slog.Error("hex to int conversion failed", "err", err)
-				slog.Error("retrying")
-				time.Sleep(time.Duration(e.maxDelay))
-				continue
-			}
-			l1FinalizedTimestamp := uint64(l1FinalizedTimestampInt)
-			return l1FinalizedNumber, l1FinalizedTimestamp
-		}
-	}
-}
-
-func (e *EspressoReader) readEspressoHeadersByRange(ctx context.Context, from uint64, until uint64) string {
-	for {
-		select {
-		case <-ctx.Done():
-			slog.Info("exiting espresso reader")
-			return ""
-		default:
-			requestURL := fmt.Sprintf("%s/availability/header/%d/%d", e.url, from, until)
-			res, err := http.Get(requestURL)
-			if err != nil {
-				slog.Error("error making http request", "err", err)
-				slog.Error("retrying")
-				time.Sleep(time.Duration(e.maxDelay))
-				continue
-			}
-			resBody, err := io.ReadAll(res.Body)
-			if err != nil {
-				slog.Error("could not read response body", "err", err)
-				slog.Error("retrying")
-				time.Sleep(time.Duration(e.maxDelay))
-				continue
-			}
-
-			return string(resBody)
-		}
-	}
-}
-
-func (e *EspressoReader) getNSTableByRange(ctx context.Context, from uint64, until uint64) (string, error) {
-	var nsTables string
-	for len(nsTables) == 0 {
-		select {
-		case <-ctx.Done():
-			slog.Info("exiting espresso reader")
-			return "", ctx.Err()
-		default:
-			espressoHeaders := e.readEspressoHeadersByRange(ctx, from, until)
-			nsTables = gjson.Get(espressoHeaders, "#.fields.ns_table.bytes").Raw
-			if len(nsTables) == 0 {
-				slog.Debug("ns table is empty in current block range. Retry fetching")
-				var delay time.Duration = 2000
-				time.Sleep(delay * time.Millisecond)
-			}
-		}
-	}
-
-	return nsTables, nil
-}
-
-func (e *EspressoReader) extractNS(nsTable []byte) []uint32 {
-	var nsArray []uint32
-	numNS := binary.LittleEndian.Uint32(nsTable[0:])
-	for i := range numNS {
-		nextNS := binary.LittleEndian.Uint32(nsTable[(4 + 8*i):])
-		nsArray = append(nsArray, nextNS)
-	}
-	return nsArray
 }
 
 //////// evm reader related ////////
