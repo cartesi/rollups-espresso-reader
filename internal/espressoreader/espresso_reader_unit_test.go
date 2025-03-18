@@ -290,10 +290,14 @@ func (m *MockEthClient) HeaderByNumber(ctx context.Context, number *big.Int) (*e
 	return &header, args.Error(1)
 }
 
-type MockInputSource struct{}
+type MockInputSource struct {
+	mock.Mock
+}
 
 func (m *MockInputSource) RetrieveInputs(opts *bind.FilterOpts, appAddresses []common.Address, index []*big.Int) ([]iinputbox.IInputBoxInputAdded, error) {
-	return nil, nil
+	args := m.Called(opts, appAddresses, index)
+	events, _ := args.Get(0).([]iinputbox.IInputBoxInputAdded)
+	return events, args.Error(1)
 }
 
 type MockEspressoHelper struct {
@@ -323,6 +327,7 @@ type EspressoReaderUnitTestSuite struct {
 	mockEspressoClient *MockEspressoClient
 	mockDatabase       *MockRepository
 	mockEthClient      *MockEthClient
+	mockInputSource    *MockInputSource
 	mockEspressoHelper *MockEspressoHelper
 }
 
@@ -342,6 +347,7 @@ func (s *EspressoReaderUnitTestSuite) SetupTest() {
 	mockDatabase := new(MockRepository)
 	mockEthClient := new(MockEthClient)
 	mockInputSource := new(MockInputSource)
+	s.mockInputSource = mockInputSource
 	evmReader := evmreader.NewEvmReader(
 		mockEthClient, nil, mockInputSource, mockDatabase, uint64(inputBoxDeploymentBlock), "0", nil, true,
 	)
@@ -637,6 +643,12 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 		MixDigest: common.Hash{},
 	}, nil)
 
+	s.mockInputSource.On("RetrieveInputs",
+		mock.Anything, //  *bind.FilterOpts
+		mock.Anything, // appAddresses
+		mock.Anything, // index
+	).Return(nil, nil)
+
 	s.mockEspressoHelper.On("getL1FinalizedHeight",
 		mock.Anything, // context.Context,
 		mock.Anything, // espressoBlockHeight
@@ -660,6 +672,135 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 	s.espressoReader.readL1(ctx, appEvmType, uint64(currentBlockHeight), uint64(lastProcessedBlock))
 
 	s.Equal(model.EpochStatus_Closed, s.mockDatabase.epochs[0].Status)
+
+	s.mockEspressoClient.AssertExpectations(s.T())
+	s.mockDatabase.AssertExpectations(s.T())
+	s.mockEthClient.AssertExpectations(s.T())
+	s.mockEspressoHelper.AssertExpectations(s.T())
+}
+
+func (s *EspressoReaderUnitTestSuite) TestEdgeCaseSkippingL1Blocks() {
+	transaction := transactions[0]
+	transactions := []types.Bytes{
+		[]byte(transaction),
+	}
+	transactionsInBlock := client.TransactionsInBlock{
+		Transactions: transactions,
+	}
+
+	ctx := context.Background()
+
+	currentBlockHeight := 10
+	lastProcessedBlock := 3
+	l1FinalizedLatestHeight := 5
+	l1FinalizedTimestamp := 17
+	currentInputIndex := 0
+
+	s.mockEspressoClient.On(
+		"FetchTransactionsInBlock",
+		mock.Anything, // context.Context
+		mock.Anything, // blockHeight
+		mock.Anything, // namespace
+	).Return(transactionsInBlock, nil)
+
+	s.mockDatabase.On("GetEspressoNonce",
+		mock.Anything, // context.Context
+		mock.Anything, // msgSender
+		mock.Anything, // appAddressStr
+	).Return(0, nil)
+
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
+	s.mockDatabase.On("GetEpoch",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+		uint64(0),     // index
+	).Return(model.Epoch{
+		Index:      0,
+		FirstBlock: 0,
+		LastBlock:  uint64(lastProcessedBlock),
+		Status:     model.EpochStatus_Closed,
+	}, nil)
+
+	s.mockDatabase.On("CreateEpochsAndInputs",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+		mock.Anything, // epochInputMap
+		mock.Anything, // blockNumber
+	).Return(nil)
+
+	s.mockDatabase.On("UpdateEspressoNonce",
+		mock.Anything, // context.Context
+		mock.Anything, // senderAddress
+		mock.Anything, // nameOrAddress
+	).Return(nil)
+
+	s.mockDatabase.On("UpdateInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+	).Return(nil)
+
+	s.mockEthClient.On("HeaderByNumber",
+		mock.Anything, // context.Context
+		mock.Anything, // number
+	).Return(eth_types.Header{
+		MixDigest: common.Hash{},
+	}, nil)
+
+	appContractAddress := common.HexToAddress("0x5a205fcb6947e200615b75c409ac0aa486d77649")
+	indexValue := new(big.Int).SetUint64(1)
+	inputData := []byte{0x01, 0x02, 0x03, 0x4a, 0x5b, 0x6c}
+	rawLog := eth_types.Log{
+		Address:     common.HexToAddress("0x5a205fcb6947e200615b75c409ac0aa486d77649"),
+		Topics:      []common.Hash{common.HexToHash("0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")},
+		Data:        []byte{0xaa, 0xbb, 0xcc},
+		BlockNumber: 5,
+		TxHash:      common.HexToHash("0x9876543210abcdef9876543210abcdef9876543210abcdef9876543210abcdef"),
+		TxIndex:     0,
+		BlockHash:   common.HexToHash("0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"),
+		Index:       1,
+		Removed:     false,
+	}
+	mockEvent := iinputbox.IInputBoxInputAdded{
+		AppContract: appContractAddress,
+		Index:       indexValue,
+		Input:       inputData,
+		Raw:         rawLog,
+	}
+	var mockEvents []iinputbox.IInputBoxInputAdded
+	mockEvents = append(mockEvents, mockEvent)
+	s.mockInputSource.On("RetrieveInputs",
+		mock.Anything, //  *bind.FilterOpts
+		mock.Anything, // appAddresses
+		mock.Anything, // index
+	).Return(mockEvents, nil)
+
+	s.mockEspressoHelper.On("getL1FinalizedHeight",
+		mock.Anything, // context.Context,
+		mock.Anything, // espressoBlockHeight
+		mock.Anything, // delay
+		mock.Anything, // url
+	).Return(l1FinalizedLatestHeight, l1FinalizedLatestHeight)
+
+	application := model.Application{
+		ID:                  33331,
+		IApplicationAddress: common.HexToAddress("0x5a205fcb6947e200615b75c409ac0aa486d77649"),
+		EpochLength:         uint64(lastProcessedBlock + 1), // test the edge case
+	}
+	appEvmType := evmreader.TypeExportApplication{
+		Application: application,
+	}
+
+	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(lastProcessedBlock), uint64(l1FinalizedTimestamp))
+	var apps []evmreader.TypeExportApplication
+	apps = append(apps, appEvmType)
+
+	s.espressoReader.readL1(ctx, appEvmType, uint64(currentBlockHeight), uint64(lastProcessedBlock))
+
+	s.Equal(2, len(s.mockDatabase.inputs))
 
 	s.mockEspressoClient.AssertExpectations(s.T())
 	s.mockDatabase.AssertExpectations(s.T())
