@@ -29,7 +29,7 @@ jobs:
 
       - name: Clone Node V2 (avoid submodules)
         run: |
-          git clone -b v2.0.0-dev-20250128 --depth 1 --recurse-submodules https://github.com/cartesi/rollups-node.git
+          git clone -b v2.0.0-alpha.1 --depth 1 --recurse-submodules https://github.com/cartesi/rollups-node.git
 
       - name: Wait for PostgreSQL to be ready
         run: |
