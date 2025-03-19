@@ -29,7 +29,7 @@ To build:
 go build
 ```
 
-To run, first you need to run the appropriate version of the Cartesi Rollups Node from its [repository](https://github.com/cartesi/rollups-node/releases/tag/v2.0.0-dev-20250128):
+To run, first you need to run the appropriate version of the Cartesi Rollups Node from its [repository](https://github.com/cartesi/rollups-node/releases/tag/v2.0.0-alpha.1):
 
 ```bash
 cd <path-to-cartesi-rollups-node>

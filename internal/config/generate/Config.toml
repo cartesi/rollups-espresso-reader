@@ -40,11 +40,11 @@ One of 'latest', 'pending', 'safe', 'finalized'"""
 # Postgres
 #
 
-[postgres.CARTESI_POSTGRES_ENDPOINT]
+[database.CARTESI_DATABASE_CONNECTION]
 default = ""
-go-type = "string"
+go-type = "URL"
 description = """
-Postgres endpoint in the 'postgres://user:password@hostname:port/database' format.
+Postgres endpoint in the 'postgres://user:password@hostname:port/database' format (URL).
 
 If not set, or set to empty string, will defer the behaviour to the PG driver.
 See [this](https://www.postgresql.org/docs/current/libpq-envars.html) for more information.

@@ -17,22 +17,22 @@ func main() {
 	var s *schema.Schema
 	var err error
 
-	postgresEndpoint := config.GetPostgresEndpoint() + "&x-migrations-table=espresso_schema_migrations"
+	databaseConnection := config.GetDatabaseConnection() + "&x-migrations-table=espresso_schema_migrations"
 
-	uri, err := url.Parse(postgresEndpoint)
+	uri, err := url.Parse(databaseConnection)
 	if err == nil {
 		uri.User = nil
 	} else {
-		slog.Error("Failed to parse PostgresEndpoint.", "error", err)
+		slog.Error("Failed to parse DatabaseConnection.", "error", err)
 		os.Exit(1)
 	}
 
 	for i := 0; i < 5; i++ {
-		s, err = schema.New(postgresEndpoint)
+		s, err = schema.New(databaseConnection)
 		if err == nil {
 			break
 		}
-		slog.Warn("Connection to database failed. Trying again.", "PostgresEndpoint", uri.String())
+		slog.Warn("Connection to database failed. Trying again.", "DatabaseConnection", uri.String())
 		if i == 4 {
 			slog.Error("Failed to connect to database.", "error", err)
 			os.Exit(1)
