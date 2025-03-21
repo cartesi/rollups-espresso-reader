@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/go-jet/jet/v2/postgres"
 
@@ -104,6 +105,7 @@ func (r *postgresRepository) GetApplication(
 			table.Application.TemplateURI,
 			table.Application.EpochLength,
 			table.Application.State,
+			table.Application.Reason,
 			table.Application.LastProcessedBlock,
 			table.Application.LastClaimCheckBlock,
 			table.Application.LastOutputCheckBlock,
@@ -148,6 +150,7 @@ func (r *postgresRepository) GetApplication(
 		&app.TemplateURI,
 		&app.EpochLength,
 		&app.State,
+		&app.Reason,
 		&app.LastProcessedBlock,
 		&app.LastClaimCheckBlock,
 		&app.LastOutputCheckBlock,
@@ -171,7 +174,7 @@ func (r *postgresRepository) GetApplication(
 		&app.ExecutionParameters.CreatedAt,
 		&app.ExecutionParameters.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil // not found
 	}
 	if err != nil {
@@ -196,6 +199,7 @@ func (r *postgresRepository) UpdateApplication(
 			table.Application.TemplateURI,
 			table.Application.EpochLength,
 			table.Application.State,
+			table.Application.Reason,
 			table.Application.LastProcessedBlock,
 			table.Application.LastClaimCheckBlock,
 			table.Application.LastOutputCheckBlock,
@@ -209,6 +213,7 @@ func (r *postgresRepository) UpdateApplication(
 			app.TemplateURI,
 			app.EpochLength,
 			app.State,
+			app.Reason,
 			app.LastProcessedBlock,
 			app.LastClaimCheckBlock,
 			app.LastOutputCheckBlock,
@@ -223,17 +228,21 @@ func (r *postgresRepository) UpdateApplication(
 
 func (r *postgresRepository) UpdateApplicationState(
 	ctx context.Context,
-	app *model.Application,
+	appID int64,
+	state model.ApplicationState,
+	reason *string,
 ) error {
 
 	updateStmt := table.Application.
 		UPDATE(
 			table.Application.State,
+			table.Application.Reason,
 		).
 		SET(
-			app.State,
+			state,
+			reason,
 		).
-		WHERE(table.Application.ID.EQ(postgres.Int(app.ID)))
+		WHERE(table.Application.ID.EQ(postgres.Int(appID)))
 
 	sqlStr, args := updateStmt.Sql()
 	_, err := r.db.Exec(ctx, sqlStr, args...)
@@ -251,8 +260,14 @@ func (r *postgresRepository) DeleteApplication(
 		WHERE(table.Application.ID.EQ(postgres.Int(id)))
 
 	sqlStr, args := delStmt.Sql()
-	_, err := r.db.Exec(ctx, sqlStr, args...)
-	return err
+	cmd, err := r.db.Exec(ctx, sqlStr, args...)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() != 1 {
+		return fmt.Errorf("application with ID %d not found", id)
+	}
+	return nil
 }
 
 // ListApplications queries multiple apps with optional filters & pagination.
@@ -260,7 +275,7 @@ func (r *postgresRepository) ListApplications(
 	ctx context.Context,
 	f repository.ApplicationFilter,
 	p repository.Pagination,
-) ([]*model.Application, error) {
+) ([]*model.Application, uint64, error) {
 
 	sel := table.Application.
 		SELECT(
@@ -272,6 +287,7 @@ func (r *postgresRepository) ListApplications(
 			table.Application.TemplateURI,
 			table.Application.EpochLength,
 			table.Application.State,
+			table.Application.Reason,
 			table.Application.LastProcessedBlock,
 			table.Application.LastClaimCheckBlock,
 			table.Application.LastOutputCheckBlock,
@@ -294,6 +310,7 @@ func (r *postgresRepository) ListApplications(
 			table.ExecutionParameters.MaxConcurrentInspects,
 			table.ExecutionParameters.CreatedAt,
 			table.ExecutionParameters.UpdatedAt,
+			postgres.COUNT(postgres.STAR).OVER().AS("total_count"),
 		).
 		FROM(
 			table.Application.INNER_JOIN(
@@ -307,10 +324,6 @@ func (r *postgresRepository) ListApplications(
 		conditions = append(conditions, table.Application.State.EQ(postgres.NewEnumValue(f.State.String())))
 	}
 
-	if f.Name != nil {
-		conditions = append(conditions, table.Application.Name.EQ(postgres.VarChar()(*f.Name)))
-	}
-
 	if len(conditions) > 0 {
 		sel = sel.WHERE(postgres.AND(conditions...))
 	}
@@ -319,20 +332,21 @@ func (r *postgresRepository) ListApplications(
 
 	// Apply pagination
 	if p.Limit > 0 {
-		sel = sel.LIMIT(p.Limit)
+		sel = sel.LIMIT(int64(p.Limit))
 	}
 	if p.Offset > 0 {
-		sel = sel.OFFSET(p.Offset)
+		sel = sel.OFFSET(int64(p.Offset))
 	}
 
 	sqlStr, args := sel.Sql()
 	rows, err := r.db.Query(ctx, sqlStr, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
 	var apps []*model.Application
+	var total uint64
 	for rows.Next() {
 		var app model.Application
 		err := rows.Scan(
@@ -344,10 +358,11 @@ func (r *postgresRepository) ListApplications(
 			&app.TemplateURI,
 			&app.EpochLength,
 			&app.State,
+			&app.Reason,
 			&app.LastProcessedBlock,
-			&app.ProcessedInputs,
 			&app.LastClaimCheckBlock,
 			&app.LastOutputCheckBlock,
+			&app.ProcessedInputs,
 			&app.CreatedAt,
 			&app.UpdatedAt,
 			&app.ExecutionParameters.ApplicationID,
@@ -366,12 +381,13 @@ func (r *postgresRepository) ListApplications(
 			&app.ExecutionParameters.MaxConcurrentInspects,
 			&app.ExecutionParameters.CreatedAt,
 			&app.ExecutionParameters.UpdatedAt,
+			&total,
 		)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		apps = append(apps, &app)
 	}
 
-	return apps, nil
+	return apps, total, nil
 }

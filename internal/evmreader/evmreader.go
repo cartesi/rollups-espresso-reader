@@ -27,6 +27,16 @@ import (
 //go:embed abi.json
 var abiData string
 
+const EvmReaderConfigKey = "evm-reader"
+
+type PersistentConfig struct {
+	DefaultBlock            DefaultBlock
+	InputReaderEnabled      bool
+	InputBoxDeploymentBlock uint64
+	InputBoxAddress         string
+	ChainID                 uint64
+}
+
 // Interface for Input reading
 type InputSource interface {
 	// Wrapper for FilterInputAdded(), which is automatically generated
@@ -37,7 +47,8 @@ type InputSource interface {
 
 // Interface for the node repository
 type EvmReaderRepository interface {
-	ListApplications(ctx context.Context, f repository.ApplicationFilter, p repository.Pagination) ([]*Application, error)
+	ListApplications(ctx context.Context, f repository.ApplicationFilter, p repository.Pagination) ([]*Application, uint64, error)
+	UpdateApplicationState(ctx context.Context, appID int64, state ApplicationState, reason *string) error
 	CreateEpochsAndInputs(
 		ctx context.Context, nameOrAddress string,
 		epochInputMap map[*Epoch][]*Input, blockNumber uint64,
@@ -142,15 +153,19 @@ func NewEvmReader(
 	return evmReader
 }
 
-func (r *EvmReader) GetAllRunningApplications(ctx context.Context) ([]*Application, error) {
+func (r *EvmReader) GetAllRunningApplications(ctx context.Context, er EvmReaderRepository) ([]*Application, uint64, error) {
 	f := repository.ApplicationFilter{State: Pointer(ApplicationState_Enabled)}
-	return r.repository.ListApplications(ctx, f, repository.Pagination{})
+	return er.ListApplications(ctx, f, repository.Pagination{})
 }
 
 // GetAppContracts retrieves the ApplicationContract and ConsensusContract for a given Application.
 // Also validates if IConsensus configuration matches the blockchain registered one
-func (r *EvmReader) GetAppContracts(app Application,
+func (r *EvmReader) GetAppContracts(app *Application,
 ) (ApplicationContract, ConsensusContract, error) {
+	if app == nil {
+		return nil, nil, fmt.Errorf("Application reference is nil. Should never happen")
+	}
+
 	applicationContract, err := r.contractFactory.NewApplication(app.IApplicationAddress)
 	if err != nil {
 		return nil, nil, errors.Join(
