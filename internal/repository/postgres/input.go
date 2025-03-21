@@ -6,10 +6,10 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
-	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-jet/jet/v2/postgres"
@@ -68,7 +68,7 @@ func (r *postgresRepository) GetInput(
 		&inp.CreatedAt,
 		&inp.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -134,7 +134,7 @@ func (r *postgresRepository) GetInputByTxReference(
 		&inp.CreatedAt,
 		&inp.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -198,97 +198,11 @@ func (r *postgresRepository) GetLastInput(
 		&inp.CreatedAt,
 		&inp.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	return &inp, nil
-}
-
-func (r *postgresRepository) ListInputs(
-	ctx context.Context,
-	nameOrAddress string,
-	f repository.InputFilter,
-	p repository.Pagination,
-) ([]*model.Input, error) {
-
-	whereClause, err := getWhereClauseFromNameOrAddress(nameOrAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	sel := table.Input.
-		SELECT(
-			table.Input.EpochApplicationID,
-			table.Input.EpochIndex,
-			table.Input.Index,
-			table.Input.BlockNumber,
-			table.Input.RawData,
-			table.Input.Status,
-			table.Input.MachineHash,
-			table.Input.OutputsHash,
-			table.Input.TransactionReference,
-			table.Input.CreatedAt,
-			table.Input.UpdatedAt,
-		).
-		FROM(
-			table.Input.
-				INNER_JOIN(table.Application,
-					table.Input.EpochApplicationID.EQ(table.Application.ID),
-				),
-		)
-
-	conditions := []postgres.BoolExpression{whereClause}
-	if f.Status != nil {
-		conditions = append(conditions, table.Input.Status.EQ(postgres.NewEnumValue(f.Status.String())))
-	}
-
-	if f.NotStatus != nil {
-		conditions = append(conditions, table.Input.Status.NOT_EQ(postgres.NewEnumValue(f.NotStatus.String())))
-	}
-
-	if f.InputIndex != nil {
-		conditions = append(conditions, table.Input.Index.GT_EQ(postgres.RawFloat(fmt.Sprintf("%d", *f.InputIndex))))
-	}
-
-	sel = sel.WHERE(postgres.AND(conditions...)).ORDER_BY(table.Input.Index.ASC())
-
-	if p.Limit > 0 {
-		sel = sel.LIMIT(p.Limit)
-	}
-	if p.Offset > 0 {
-		sel = sel.OFFSET(p.Offset)
-	}
-
-	sqlStr, args := sel.Sql()
-	rows, err := r.db.Query(ctx, sqlStr, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var inputs []*model.Input
-	for rows.Next() {
-		var in model.Input
-		err := rows.Scan(
-			&in.EpochApplicationID,
-			&in.EpochIndex,
-			&in.Index,
-			&in.BlockNumber,
-			&in.RawData,
-			&in.Status,
-			&in.MachineHash,
-			&in.OutputsHash,
-			&in.TransactionReference,
-			&in.CreatedAt,
-			&in.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		inputs = append(inputs, &in)
-	}
-	return inputs, nil
 }
