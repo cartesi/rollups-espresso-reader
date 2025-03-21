@@ -99,7 +99,7 @@ jobs:
         run: |
           cd rollups-node
           make devnet
-          make run-devnet
+          make start-devnet
       
       - name: Build Espresso image
         run: |

@@ -30,7 +30,7 @@ docker build -t espresso -f ./ci/Dockerfile .
 echo "Run Anvil"
 cd rollups-node
 make devnet
-make run-devnet
+make start-devnet
 cd -
 
 # export $(grep -v '^#' env.nodev2-sepolia | xargs)
