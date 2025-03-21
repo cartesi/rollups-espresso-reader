@@ -19,6 +19,12 @@ type postgresRepository struct {
 	db *pgxpool.Pool
 }
 
+func (r *postgresRepository) Close() {
+	if r.db != nil {
+		r.db.Close()
+	}
+}
+
 func validateSchema(pool *pgxpool.Pool) error {
 
 	s, err := schema.NewWithPool(pool)
@@ -42,19 +48,20 @@ func NewPostgresRepository(ctx context.Context, conn string, maxRetries int, del
 		return nil, fmt.Errorf("failed to create Postgres pool: %w", err)
 	}
 
+	// Wait for schema validation (migrations) to complete. Workaround to facilitate container startup order.
 	for i := 0; i < maxRetries; i++ {
-		if err := pool.Ping(ctx); err == nil {
-			err = validateSchema(pool)
-			if err != nil {
-				return nil, fmt.Errorf("failed to validate Postgres schema version: %w", err)
-			}
-
+		err = validateSchema(pool)
+		if err == nil {
 			return &postgresRepository{db: pool}, nil
+		}
+		if i == maxRetries-1 {
+			pool.Close()
+			return nil, fmt.Errorf("failed to validate Postgres schema version: %w", err)
 		}
 		time.Sleep(delay)
 	}
 
+	// This should never be reached due to the returns in the loops above
 	pool.Close()
-	return nil, fmt.Errorf("failed to ping Postgres after %d retries", maxRetries)
-
+	return nil, fmt.Errorf("unexpected error initializing Postgres repository")
 }
