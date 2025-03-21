@@ -6,7 +6,6 @@ package espressoreader
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader/retrypolicy"
-	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 
 	"github.com/EspressoSystems/espresso-sequencer-go/client"
@@ -100,7 +98,7 @@ func (s *EspressoReaderService) setupEvmReader(ctx context.Context, r repository
 	}
 	defer wsClient.Close()
 
-	config, err := repository.LoadNodeConfig[model.NodeConfigValue](ctx, r, model.BaseConfigKey)
+	config, err := repository.LoadNodeConfig[evmreader.PersistentConfig](ctx, r, evmreader.EvmReaderConfigKey)
 	if err != nil {
 		slog.Error("db config", "error", err)
 	}
@@ -161,7 +159,7 @@ func (s *EspressoReaderService) requestNonce(w http.ResponseWriter, r *http.Requ
 	}
 	nonceRequest := &NonceRequest{}
 	if err := json.Unmarshal(body, nonceRequest); err != nil {
-		fmt.Println(err)
+		slog.Error("could not unmarshal", "err", err)
 	}
 
 	senderAddress := common.HexToAddress(nonceRequest.MsgSender)

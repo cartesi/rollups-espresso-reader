@@ -10,7 +10,7 @@ import (
 
 	"github.com/cartesi/rollups-espresso-reader/internal/config"
 	"github.com/cartesi/rollups-espresso-reader/internal/espressoreader"
-	"github.com/cartesi/rollups-espresso-reader/internal/model"
+	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/factory"
 	"github.com/cartesi/rollups-espresso-reader/internal/services/retry"
@@ -62,13 +62,13 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	// load node configuration
-	var config *model.NodeConfig[model.NodeConfigValue]
+	var config evmreader.PersistentConfig
 	config, err = retry.CallFunctionWithRetryPolicy(
 		loadNodeConfig,
 		loadNodeConfigArgs{
 			ctx:       ctx,
 			database:  database,
-			configKey: model.BaseConfigKey,
+			configKey: evmreader.EvmReaderConfigKey,
 		},
 		c.MaxRetries,
 		c.MaxDelay,
@@ -87,8 +87,8 @@ func run(cmd *cobra.Command, args []string) {
 		c.EspressoBaseUrl,
 		c.EspressoStartingBlock,
 		c.EspressoNamespace,
-		config.Value.ChainID,
-		config.Value.InputBoxDeploymentBlock,
+		config.ChainID,
+		config.InputBoxDeploymentBlock,
 		c.EspressoServiceEndpoint,
 		c.MaxRetries,
 		c.MaxDelay,
@@ -112,8 +112,9 @@ func run(cmd *cobra.Command, args []string) {
 	}
 }
 
-func loadNodeConfig(args loadNodeConfigArgs) (*model.NodeConfig[model.NodeConfigValue], error) {
-	return repository.LoadNodeConfig[model.NodeConfigValue](args.ctx, args.database, args.configKey)
+func loadNodeConfig(args loadNodeConfigArgs) (evmreader.PersistentConfig, error) {
+	config, _ := repository.LoadNodeConfig[evmreader.PersistentConfig](args.ctx, args.database, args.configKey)
+	return config.Value, nil
 }
 
 func main() {

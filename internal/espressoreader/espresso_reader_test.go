@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/config"
+	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/factory"
@@ -60,7 +61,7 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 	}
 	suite.Nil(err)
 
-	config, err := repository.LoadNodeConfig[model.NodeConfigValue](suite.ctx, suite.database, model.BaseConfigKey)
+	config, err := repository.LoadNodeConfig[evmreader.PersistentConfig](suite.ctx, suite.database, evmreader.EvmReaderConfigKey)
 	if err != nil {
 		slog.Error("db config", "error", err)
 	}
@@ -200,7 +201,7 @@ func (suite *EspressoReaderTestSuite) TestEpoch() {
 }
 
 func (suite *EspressoReaderTestSuite) TestNodeConfig() {
-	nodeConfig, err := repository.LoadNodeConfig[model.NodeConfigValue](suite.ctx, suite.database, model.BaseConfigKey)
+	nodeConfig, err := repository.LoadNodeConfig[evmreader.PersistentConfig](suite.ctx, suite.database, evmreader.EvmReaderConfigKey)
 	suite.Nil(err)
 	suite.Equal(model.DefaultBlock_Finalized, nodeConfig.Value.DefaultBlock)
 	// suite.Equal(, nodeConfig.InputBoxDeploymentBlock)

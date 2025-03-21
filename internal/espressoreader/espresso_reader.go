@@ -452,7 +452,7 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 
 func (e *EspressoReader) getAppsForEvmReader(ctx context.Context) []evmreader.TypeExportApplication {
 	// Get All Applications
-	runningApps, err := e.evmReader.GetAllRunningApplications(ctx)
+	runningApps, _, err := e.evmReader.GetAllRunningApplications(ctx, e.repository)
 	if err != nil {
 		slog.Error("Error retrieving running applications",
 			"error",
@@ -463,7 +463,7 @@ func (e *EspressoReader) getAppsForEvmReader(ctx context.Context) []evmreader.Ty
 	// Build Contracts
 	var apps []evmreader.TypeExportApplication
 	for _, app := range runningApps {
-		applicationContract, consensusContract, err := e.evmReader.GetAppContracts(*app)
+		applicationContract, consensusContract, err := e.evmReader.GetAppContracts(app)
 		if err != nil {
 			slog.Error("Error retrieving application contracts", "app", app, "error", err)
 			continue

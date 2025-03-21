@@ -19,6 +19,7 @@ type Application struct {
 	TemplateURI          string
 	EpochLength          uint64
 	State                ApplicationState
+	Reason               *string
 	LastProcessedBlock   uint64
 	LastClaimCheckBlock  uint64
 	LastOutputCheckBlock uint64
@@ -261,10 +262,6 @@ type Report struct {
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 }
-
-const (
-	BaseConfigKey string = "BASE_NODE"
-)
 
 type NodeConfig[T any] struct {
 	Key       string

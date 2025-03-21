@@ -137,27 +137,7 @@ func (m *MockRepository) GetReport(ctx context.Context, nameOrAddress string, re
 }
 
 // ListApplications implements repository.Repository.
-func (m *MockRepository) ListApplications(ctx context.Context, f repository.ApplicationFilter, p repository.Pagination) ([]*model.Application, error) {
-	panic("unimplemented")
-}
-
-// ListEpochs implements repository.Repository.
-func (m *MockRepository) ListEpochs(ctx context.Context, nameOrAddress string, f repository.EpochFilter, p repository.Pagination) ([]*model.Epoch, error) {
-	panic("unimplemented")
-}
-
-// ListInputs implements repository.Repository.
-func (m *MockRepository) ListInputs(ctx context.Context, nameOrAddress string, f repository.InputFilter, p repository.Pagination) ([]*model.Input, error) {
-	panic("unimplemented")
-}
-
-// ListOutputs implements repository.Repository.
-func (m *MockRepository) ListOutputs(ctx context.Context, nameOrAddress string, f repository.OutputFilter, p repository.Pagination) ([]*model.Output, error) {
-	panic("unimplemented")
-}
-
-// ListReports implements repository.Repository.
-func (m *MockRepository) ListReports(ctx context.Context, nameOrAddress string, f repository.ReportFilter, p repository.Pagination) ([]*model.Report, error) {
+func (m *MockRepository) ListApplications(ctx context.Context, f repository.ApplicationFilter, p repository.Pagination) ([]*model.Application, uint64, error) {
 	panic("unimplemented")
 }
 
@@ -182,7 +162,7 @@ func (m *MockRepository) UpdateApplication(ctx context.Context, app *model.Appli
 }
 
 // UpdateApplicationState implements repository.Repository.
-func (m *MockRepository) UpdateApplicationState(ctx context.Context, app *model.Application) error {
+func (m *MockRepository) UpdateApplicationState(ctx context.Context, appID int64, state model.ApplicationState, reason *string) error {
 	panic("unimplemented")
 }
 
@@ -198,11 +178,6 @@ func (m *MockRepository) UpdateEpochWithSubmittedClaim(ctx context.Context, appl
 
 // UpdateEpochsClaimAccepted implements repository.Repository.
 func (m *MockRepository) UpdateEpochsClaimAccepted(ctx context.Context, nameOrAddress string, epochs []*model.Epoch, mostRecentBlockNumber uint64) error {
-	panic("unimplemented")
-}
-
-// UpdateEpochsInputsProcessed implements repository.Repository.
-func (m *MockRepository) UpdateEpochsInputsProcessed(ctx context.Context, nameOrAddress string) error {
 	panic("unimplemented")
 }
 
@@ -232,6 +207,10 @@ func (m *MockRepository) UpdateLastProcessedEspressoBlock(ctx context.Context, n
 
 // UpdateOutputsExecution implements repository.Repository.
 func (m *MockRepository) UpdateOutputsExecution(ctx context.Context, nameOrAddress string, executedOutputs []*model.Output, blockNumber uint64) error {
+	panic("unimplemented")
+}
+
+func (m *MockRepository) Close() {
 	panic("unimplemented")
 }
 

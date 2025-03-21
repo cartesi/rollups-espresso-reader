@@ -46,7 +46,6 @@ func (r *EvmReader) ReadAndStoreInputs(
 
 	// Index Inputs into epochs and handle epoch finalization
 	for address, inputs := range appInputsMap {
-
 		app, exists := addrToApp[address]
 		if !exists {
 			slog.Error("Application address on input not found",
@@ -85,13 +84,20 @@ func (r *EvmReader) ReadAndStoreInputs(
 				if currentEpoch.Index == inputEpochIndex {
 					// Input can only be added to open epochs
 					if currentEpoch.Status != EpochStatus_Open {
-						slog.Error("Current epoch is not open",
+						reason := "Received inputs for an epoch that was not open. Should never happen"
+
+						slog.Error(reason,
 							"application", app.Name,
 							"address", address,
 							"epoch_index", currentEpoch.Index,
 							"status", currentEpoch.Status,
 						)
-						return fmt.Errorf("Current epoch is not open. Should never happen")
+						err := r.repository.UpdateApplicationState(ctx, app.ID, ApplicationState_Inoperable, &reason)
+
+						if err != nil {
+							slog.Error("failed to update application state to inoperable", "application", app.Name, "err", err)
+						}
+						return errors.New(reason)
 					}
 				} else {
 					if currentEpoch.Status == EpochStatus_Open {
@@ -209,7 +215,6 @@ func (r *EvmReader) readInputsFromBlockchain(
 	apps []TypeExportApplication,
 	startBlock, endBlock uint64,
 ) (map[common.Address][]*Input, error) {
-
 	// Initialize app input map
 	var appInputsMap = make(map[common.Address][]*Input)
 	var appsAddresses = []common.Address{}
@@ -227,7 +232,6 @@ func (r *EvmReader) readInputsFromBlockchain(
 	if err != nil {
 		return nil, err
 	}
-
 	// Order inputs as order is not enforced by RetrieveInputs method nor the APIs
 	for _, event := range inputsEvents {
 		slog.Debug("Received input",

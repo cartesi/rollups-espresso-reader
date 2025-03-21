@@ -3,7 +3,7 @@ set -e
 
 rm -rf ./rollups-node
 
-git clone -b v2.0.0-dev-20250128 --depth 1 --recurse-submodules https://github.com/cartesi/rollups-node.git
+git clone -b v2.0.0-alpha.1 --depth 1 --recurse-submodules https://github.com/cartesi/rollups-node.git
 
 docker stop $(docker ps -q) || true
 
@@ -30,7 +30,7 @@ docker build -t espresso -f ./ci/Dockerfile .
 echo "Run Anvil"
 cd rollups-node
 make devnet
-make run-devnet
+make start-devnet
 cd -
 
 # export $(grep -v '^#' env.nodev2-sepolia | xargs)

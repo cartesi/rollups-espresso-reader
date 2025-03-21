@@ -6,7 +6,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
@@ -39,6 +39,7 @@ func (r *postgresRepository) LoadNodeConfigRaw(ctx context.Context, key string) 
 			table.NodeConfig.CreatedAt,
 			table.NodeConfig.UpdatedAt,
 		).
+		WHERE(table.NodeConfig.Key.EQ(postgres.String(key))).
 		LIMIT(1)
 
 	sqlStr, args := sel.Sql()
@@ -54,8 +55,8 @@ func (r *postgresRepository) LoadNodeConfigRaw(ctx context.Context, key string) 
 		&createdAt,
 		&updatedAt,
 	)
-	if err == sql.ErrNoRows {
-		return nil, time.Time{}, time.Time{}, fmt.Errorf("no node config found for key=%q", key)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, time.Time{}, time.Time{}, nil
 	}
 	if err != nil {
 		return nil, time.Time{}, time.Time{}, err
