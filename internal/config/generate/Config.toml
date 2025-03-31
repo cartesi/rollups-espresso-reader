@@ -37,10 +37,10 @@ The default block to be used by EVM Reader when requesting new blocks.
 One of 'latest', 'pending', 'safe', 'finalized'"""
 
 #
-# Postgres
+# Database
 #
 
-[postgres.CARTESI_POSTGRES_ENDPOINT]
+[database.CARTESI_DATABASE_CONNECTION]
 default = ""
 go-type = "string"
 description = """
@@ -51,7 +51,7 @@ See [this](https://www.postgresql.org/docs/current/libpq-envars.html) for more i
 
 It is also possible to set the endpoint without a password and load it from Postgres' passfile.
 See [this](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-PASSFILE)
-for more information."""
+for more information. [Required: all]"""
 
 #
 # Espresso
@@ -62,18 +62,6 @@ default = ""
 go-type = "string"
 description = """
 Espresso base url."""
-
-[espresso.ESPRESSO_STARTING_BLOCK]
-default = "0"
-go-type = "uint64"
-description = """
-Espresso starting block."""
-
-[espresso.ESPRESSO_NAMESPACE]
-default = "0"
-go-type = "uint64"
-description = """
-Espresso namespace."""
 
 [espresso.ESPRESSO_SERVICE_ENDPOINT]
 default = "0.0.0.0:8080"

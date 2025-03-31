@@ -14,6 +14,71 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+func (r *postgresRepository) GetEspressoConfig(
+	ctx context.Context,
+	nameOrAddress string,
+) (uint64, uint64, error) {
+	app := common.HexToAddress(nameOrAddress)
+	sel := table.EspressoConfig.
+		SELECT(
+			table.EspressoConfig.StartingBlock,
+			table.EspressoConfig.Namespace,
+		).
+		FROM(table.EspressoConfig).
+		WHERE(
+			table.EspressoConfig.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())),
+		)
+
+	sqlStr, args := sel.Sql()
+	row := r.db.QueryRow(ctx, sqlStr, args...)
+
+	var startingBlock, namespace uint64
+	err := row.Scan(
+		&startingBlock,
+		&namespace,
+	)
+	if err != nil {
+		return 0, 0, err
+	}
+	return startingBlock, namespace, nil
+}
+
+func (r *postgresRepository) UpdateEspressoConfig(
+	ctx context.Context,
+	nameOrAddress string,
+	startingBlock uint64, namespace uint64,
+) error {
+	app := common.HexToAddress(nameOrAddress)
+	insertStmt := table.EspressoConfig.INSERT(
+		table.EspressoConfig.ApplicationAddress,
+		table.EspressoConfig.StartingBlock,
+		table.EspressoConfig.Namespace,
+	).VALUES(
+		postgres.Bytea(app.Bytes()),
+		startingBlock,
+		namespace,
+	)
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	sqlStr, args := insertStmt.Sql()
+	_, err = tx.Exec(ctx, sqlStr, args...)
+
+	if err != nil {
+		return errors.Join(err, tx.Rollback(ctx))
+	}
+
+	// Commit transaction
+	err = tx.Commit(ctx)
+	if err != nil {
+		return errors.Join(err, tx.Rollback(ctx))
+	}
+	return nil
+}
+
 func (r *postgresRepository) GetEspressoNonce(
 	ctx context.Context,
 	senderAddress string,

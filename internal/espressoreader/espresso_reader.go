@@ -20,11 +20,14 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	"github.com/cartesi/rollups-espresso-reader/internal/services/retry"
+	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/dataavailability"
+	"github.com/cartesi/rollups-espresso-reader/pkg/ethutil"
 
 	"github.com/EspressoSystems/espresso-sequencer-go/client"
 	"github.com/EspressoSystems/espresso-sequencer-go/types"
 	espresso "github.com/EspressoSystems/espresso-sequencer-go/types/common"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type EspressoClient interface {
@@ -46,23 +49,21 @@ type EspressoHelperInterface interface {
 }
 
 type EspressoReader struct {
-	url                     string
-	client                  EspressoClient
-	espressoHelper          EspressoHelperInterface
-	startingBlock           uint64
-	namespace               uint64
-	repository              repository.Repository
-	evmReader               *evmreader.EvmReader
-	chainId                 uint64
-	inputBoxDeploymentBlock uint64
-	maxRetries              uint64
-	maxDelay                uint64
+	url                    string
+	client                 EspressoClient
+	espressoHelper         EspressoHelperInterface
+	repository             repository.Repository
+	evmReader              *evmreader.EvmReader
+	chainId                uint64
+	maxRetries             uint64
+	maxDelay               uint64
+	blockchainHttpEndpoint string
 }
 
-func NewEspressoReader(url string, startingBlock uint64, namespace uint64, repository repository.Repository, evmReader *evmreader.EvmReader, chainId uint64, inputBoxDeploymentBlock uint64, maxRetries uint64, maxDelay uint64) EspressoReader {
+func NewEspressoReader(url string, repository repository.Repository, evmReader *evmreader.EvmReader, chainId uint64, maxRetries uint64, maxDelay uint64, blockchainHttpEndpoint string) EspressoReader {
 	client := client.NewClient(url)
 	espressoHelper := &EspressoHelper{}
-	return EspressoReader{url: url, client: client, espressoHelper: espressoHelper, startingBlock: startingBlock, namespace: namespace, repository: repository, evmReader: evmReader, chainId: chainId, inputBoxDeploymentBlock: inputBoxDeploymentBlock, maxRetries: maxRetries, maxDelay: maxDelay}
+	return EspressoReader{url: url, client: client, espressoHelper: espressoHelper, repository: repository, evmReader: evmReader, chainId: chainId, maxRetries: maxRetries, maxDelay: maxDelay, blockchainHttpEndpoint: blockchainHttpEndpoint}
 }
 
 func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
@@ -91,19 +92,25 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 			apps := e.getAppsForEvmReader(ctx)
 			if len(apps) > 0 {
 				for _, app := range apps {
+					startingBlock, namespace, err := e.getEspressoConfig(ctx, app.IApplicationAddress)
+					if err != nil {
+						slog.Error("failed getting espresso config from onchain", "error", err)
+						continue
+					}
+
 					lastProcessedEspressoBlock, err := e.repository.GetLastProcessedEspressoBlock(ctx, app.Application.IApplicationAddress.Hex())
 					if err != nil {
 						slog.Error("failed reading lastProcessedEspressoBlock", "error", err)
 						continue
 					}
-					lastProcessedL1Block := app.Application.LastProcessedBlock
+					lastProcessedL1Block := app.Application.LastInputCheckBlock
 					appAddress := app.Application.IApplicationAddress
-					if lastProcessedL1Block < e.inputBoxDeploymentBlock {
-						lastProcessedL1Block = e.inputBoxDeploymentBlock - 1
+					if lastProcessedL1Block < app.IInputBoxBlock {
+						lastProcessedL1Block = app.IInputBoxBlock - 1
 					}
 					if lastProcessedEspressoBlock == 0 {
-						if e.startingBlock != 0 {
-							lastProcessedEspressoBlock = e.startingBlock - 1
+						if startingBlock != 0 {
+							lastProcessedEspressoBlock = startingBlock - 1
 						} else {
 							lastProcessedEspressoBlock = latestBlockHeight - 1
 						}
@@ -112,7 +119,7 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 					if latestBlockHeight-lastProcessedEspressoBlock > 100 {
 						// bootstrap
 						slog.Debug("bootstrapping:", "app", appAddress, "from-block", lastProcessedEspressoBlock+1, "to-block", latestBlockHeight)
-						err = e.bootstrap(ctx, app, lastProcessedEspressoBlock, latestBlockHeight, lastProcessedL1Block)
+						err = e.bootstrap(ctx, app, lastProcessedEspressoBlock, namespace, latestBlockHeight, lastProcessedL1Block)
 						if err != nil {
 							slog.Error("failed reading inputs", "error", err)
 							continue
@@ -132,7 +139,7 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 							var l1FinalizedTimestamp uint64
 							lastProcessedL1Block, l1FinalizedTimestamp = e.readL1(ctx, app, currentBlockHeight, lastProcessedL1Block)
 							//** read espresso **//
-							e.readEspresso(ctx, app, currentBlockHeight, lastProcessedL1Block, l1FinalizedTimestamp)
+							e.readEspresso(ctx, app, currentBlockHeight, namespace, lastProcessedL1Block, l1FinalizedTimestamp)
 
 							// update lastProcessedEspressoBlock in db
 							err = e.repository.UpdateLastProcessedEspressoBlock(ctx, app.Application.IApplicationAddress.Hex(), latestBlockHeight)
@@ -152,7 +159,7 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 	}
 }
 
-func (e *EspressoReader) bootstrap(ctx context.Context, app evmreader.TypeExportApplication, lastProcessedEspressoBlock uint64, latestBlockHeight uint64, l1FinalizedHeight uint64) error {
+func (e *EspressoReader) bootstrap(ctx context.Context, app evmreader.TypeExportApplication, lastProcessedEspressoBlock uint64, namespace uint64, latestBlockHeight uint64, l1FinalizedHeight uint64) error {
 	var l1FinalizedTimestamp uint64
 	var nsTables []string
 	batchStartingBlock := lastProcessedEspressoBlock + 1
@@ -181,11 +188,11 @@ func (e *EspressoReader) bootstrap(ctx context.Context, app evmreader.TypeExport
 				for index, nsTable := range nsTables {
 					nsTableBytes, _ := base64.StdEncoding.DecodeString(nsTable)
 					ns := e.espressoHelper.extractNS(nsTableBytes)
-					if slices.Contains(ns, uint32(e.namespace)) {
+					if slices.Contains(ns, uint32(namespace)) {
 						currentEspressoBlock := batchStartingBlock + uint64(index)
 						slog.Debug("found namespace contained in", "block", currentEspressoBlock)
 						l1FinalizedHeight, l1FinalizedTimestamp = e.readL1(ctx, app, currentEspressoBlock, l1FinalizedHeight)
-						e.readEspresso(ctx, app, currentEspressoBlock, l1FinalizedHeight, l1FinalizedTimestamp)
+						e.readEspresso(ctx, app, currentEspressoBlock, namespace, l1FinalizedHeight, l1FinalizedTimestamp)
 					}
 				}
 			}
@@ -363,9 +370,9 @@ func (e *EspressoReader) findOrBuildNewEpoch(ctx context.Context, appEvmType evm
 	return currentEpoch, nil
 }
 
-func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.TypeExportApplication, currentBlockHeight uint64, l1FinalizedLatestHeight uint64, l1FinalizedTimestamp uint64) {
+func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.TypeExportApplication, currentBlockHeight uint64, namespace uint64, l1FinalizedLatestHeight uint64, l1FinalizedTimestamp uint64) {
 	app := appEvmType.Application.IApplicationAddress
-	transactions, err := e.client.FetchTransactionsInBlock(ctx, currentBlockHeight, e.namespace)
+	transactions, err := e.client.FetchTransactionsInBlock(ctx, currentBlockHeight, namespace)
 	if err != nil {
 		slog.Error("failed fetching espresso tx", "error", err)
 		return
@@ -448,6 +455,48 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 
 }
 
+func (e *EspressoReader) getEspressoConfig(ctx context.Context, appAddress common.Address) (uint64, uint64, error) {
+	startingBlock, namespace, err := e.repository.GetEspressoConfig(ctx, appAddress.Hex())
+
+	if err != nil {
+		// da is not available in the db
+		ethClient, err := ethclient.Dial(e.blockchainHttpEndpoint)
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to connect to the blockchain http endpoint: %w", err)
+		}
+		da, err := ethutil.GetDataAvailability(ctx, ethClient, appAddress)
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to get data availability for app %s: %w", appAddress.Hex(), err)
+		}
+		if len(da) < model.DATA_AVAILABILITY_SELECTOR_SIZE {
+			return 0, 0, fmt.Errorf("invalid Data Availability")
+		}
+		parsedAbi, err := dataavailability.DataAvailabilityMetaData.GetAbi()
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to get ABI: %w", err)
+		}
+		method, err := parsedAbi.MethodById(da[:model.DATA_AVAILABILITY_SELECTOR_SIZE])
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to get method by ID: %w", err)
+		}
+		args, err := method.Inputs.Unpack(da[model.DATA_AVAILABILITY_SELECTOR_SIZE:])
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to unpack inputs: %w", err)
+		}
+		if len(args) != 3 {
+			return 0, 0, fmt.Errorf("invalid Data Availability for expresso")
+		}
+
+		startingBlock = uint64(args[1].(*big.Int).Int64())
+		namespace = uint64(args[2].(uint32))
+
+		// update db
+		e.repository.UpdateEspressoConfig(ctx, appAddress.Hex(), startingBlock, namespace)
+	}
+
+	return startingBlock, namespace, nil
+}
+
 //////// evm reader related ////////
 
 func (e *EspressoReader) getAppsForEvmReader(ctx context.Context) []evmreader.TypeExportApplication {
@@ -463,14 +512,14 @@ func (e *EspressoReader) getAppsForEvmReader(ctx context.Context) []evmreader.Ty
 	// Build Contracts
 	var apps []evmreader.TypeExportApplication
 	for _, app := range runningApps {
-		applicationContract, consensusContract, err := e.evmReader.GetAppContracts(app)
+		applicationContract, inputSource, err := e.evmReader.GetAppContracts(app)
 		if err != nil {
 			slog.Error("Error retrieving application contracts", "app", app, "error", err)
 			continue
 		}
 		apps = append(apps, evmreader.TypeExportApplication{Application: *app,
 			ApplicationContract: applicationContract,
-			ConsensusContract:   consensusContract})
+			InputSource:         inputSource})
 	}
 
 	if len(apps) == 0 {

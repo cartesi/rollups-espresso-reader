@@ -21,13 +21,15 @@ type applicationTable struct {
 	Name                 postgres.ColumnString
 	IapplicationAddress  postgres.ColumnString
 	IconsensusAddress    postgres.ColumnString
+	IinputboxAddress     postgres.ColumnString
+	IinputboxBlock       postgres.ColumnFloat
 	TemplateHash         postgres.ColumnString
 	TemplateURI          postgres.ColumnString
 	EpochLength          postgres.ColumnFloat
+	DataAvailability     postgres.ColumnString
 	State                postgres.ColumnString
 	Reason               postgres.ColumnString
-	LastProcessedBlock   postgres.ColumnFloat
-	LastClaimCheckBlock  postgres.ColumnFloat
+	LastInputCheckBlock  postgres.ColumnFloat
 	LastOutputCheckBlock postgres.ColumnFloat
 	ProcessedInputs      postgres.ColumnFloat
 	CreatedAt            postgres.ColumnTimestampz
@@ -76,19 +78,21 @@ func newApplicationTableImpl(schemaName, tableName, alias string) applicationTab
 		NameColumn                 = postgres.StringColumn("name")
 		IapplicationAddressColumn  = postgres.StringColumn("iapplication_address")
 		IconsensusAddressColumn    = postgres.StringColumn("iconsensus_address")
+		IinputboxAddressColumn     = postgres.StringColumn("iinputbox_address")
+		IinputboxBlockColumn       = postgres.FloatColumn("iinputbox_block")
 		TemplateHashColumn         = postgres.StringColumn("template_hash")
 		TemplateURIColumn          = postgres.StringColumn("template_uri")
 		EpochLengthColumn          = postgres.FloatColumn("epoch_length")
+		DataAvailabilityColumn     = postgres.StringColumn("data_availability")
 		StateColumn                = postgres.StringColumn("state")
 		ReasonColumn               = postgres.StringColumn("reason")
-		LastProcessedBlockColumn   = postgres.FloatColumn("last_processed_block")
-		LastClaimCheckBlockColumn  = postgres.FloatColumn("last_claim_check_block")
+		LastInputCheckBlockColumn  = postgres.FloatColumn("last_input_check_block")
 		LastOutputCheckBlockColumn = postgres.FloatColumn("last_output_check_block")
 		ProcessedInputsColumn      = postgres.FloatColumn("processed_inputs")
 		CreatedAtColumn            = postgres.TimestampzColumn("created_at")
 		UpdatedAtColumn            = postgres.TimestampzColumn("updated_at")
-		allColumns                 = postgres.ColumnList{IDColumn, NameColumn, IapplicationAddressColumn, IconsensusAddressColumn, TemplateHashColumn, TemplateURIColumn, EpochLengthColumn, StateColumn, ReasonColumn, LastProcessedBlockColumn, LastClaimCheckBlockColumn, LastOutputCheckBlockColumn, ProcessedInputsColumn, CreatedAtColumn, UpdatedAtColumn}
-		mutableColumns             = postgres.ColumnList{NameColumn, IapplicationAddressColumn, IconsensusAddressColumn, TemplateHashColumn, TemplateURIColumn, EpochLengthColumn, StateColumn, ReasonColumn, LastProcessedBlockColumn, LastClaimCheckBlockColumn, LastOutputCheckBlockColumn, ProcessedInputsColumn, CreatedAtColumn, UpdatedAtColumn}
+		allColumns                 = postgres.ColumnList{IDColumn, NameColumn, IapplicationAddressColumn, IconsensusAddressColumn, IinputboxAddressColumn, IinputboxBlockColumn, TemplateHashColumn, TemplateURIColumn, EpochLengthColumn, DataAvailabilityColumn, StateColumn, ReasonColumn, LastInputCheckBlockColumn, LastOutputCheckBlockColumn, ProcessedInputsColumn, CreatedAtColumn, UpdatedAtColumn}
+		mutableColumns             = postgres.ColumnList{NameColumn, IapplicationAddressColumn, IconsensusAddressColumn, IinputboxAddressColumn, IinputboxBlockColumn, TemplateHashColumn, TemplateURIColumn, EpochLengthColumn, DataAvailabilityColumn, StateColumn, ReasonColumn, LastInputCheckBlockColumn, LastOutputCheckBlockColumn, ProcessedInputsColumn, CreatedAtColumn, UpdatedAtColumn}
 	)
 
 	return applicationTable{
@@ -99,13 +103,15 @@ func newApplicationTableImpl(schemaName, tableName, alias string) applicationTab
 		Name:                 NameColumn,
 		IapplicationAddress:  IapplicationAddressColumn,
 		IconsensusAddress:    IconsensusAddressColumn,
+		IinputboxAddress:     IinputboxAddressColumn,
+		IinputboxBlock:       IinputboxBlockColumn,
 		TemplateHash:         TemplateHashColumn,
 		TemplateURI:          TemplateURIColumn,
 		EpochLength:          EpochLengthColumn,
+		DataAvailability:     DataAvailabilityColumn,
 		State:                StateColumn,
 		Reason:               ReasonColumn,
-		LastProcessedBlock:   LastProcessedBlockColumn,
-		LastClaimCheckBlock:  LastClaimCheckBlockColumn,
+		LastInputCheckBlock:  LastInputCheckBlockColumn,
 		LastOutputCheckBlock: LastOutputCheckBlockColumn,
 		ProcessedInputs:      ProcessedInputsColumn,
 		CreatedAt:            CreatedAtColumn,

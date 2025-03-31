@@ -31,7 +31,7 @@ var (
 
 // ISelfHostedApplicationFactoryMetaData contains all meta data concerning the ISelfHostedApplicationFactory contract.
 var ISelfHostedApplicationFactoryMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"authorityOwner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"epochLength\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"appOwner\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"templateHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"calculateAddresses\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"authorityOwner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"epochLength\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"appOwner\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"templateHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"deployContracts\",\"outputs\":[{\"internalType\":\"contractIApplication\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"contractIAuthority\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getApplicationFactory\",\"outputs\":[{\"internalType\":\"contractIApplicationFactory\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getAuthorityFactory\",\"outputs\":[{\"internalType\":\"contractIAuthorityFactory\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"calculateAddresses\",\"inputs\":[{\"name\":\"authorityOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"epochLength\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"appOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"templateHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"dataAvailability\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deployContracts\",\"inputs\":[{\"name\":\"authorityOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"epochLength\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"appOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"templateHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"dataAvailability\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIApplication\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAuthority\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getApplicationFactory\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIApplicationFactory\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getAuthorityFactory\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAuthorityFactory\"}],\"stateMutability\":\"view\"}]",
 }
 
 // ISelfHostedApplicationFactoryABI is the input ABI used to generate the binding from.
@@ -180,12 +180,12 @@ func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryTransactorRaw
 	return _ISelfHostedApplicationFactory.Contract.contract.Transact(opts, method, params...)
 }
 
-// CalculateAddresses is a free data retrieval call binding the contract method 0xde4d53fd.
+// CalculateAddresses is a free data retrieval call binding the contract method 0x938f7adc.
 //
-// Solidity: function calculateAddresses(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes32 salt) view returns(address, address)
-func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryCaller) CalculateAddresses(opts *bind.CallOpts, authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, salt [32]byte) (common.Address, common.Address, error) {
+// Solidity: function calculateAddresses(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes dataAvailability, bytes32 salt) view returns(address, address)
+func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryCaller) CalculateAddresses(opts *bind.CallOpts, authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, dataAvailability []byte, salt [32]byte) (common.Address, common.Address, error) {
 	var out []interface{}
-	err := _ISelfHostedApplicationFactory.contract.Call(opts, &out, "calculateAddresses", authorityOwner, epochLength, appOwner, templateHash, salt)
+	err := _ISelfHostedApplicationFactory.contract.Call(opts, &out, "calculateAddresses", authorityOwner, epochLength, appOwner, templateHash, dataAvailability, salt)
 
 	if err != nil {
 		return *new(common.Address), *new(common.Address), err
@@ -198,18 +198,18 @@ func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryCaller) Calcu
 
 }
 
-// CalculateAddresses is a free data retrieval call binding the contract method 0xde4d53fd.
+// CalculateAddresses is a free data retrieval call binding the contract method 0x938f7adc.
 //
-// Solidity: function calculateAddresses(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes32 salt) view returns(address, address)
-func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactorySession) CalculateAddresses(authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, salt [32]byte) (common.Address, common.Address, error) {
-	return _ISelfHostedApplicationFactory.Contract.CalculateAddresses(&_ISelfHostedApplicationFactory.CallOpts, authorityOwner, epochLength, appOwner, templateHash, salt)
+// Solidity: function calculateAddresses(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes dataAvailability, bytes32 salt) view returns(address, address)
+func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactorySession) CalculateAddresses(authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, dataAvailability []byte, salt [32]byte) (common.Address, common.Address, error) {
+	return _ISelfHostedApplicationFactory.Contract.CalculateAddresses(&_ISelfHostedApplicationFactory.CallOpts, authorityOwner, epochLength, appOwner, templateHash, dataAvailability, salt)
 }
 
-// CalculateAddresses is a free data retrieval call binding the contract method 0xde4d53fd.
+// CalculateAddresses is a free data retrieval call binding the contract method 0x938f7adc.
 //
-// Solidity: function calculateAddresses(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes32 salt) view returns(address, address)
-func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryCallerSession) CalculateAddresses(authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, salt [32]byte) (common.Address, common.Address, error) {
-	return _ISelfHostedApplicationFactory.Contract.CalculateAddresses(&_ISelfHostedApplicationFactory.CallOpts, authorityOwner, epochLength, appOwner, templateHash, salt)
+// Solidity: function calculateAddresses(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes dataAvailability, bytes32 salt) view returns(address, address)
+func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryCallerSession) CalculateAddresses(authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, dataAvailability []byte, salt [32]byte) (common.Address, common.Address, error) {
+	return _ISelfHostedApplicationFactory.Contract.CalculateAddresses(&_ISelfHostedApplicationFactory.CallOpts, authorityOwner, epochLength, appOwner, templateHash, dataAvailability, salt)
 }
 
 // GetApplicationFactory is a free data retrieval call binding the contract method 0xe63d50ff.
@@ -274,23 +274,23 @@ func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryCallerSession
 	return _ISelfHostedApplicationFactory.Contract.GetAuthorityFactory(&_ISelfHostedApplicationFactory.CallOpts)
 }
 
-// DeployContracts is a paid mutator transaction binding the contract method 0xffc643ca.
+// DeployContracts is a paid mutator transaction binding the contract method 0x50567b3a.
 //
-// Solidity: function deployContracts(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes32 salt) returns(address, address)
-func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryTransactor) DeployContracts(opts *bind.TransactOpts, authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, salt [32]byte) (*types.Transaction, error) {
-	return _ISelfHostedApplicationFactory.contract.Transact(opts, "deployContracts", authorityOwner, epochLength, appOwner, templateHash, salt)
+// Solidity: function deployContracts(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes dataAvailability, bytes32 salt) returns(address, address)
+func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryTransactor) DeployContracts(opts *bind.TransactOpts, authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, dataAvailability []byte, salt [32]byte) (*types.Transaction, error) {
+	return _ISelfHostedApplicationFactory.contract.Transact(opts, "deployContracts", authorityOwner, epochLength, appOwner, templateHash, dataAvailability, salt)
 }
 
-// DeployContracts is a paid mutator transaction binding the contract method 0xffc643ca.
+// DeployContracts is a paid mutator transaction binding the contract method 0x50567b3a.
 //
-// Solidity: function deployContracts(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes32 salt) returns(address, address)
-func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactorySession) DeployContracts(authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, salt [32]byte) (*types.Transaction, error) {
-	return _ISelfHostedApplicationFactory.Contract.DeployContracts(&_ISelfHostedApplicationFactory.TransactOpts, authorityOwner, epochLength, appOwner, templateHash, salt)
+// Solidity: function deployContracts(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes dataAvailability, bytes32 salt) returns(address, address)
+func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactorySession) DeployContracts(authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, dataAvailability []byte, salt [32]byte) (*types.Transaction, error) {
+	return _ISelfHostedApplicationFactory.Contract.DeployContracts(&_ISelfHostedApplicationFactory.TransactOpts, authorityOwner, epochLength, appOwner, templateHash, dataAvailability, salt)
 }
 
-// DeployContracts is a paid mutator transaction binding the contract method 0xffc643ca.
+// DeployContracts is a paid mutator transaction binding the contract method 0x50567b3a.
 //
-// Solidity: function deployContracts(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes32 salt) returns(address, address)
-func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryTransactorSession) DeployContracts(authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, salt [32]byte) (*types.Transaction, error) {
-	return _ISelfHostedApplicationFactory.Contract.DeployContracts(&_ISelfHostedApplicationFactory.TransactOpts, authorityOwner, epochLength, appOwner, templateHash, salt)
+// Solidity: function deployContracts(address authorityOwner, uint256 epochLength, address appOwner, bytes32 templateHash, bytes dataAvailability, bytes32 salt) returns(address, address)
+func (_ISelfHostedApplicationFactory *ISelfHostedApplicationFactoryTransactorSession) DeployContracts(authorityOwner common.Address, epochLength *big.Int, appOwner common.Address, templateHash [32]byte, dataAvailability []byte, salt [32]byte) (*types.Transaction, error) {
+	return _ISelfHostedApplicationFactory.Contract.DeployContracts(&_ISelfHostedApplicationFactory.TransactOpts, authorityOwner, epochLength, appOwner, templateHash, dataAvailability, salt)
 }

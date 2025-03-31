@@ -166,6 +166,11 @@ func (m *MockRepository) UpdateApplicationState(ctx context.Context, appID int64
 	panic("unimplemented")
 }
 
+// UpdateEventLastCheckBlock implements repository.Repository.
+func (m *MockRepository) UpdateEventLastCheckBlock(ctx context.Context, appIDs []int64, event MonitoredEvent, blockNumber uint64) error {
+	panic("unimplemented")
+}
+
 // UpdateEpoch implements repository.Repository.
 func (m *MockRepository) UpdateEpoch(ctx context.Context, nameOrAddress string, e *model.Epoch) error {
 	panic("unimplemented")
@@ -328,7 +333,7 @@ func (s *EspressoReaderUnitTestSuite) SetupTest() {
 	mockInputSource := new(MockInputSource)
 	s.mockInputSource = mockInputSource
 	evmReader := evmreader.NewEvmReader(
-		mockEthClient, nil, mockInputSource, mockDatabase, uint64(inputBoxDeploymentBlock), "0", nil, true,
+		mockEthClient, nil, mockDatabase, "0", nil, true,
 	)
 	s.espressoReader = NewEspressoReader(
 		espressoApiURL,
