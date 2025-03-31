@@ -28,12 +28,14 @@ func (r *postgresRepository) CreateApplication(
 			table.Application.Name,
 			table.Application.IapplicationAddress,
 			table.Application.IconsensusAddress,
+			table.Application.IinputboxAddress,
 			table.Application.TemplateHash,
 			table.Application.TemplateURI,
 			table.Application.EpochLength,
+			table.Application.DataAvailability,
 			table.Application.State,
-			table.Application.LastProcessedBlock,
-			table.Application.LastClaimCheckBlock,
+			table.Application.IinputboxBlock,
+			table.Application.LastInputCheckBlock,
 			table.Application.LastOutputCheckBlock,
 			table.Application.ProcessedInputs,
 		).
@@ -41,12 +43,14 @@ func (r *postgresRepository) CreateApplication(
 			app.Name,
 			app.IApplicationAddress,
 			app.IConsensusAddress,
+			app.IInputBoxAddress,
 			app.TemplateHash,
 			app.TemplateURI,
 			app.EpochLength,
+			app.DataAvailability[:],
 			app.State,
-			app.LastProcessedBlock,
-			app.LastClaimCheckBlock,
+			app.IInputBoxBlock,
+			app.LastInputCheckBlock,
 			app.LastOutputCheckBlock,
 			app.ProcessedInputs,
 		).
@@ -101,18 +105,21 @@ func (r *postgresRepository) GetApplication(
 			table.Application.Name,
 			table.Application.IapplicationAddress,
 			table.Application.IconsensusAddress,
+			table.Application.IinputboxAddress,
 			table.Application.TemplateHash,
 			table.Application.TemplateURI,
 			table.Application.EpochLength,
+			table.Application.DataAvailability,
 			table.Application.State,
 			table.Application.Reason,
-			table.Application.LastProcessedBlock,
-			table.Application.LastClaimCheckBlock,
+			table.Application.IinputboxBlock,
+			table.Application.LastInputCheckBlock,
 			table.Application.LastOutputCheckBlock,
 			table.Application.ProcessedInputs,
 			table.Application.CreatedAt,
 			table.Application.UpdatedAt,
 			table.ExecutionParameters.ApplicationID,
+			table.ExecutionParameters.SnapshotPolicy,
 			table.ExecutionParameters.SnapshotRetention,
 			table.ExecutionParameters.AdvanceIncCycles,
 			table.ExecutionParameters.AdvanceMaxCycles,
@@ -146,18 +153,21 @@ func (r *postgresRepository) GetApplication(
 		&app.Name,
 		&app.IApplicationAddress,
 		&app.IConsensusAddress,
+		&app.IInputBoxAddress,
 		&app.TemplateHash,
 		&app.TemplateURI,
 		&app.EpochLength,
+		&app.DataAvailability,
 		&app.State,
 		&app.Reason,
-		&app.LastProcessedBlock,
-		&app.LastClaimCheckBlock,
+		&app.IInputBoxBlock,
+		&app.LastInputCheckBlock,
 		&app.LastOutputCheckBlock,
 		&app.ProcessedInputs,
 		&app.CreatedAt,
 		&app.UpdatedAt,
 		&app.ExecutionParameters.ApplicationID,
+		&app.ExecutionParameters.SnapshotPolicy,
 		&app.ExecutionParameters.SnapshotRetention,
 		&app.ExecutionParameters.AdvanceIncCycles,
 		&app.ExecutionParameters.AdvanceMaxCycles,
@@ -195,13 +205,15 @@ func (r *postgresRepository) UpdateApplication(
 			table.Application.Name,
 			table.Application.IapplicationAddress,
 			table.Application.IconsensusAddress,
+			table.Application.IinputboxAddress,
 			table.Application.TemplateHash,
 			table.Application.TemplateURI,
 			table.Application.EpochLength,
+			table.Application.DataAvailability,
 			table.Application.State,
 			table.Application.Reason,
-			table.Application.LastProcessedBlock,
-			table.Application.LastClaimCheckBlock,
+			table.Application.IinputboxBlock,
+			table.Application.LastInputCheckBlock,
 			table.Application.LastOutputCheckBlock,
 			table.Application.ProcessedInputs,
 		).
@@ -209,13 +221,15 @@ func (r *postgresRepository) UpdateApplication(
 			app.Name,
 			app.IApplicationAddress,
 			app.IConsensusAddress,
+			app.IInputBoxAddress,
 			app.TemplateHash,
 			app.TemplateURI,
 			app.EpochLength,
+			app.DataAvailability[:],
 			app.State,
 			app.Reason,
-			app.LastProcessedBlock,
-			app.LastClaimCheckBlock,
+			app.IInputBoxBlock,
+			app.LastInputCheckBlock,
 			app.LastOutputCheckBlock,
 			app.ProcessedInputs,
 		).
@@ -243,6 +257,48 @@ func (r *postgresRepository) UpdateApplicationState(
 			reason,
 		).
 		WHERE(table.Application.ID.EQ(postgres.Int(appID)))
+
+	sqlStr, args := updateStmt.Sql()
+	_, err := r.db.Exec(ctx, sqlStr, args...)
+	return err
+}
+
+func (r *postgresRepository) UpdateEventLastCheckBlock(
+	ctx context.Context,
+	appIDs []int64,
+	event model.MonitoredEvent,
+	blockNumber uint64,
+) error {
+	var column postgres.ColumnFloat
+	switch event {
+	case model.MonitoredEvent_InputAdded:
+		column = table.Application.LastInputCheckBlock
+	case model.MonitoredEvent_OutputExecuted:
+		column = table.Application.LastOutputCheckBlock
+	case model.MonitoredEvent_ClaimSubmitted:
+		fallthrough
+	case model.MonitoredEvent_ClaimAccepted:
+		fallthrough
+	default:
+		return fmt.Errorf("invalid monitored event type: %v", event)
+	}
+	if len(appIDs) == 0 {
+		return nil
+	}
+
+	ids := make([]postgres.Expression, len(appIDs))
+	for i, id := range appIDs {
+		ids[i] = postgres.Int(id)
+	}
+
+	updateStmt := table.Application.
+		UPDATE(
+			column,
+		).
+		SET(
+			postgres.RawFloat(fmt.Sprintf("%d", blockNumber)),
+		).
+		WHERE(table.Application.ID.IN(ids...))
 
 	sqlStr, args := updateStmt.Sql()
 	_, err := r.db.Exec(ctx, sqlStr, args...)
@@ -283,18 +339,21 @@ func (r *postgresRepository) ListApplications(
 			table.Application.Name,
 			table.Application.IapplicationAddress,
 			table.Application.IconsensusAddress,
+			table.Application.IinputboxAddress,
 			table.Application.TemplateHash,
 			table.Application.TemplateURI,
 			table.Application.EpochLength,
+			table.Application.DataAvailability,
 			table.Application.State,
 			table.Application.Reason,
-			table.Application.LastProcessedBlock,
-			table.Application.LastClaimCheckBlock,
+			table.Application.IinputboxBlock,
+			table.Application.LastInputCheckBlock,
 			table.Application.LastOutputCheckBlock,
 			table.Application.ProcessedInputs,
 			table.Application.CreatedAt,
 			table.Application.UpdatedAt,
 			table.ExecutionParameters.ApplicationID,
+			table.ExecutionParameters.SnapshotPolicy,
 			table.ExecutionParameters.SnapshotRetention,
 			table.ExecutionParameters.AdvanceIncCycles,
 			table.ExecutionParameters.AdvanceMaxCycles,
@@ -322,6 +381,9 @@ func (r *postgresRepository) ListApplications(
 	conditions := []postgres.BoolExpression{}
 	if f.State != nil {
 		conditions = append(conditions, table.Application.State.EQ(postgres.NewEnumValue(f.State.String())))
+	}
+	if f.DataAvailability != nil {
+		conditions = append(conditions, table.Application.DataAvailability.EQ(postgres.Bytea(f.DataAvailability[:])))
 	}
 
 	if len(conditions) > 0 {
@@ -354,18 +416,21 @@ func (r *postgresRepository) ListApplications(
 			&app.Name,
 			&app.IApplicationAddress,
 			&app.IConsensusAddress,
+			&app.IInputBoxAddress,
 			&app.TemplateHash,
 			&app.TemplateURI,
 			&app.EpochLength,
+			&app.DataAvailability,
 			&app.State,
 			&app.Reason,
-			&app.LastProcessedBlock,
-			&app.LastClaimCheckBlock,
+			&app.IInputBoxBlock,
+			&app.LastInputCheckBlock,
 			&app.LastOutputCheckBlock,
 			&app.ProcessedInputs,
 			&app.CreatedAt,
 			&app.UpdatedAt,
 			&app.ExecutionParameters.ApplicationID,
+			&app.ExecutionParameters.SnapshotPolicy,
 			&app.ExecutionParameters.SnapshotRetention,
 			&app.ExecutionParameters.AdvanceIncCycles,
 			&app.ExecutionParameters.AdvanceMaxCycles,

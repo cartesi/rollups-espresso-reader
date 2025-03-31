@@ -14,15 +14,19 @@
 # limitations under the License.
 #
 
+ROLLUPS_CONTRACTS_ABI_BASEDIR:= rollups-contracts/
+CONTRACTS_VERSION := 2.0.0-rc.17
+CONTRACTS_URL:=https://github.com/cartesi/rollups-contracts/releases/download/
+CONTRACTS_ARTIFACT:=rollups-contracts-$(CONTRACTS_VERSION)-artifacts.tar.gz
+CONTRACTS_SHA256:=f87096ea7e7a3ff38c2c3807ae3d1711f23b8ce0ff843423c5b73356ef8b8bc7
+
 env:
 	@echo export CARTESI_LOG_LEVEL="debug"
-	@echo export CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=""
-	@echo export CARTESI_BLOCKCHAIN_WS_ENDPOINT=""
-	@echo export CARTESI_POSTGRES_ENDPOINT="postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
+	@echo export CARTESI_BLOCKCHAIN_HTTP_ENDPOINT="http://localhost:8545"
+	@echo export CARTESI_BLOCKCHAIN_WS_ENDPOINT="ws://localhost:8545"
+	@echo export CARTESI_DATABASE_CONNECTION="postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
 	@echo export PATH=\"$(CURDIR):$$PATH\"
-	@echo export ESPRESSO_BASE_URL="https://query.decaf.testnet.espresso.network"
-	@echo export ESPRESSO_STARTING_BLOCK="1490657"
-	@echo export ESPRESSO_NAMESPACE="55555"
+	@echo export ESPRESSO_BASE_URL="http://localhost:24000"
 
 migrate: ## Run migration on development database
 	@echo "Running PostgreSQL migration"
@@ -31,11 +35,20 @@ migrate: ## Run migration on development database
 generate-db: ## Generate repository/db with Jet
 	@echo "Generating internal/repository/db with jet"
 	@rm -rf internal/repository/postgres/db
-	@go run github.com/go-jet/jet/v2/cmd/jet -dsn=$$CARTESI_POSTGRES_ENDPOINT -schema=public -path=./internal/repository/postgres/db
+	@go run github.com/go-jet/jet/v2/cmd/jet -dsn=$$CARTESI_DATABASE_CONNECTION -schema=public -path=./internal/repository/postgres/db
 	@rm -rf internal/repository/postgres/db/rollupsdb/public/model
-	@go run github.com/go-jet/jet/v2/cmd/jet -dsn=$$CARTESI_POSTGRES_ENDPOINT -schema=espresso -path=./internal/repository/postgres/db
+	@go run github.com/go-jet/jet/v2/cmd/jet -dsn=$$CARTESI_DATABASE_CONNECTION -schema=espresso -path=./internal/repository/postgres/db
 	@rm -rf internal/repository/postgres/db/rollupsdb/espresso/model
 
-generate:
+generate: $(ROLLUPS_CONTRACTS_ABI_BASEDIR)/.stamp ## Generate the file that are committed to the repo
 	@echo "Generating Go files"
 	@go generate ./internal/... ./pkg/...
+
+$(ROLLUPS_CONTRACTS_ABI_BASEDIR)/.stamp:
+	@echo "Downloading rollups-contracts artifacts"
+	@mkdir -p $(ROLLUPS_CONTRACTS_ABI_BASEDIR)
+	@curl -sSL $(CONTRACTS_URL)/v$(CONTRACTS_VERSION)/$(CONTRACTS_ARTIFACT) -o $(CONTRACTS_ARTIFACT)
+	@echo "$(CONTRACTS_SHA256)  $(CONTRACTS_ARTIFACT)" | shasum -a 256 --check > /dev/null
+	@tar -zxf $(CONTRACTS_ARTIFACT) -C $(ROLLUPS_CONTRACTS_ABI_BASEDIR)
+	@touch $@
+	@rm $(CONTRACTS_ARTIFACT)

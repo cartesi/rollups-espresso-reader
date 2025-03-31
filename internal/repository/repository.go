@@ -19,9 +19,8 @@ type Pagination struct {
 }
 
 type ApplicationFilter struct {
-	State   *ApplicationState
-	Name    *string
-	Address *string
+	State            *ApplicationState
+	DataAvailability *DataAvailabilitySelector
 }
 
 type EpochFilter struct {
@@ -42,11 +41,15 @@ type Range struct {
 }
 
 type OutputFilter struct {
-	InputIndex *uint64
-	BlockRange *Range
+	EpochIndex     *uint64
+	InputIndex     *uint64
+	BlockRange     *Range
+	OutputType     *[]byte
+	VoucherAddress *common.Address
 }
 
 type ReportFilter struct {
+	EpochIndex *uint64
 	InputIndex *uint64
 }
 
@@ -55,6 +58,7 @@ type ApplicationRepository interface {
 	GetApplication(ctx context.Context, nameOrAddress string) (*Application, error)
 	UpdateApplication(ctx context.Context, app *Application) error
 	UpdateApplicationState(ctx context.Context, appID int64, state ApplicationState, reason *string) error
+	UpdateEventLastCheckBlock(ctx context.Context, appIDs []int64, event MonitoredEvent, blockNumber uint64) error
 	DeleteApplication(ctx context.Context, id int64) error
 	ListApplications(ctx context.Context, f ApplicationFilter, p Pagination) ([]*Application, uint64, error)
 }
@@ -89,6 +93,15 @@ type NodeConfigRepository interface {
 }
 
 type EspressoRepository interface {
+	GetEspressoConfig(
+		ctx context.Context,
+		nameOrAddress string,
+	) (uint64, uint64, error)
+	UpdateEspressoConfig(
+		ctx context.Context,
+		nameOrAddress string,
+		startingBlock uint64, namespace uint64,
+	) error
 	GetEspressoNonce(
 		ctx context.Context,
 		senderAddress string,

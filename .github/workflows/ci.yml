@@ -10,7 +10,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     env:
-      CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
+      CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
     services:
       postgres:
         image: postgres:16
@@ -78,7 +78,7 @@ jobs:
       
       - name: Migrate Espresso DB
         run: |
-          # migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_POSTGRES_ENDPOINT" up
+          # migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_DATABASE_CONNECTION" up
           eval $(make env)
           make migrate
           make generate-db
@@ -230,10 +230,10 @@ jobs:
           CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
           CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
           CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
-          CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable'
+          CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable'
         run: |
           docker run -d --env-file ./ci/env.nodev2-espressolocal \
-            -e CARTESI_POSTGRES_ENDPOINT=$CARTESI_POSTGRES_ENDPOINT \
+            -e CARTESI_DATABASE_CONNECTION=$CARTESI_DATABASE_CONNECTION \
             --rm --network=host \
             --name c_espresso espresso
           sleep 10
@@ -371,7 +371,7 @@ jobs:
           CARTESI_BLOCKCHAIN_ID: '11155111'
           CARTESI_CONTRACTS_INPUT_BOX_ADDRESS: '0x593E5BCf894D6829Dd26D0810DA7F064406aebB6'
           CARTESI_CONTRACTS_INPUT_BOX_DEPLOYMENT_BLOCK_NUMBER: '6850934'
-          CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
+          CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
           ESPRESSO_BASE_URL: 'https://query.decaf.testnet.espresso.network'
           ESPRESSO_STARTING_BLOCK: '1490657'
           ESPRESSO_NAMESPACE: '55555'

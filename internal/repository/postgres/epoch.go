@@ -197,7 +197,7 @@ func (r *postgresRepository) CreateEpochsAndInputs(
 	// Update last processed block
 	appUpdateStmt := table.Application.
 		UPDATE(
-			table.Application.LastProcessedBlock,
+			table.Application.LastInputCheckBlock,
 		).
 		SET(
 			postgres.RawFloat(fmt.Sprintf("%d", blockNumber)),

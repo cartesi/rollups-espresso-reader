@@ -156,6 +156,18 @@ func GetEvmReaderDefaultBlock() DefaultBlock {
 	return val
 }
 
+func GetDatabaseConnection() string {
+	s, ok := os.LookupEnv("CARTESI_DATABASE_CONNECTION")
+	if !ok {
+		s = ""
+	}
+	val, err := toString(s)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse CARTESI_DATABASE_CONNECTION: %v", err))
+	}
+	return val
+}
+
 func GetBaseUrl() string {
 	s, ok := os.LookupEnv("ESPRESSO_BASE_URL")
 	if !ok {
@@ -168,18 +180,6 @@ func GetBaseUrl() string {
 	return val
 }
 
-func GetNamespace() uint64 {
-	s, ok := os.LookupEnv("ESPRESSO_NAMESPACE")
-	if !ok {
-		s = "0"
-	}
-	val, err := toUint64(s)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse ESPRESSO_NAMESPACE: %v", err))
-	}
-	return val
-}
-
 func GetServiceEndpoint() string {
 	s, ok := os.LookupEnv("ESPRESSO_SERVICE_ENDPOINT")
 	if !ok {
@@ -188,18 +188,6 @@ func GetServiceEndpoint() string {
 	val, err := toString(s)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse ESPRESSO_SERVICE_ENDPOINT: %v", err))
-	}
-	return val
-}
-
-func GetStartingBlock() uint64 {
-	s, ok := os.LookupEnv("ESPRESSO_STARTING_BLOCK")
-	if !ok {
-		s = "0"
-	}
-	val, err := toUint64(s)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse ESPRESSO_STARTING_BLOCK: %v", err))
 	}
 	return val
 }
@@ -236,18 +224,6 @@ func GetLogPrettyEnabled() bool {
 	val, err := toBool(s)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse CARTESI_LOG_PRETTY_ENABLED: %v", err))
-	}
-	return val
-}
-
-func GetPostgresEndpoint() string {
-	s, ok := os.LookupEnv("CARTESI_POSTGRES_ENDPOINT")
-	if !ok {
-		s = ""
-	}
-	val, err := toString(s)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse CARTESI_POSTGRES_ENDPOINT: %v", err))
 	}
 	return val
 }

@@ -4,52 +4,91 @@
 package evmreader
 
 import (
-	appcontract "github.com/cartesi/rollups-espresso-reader/pkg/contracts/iapplication"
+	"math/big"
 
+	. "github.com/cartesi/rollups-espresso-reader/internal/model"
+	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/iapplication"
+	"github.com/cartesi/rollups-espresso-reader/pkg/ethutil"
+
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-// IConsensus Wrapper
+// IApplication Wrapper
 type ApplicationContractAdapter struct {
-	application *appcontract.IApplication
+	application        *iapplication.IApplication
+	client             *ethclient.Client
+	applicationAddress common.Address
 }
 
 func NewApplicationContractAdapter(
 	appAddress common.Address,
 	client *ethclient.Client,
 ) (*ApplicationContractAdapter, error) {
-	applicationContract, err := appcontract.NewIApplication(appAddress, client)
+	applicationContract, err := iapplication.NewIApplication(appAddress, client)
 	if err != nil {
 		return nil, err
 	}
 	return &ApplicationContractAdapter{
-		application: applicationContract,
+		application:        applicationContract,
+		applicationAddress: appAddress,
+		client:             client,
 	}, nil
 }
 
-func (a *ApplicationContractAdapter) GetConsensus(opts *bind.CallOpts) (common.Address, error) {
-	return a.application.GetConsensus(opts)
+func buildOutputExecutedFilterQuery(
+	opts *bind.FilterOpts,
+	applicationAddress common.Address,
+) (q ethereum.FilterQuery, err error) {
+	c, err := iapplication.IApplicationMetaData.GetAbi()
+	if err != nil {
+		return q, err
+	}
+
+	topics, err := abi.MakeTopics(
+		[]any{c.Events[MonitoredEvent_OutputExecuted.String()].ID},
+	)
+	if err != nil {
+		return q, err
+	}
+
+	q = ethereum.FilterQuery{
+		Addresses: []common.Address{applicationAddress},
+		FromBlock: new(big.Int).SetUint64(opts.Start),
+		Topics:    topics,
+	}
+	if opts.End != nil {
+		q.ToBlock = new(big.Int).SetUint64(*opts.End)
+	}
+	return q, err
 }
 
 func (a *ApplicationContractAdapter) RetrieveOutputExecutionEvents(
 	opts *bind.FilterOpts,
-) ([]*appcontract.IApplicationOutputExecuted, error) {
-
-	itr, err := a.application.FilterOutputExecuted(opts)
+) ([]*iapplication.IApplicationOutputExecuted, error) {
+	q, err := buildOutputExecutedFilterQuery(opts, a.applicationAddress)
 	if err != nil {
 		return nil, err
 	}
-	defer itr.Close()
 
-	var events []*appcontract.IApplicationOutputExecuted
-	for itr.Next() {
-		outputExecutedEvent := itr.Event
-		events = append(events, outputExecutedEvent)
-	}
-	if err = itr.Error(); err != nil {
+	itr, err := ethutil.ChunkedFilterLogs(opts.Context, a.client, q)
+	if err != nil {
 		return nil, err
+	}
+
+	var events []*iapplication.IApplicationOutputExecuted
+	for log, err := range itr {
+		if err != nil {
+			return nil, err
+		}
+		ev, err := a.application.ParseOutputExecuted(*log)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, ev)
 	}
 	return events, nil
 }
