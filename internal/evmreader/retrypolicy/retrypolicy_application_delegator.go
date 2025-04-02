@@ -11,7 +11,6 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/iapplication"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type ApplicationRetryPolicyDelegator struct {
@@ -30,16 +29,6 @@ func NewApplicationWithRetryPolicy(
 		maxRetries:        maxRetries,
 		delayBetweenCalls: delayBetweenCalls,
 	}
-}
-
-func (d *ApplicationRetryPolicyDelegator) GetConsensus(opts *bind.CallOpts,
-) (common.Address, error) {
-	return retry.CallFunctionWithRetryPolicy(d.delegate.GetConsensus,
-		opts,
-		d.maxRetries,
-		d.delayBetweenCalls,
-		"Application::GetConsensus",
-	)
 }
 
 func (d *ApplicationRetryPolicyDelegator) RetrieveOutputExecutionEvents(

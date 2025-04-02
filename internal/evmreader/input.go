@@ -46,7 +46,6 @@ func (r *EvmReader) ReadAndStoreInputs(
 
 	// Index Inputs into epochs and handle epoch finalization
 	for address, inputs := range appInputsMap {
-
 		app, exists := addrToApp[address]
 		if !exists {
 			slog.Error("Application address on input not found",
@@ -85,13 +84,20 @@ func (r *EvmReader) ReadAndStoreInputs(
 				if currentEpoch.Index == inputEpochIndex {
 					// Input can only be added to open epochs
 					if currentEpoch.Status != EpochStatus_Open {
-						slog.Error("Current epoch is not open",
+						reason := "Received inputs for an epoch that was not open. Should never happen"
+
+						slog.Error(reason,
 							"application", app.Name,
 							"address", address,
 							"epoch_index", currentEpoch.Index,
 							"status", currentEpoch.Status,
 						)
-						return fmt.Errorf("Current epoch is not open. Should never happen")
+						err := r.repository.UpdateApplicationState(ctx, app.ID, ApplicationState_Inoperable, &reason)
+
+						if err != nil {
+							slog.Error("failed to update application state to inoperable", "application", app.Name, "err", err)
+						}
+						return errors.New(reason)
 					}
 				} else {
 					if currentEpoch.Status == EpochStatus_Open {
@@ -200,6 +206,36 @@ func (r *EvmReader) ReadAndStoreInputs(
 
 	}
 
+	// Update LastInputCheckBlock for applications that didn't have any inputs
+	// (for apps with inputs, LastInputCheckBlock is already updated in CreateEpochsAndInputs)
+	appsToUpdate := []int64{}
+	// Find applications that didn't have any inputs in appInputsMap
+	for _, app := range apps {
+		appAddress := app.IApplicationAddress
+		// If the app doesn't have any inputs in the map or has an empty slice
+		if inputs, exists := appInputsMap[appAddress]; !exists || len(inputs) == 0 {
+			appsToUpdate = append(appsToUpdate, app.ID)
+		}
+	}
+	// Update LastInputCheckBlock for applications without inputs
+	if len(appsToUpdate) > 0 {
+		err := r.repository.UpdateEventLastCheckBlock(ctx, appsToUpdate, MonitoredEvent_InputAdded, mostRecentBlockNumber)
+		if err != nil {
+			slog.Error("Failed to update LastInputCheckBlock for applications without inputs",
+				"app_ids", appsToUpdate,
+				"block_number", mostRecentBlockNumber,
+				"error", err,
+			)
+			// We don't return an error here as we've already processed the inputs
+			// and this is just an update to the last check block
+		} else {
+			slog.Debug("Updated LastInputCheckBlock for applications without inputs",
+				"app_ids", appsToUpdate,
+				"block_number", mostRecentBlockNumber,
+			)
+		}
+	}
+
 	return nil
 }
 
@@ -209,7 +245,6 @@ func (r *EvmReader) readInputsFromBlockchain(
 	apps []TypeExportApplication,
 	startBlock, endBlock uint64,
 ) (map[common.Address][]*Input, error) {
-
 	// Initialize app input map
 	var appInputsMap = make(map[common.Address][]*Input)
 	var appsAddresses = []common.Address{}
@@ -218,16 +253,16 @@ func (r *EvmReader) readInputsFromBlockchain(
 		appsAddresses = append(appsAddresses, app.IApplicationAddress)
 	}
 
+	inputSource := apps[0].InputSource
 	opts := bind.FilterOpts{
 		Context: ctx,
 		Start:   startBlock,
 		End:     &endBlock,
 	}
-	inputsEvents, err := r.inputSource.RetrieveInputs(&opts, appsAddresses, nil)
+	inputsEvents, err := inputSource.RetrieveInputs(&opts, appsAddresses, nil)
 	if err != nil {
 		return nil, err
 	}
-
 	// Order inputs as order is not enforced by RetrieveInputs method nor the APIs
 	for _, event := range inputsEvents {
 		slog.Debug("Received input",
@@ -251,21 +286,7 @@ func (r *EvmReader) readInputsFromBlockchain(
 
 // byLastProcessedBlock key extractor function intended to be used with `indexApps` function
 func byLastProcessedBlock(app application) uint64 {
-	return app.LastProcessedBlock
-}
-
-// getEpochLength reads the application epoch length given it's consensus contract
-func getEpochLength(consensus ConsensusContract) (uint64, error) {
-
-	epochLengthRaw, err := consensus.GetEpochLength(nil)
-	if err != nil {
-		return 0, errors.Join(
-			fmt.Errorf("error retrieving application epoch length"),
-			err,
-		)
-	}
-
-	return epochLengthRaw.Uint64(), nil
+	return app.LastInputCheckBlock
 }
 
 func (r *EvmReader) modifyIndexInRaw(rawData []byte, currentIndex uint64) ([]byte, error) {

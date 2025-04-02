@@ -20,7 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
-const baseContractsPath = "../../rollups-contracts/export/artifacts/contracts/"
+const baseContractsPath = "../../rollups-contracts/"
 
 type contractBinding struct {
 	jsonPath string
@@ -29,36 +29,40 @@ type contractBinding struct {
 
 var bindings = []contractBinding{
 	{
-		jsonPath: baseContractsPath + "consensus/authority/IAuthorityFactory.sol/IAuthorityFactory.json",
+		jsonPath: baseContractsPath + "IAuthorityFactory.sol/IAuthorityFactory.json",
 		typeName: "IAuthorityFactory",
 	},
 	{
-		jsonPath: baseContractsPath + "consensus/IConsensus.sol/IConsensus.json",
+		jsonPath: baseContractsPath + "IConsensus.sol/IConsensus.json",
 		typeName: "IConsensus",
 	},
 	{
-		jsonPath: baseContractsPath + "dapp/IApplication.sol/IApplication.json",
+		jsonPath: baseContractsPath + "IApplication.sol/IApplication.json",
 		typeName: "IApplication",
 	},
 	{
-		jsonPath: baseContractsPath + "dapp/IApplicationFactory.sol/IApplicationFactory.json",
+		jsonPath: baseContractsPath + "IApplicationFactory.sol/IApplicationFactory.json",
 		typeName: "IApplicationFactory",
 	},
 	{
-		jsonPath: baseContractsPath + "dapp/ISelfHostedApplicationFactory.sol/ISelfHostedApplicationFactory.json",
+		jsonPath: baseContractsPath + "ISelfHostedApplicationFactory.sol/ISelfHostedApplicationFactory.json",
 		typeName: "ISelfHostedApplicationFactory",
 	},
 	{
-		jsonPath: baseContractsPath + "inputs/IInputBox.sol/IInputBox.json",
+		jsonPath: baseContractsPath + "IInputBox.sol/IInputBox.json",
 		typeName: "IInputBox",
 	},
 	{
-		jsonPath: baseContractsPath + "common/Inputs.sol/Inputs.json",
+		jsonPath: baseContractsPath + "Inputs.sol/Inputs.json",
 		typeName: "Inputs",
 	},
 	{
-		jsonPath: baseContractsPath + "common/Outputs.sol/Outputs.json",
+		jsonPath: baseContractsPath + "Outputs.sol/Outputs.json",
 		typeName: "Outputs",
+	},
+	{
+		jsonPath: baseContractsPath + "DataAvailability.sol/DataAvailability.json",
+		typeName: "DataAvailability",
 	},
 }
 

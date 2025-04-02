@@ -3,6 +3,13 @@
 
 CREATE SCHEMA espresso;
 
+CREATE TABLE IF NOT EXISTS espresso.espresso_config
+(
+    "application_address" ethereum_address PRIMARY KEY,
+	"starting_block" uint64 NOT NULL,
+    "namespace" uint64 NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS espresso.espresso_nonce
 (
     "sender_address" ethereum_address NOT NULL,

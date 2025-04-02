@@ -52,7 +52,7 @@ Run Anvil
 ```sh
 cd rollups-node
 make devnet
-make run-devnet
+make start-devnet
 ```
 
 Run the image

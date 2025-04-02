@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/config"
+	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/factory"
@@ -44,9 +45,8 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 		TemplateURI:          templatePath,
 		TemplateHash:         common.HexToHash(templateHash),
 		State:                model.ApplicationState_Enabled,
-		LastProcessedBlock:   0,
+		LastInputCheckBlock:  0,
 		LastOutputCheckBlock: 0,
-		LastClaimCheckBlock:  0,
 		EpochLength:          10,
 	}
 	suite.senderAddress = common.HexToAddress("0x590F92fEa8df163fFF2d7Df266364De7CE8F9E16").String()
@@ -60,7 +60,7 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 	}
 	suite.Nil(err)
 
-	config, err := repository.LoadNodeConfig[model.NodeConfigValue](suite.ctx, suite.database, model.BaseConfigKey)
+	config, err := repository.LoadNodeConfig[evmreader.PersistentConfig](suite.ctx, suite.database, evmreader.EvmReaderConfigKey)
 	if err != nil {
 		slog.Error("db config", "error", err)
 	}
@@ -73,7 +73,6 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 		suite.c.EspressoStartingBlock,
 		suite.c.EspressoNamespace,
 		config.Value.ChainID,
-		config.Value.InputBoxDeploymentBlock,
 		suite.c.EspressoServiceEndpoint,
 		suite.c.MaxRetries,
 		suite.c.MaxDelay,
@@ -200,11 +199,9 @@ func (suite *EspressoReaderTestSuite) TestEpoch() {
 }
 
 func (suite *EspressoReaderTestSuite) TestNodeConfig() {
-	nodeConfig, err := repository.LoadNodeConfig[model.NodeConfigValue](suite.ctx, suite.database, model.BaseConfigKey)
+	nodeConfig, err := repository.LoadNodeConfig[evmreader.PersistentConfig](suite.ctx, suite.database, evmreader.EvmReaderConfigKey)
 	suite.Nil(err)
 	suite.Equal(model.DefaultBlock_Finalized, nodeConfig.Value.DefaultBlock)
-	// suite.Equal(, nodeConfig.InputBoxDeploymentBlock)
-	suite.Equal(common.HexToAddress("0x593E5BCf894D6829Dd26D0810DA7F064406aebB6").String(), nodeConfig.Value.InputBoxAddress)
 	suite.Equal(uint64(11155111), nodeConfig.Value.ChainID)
 }
 

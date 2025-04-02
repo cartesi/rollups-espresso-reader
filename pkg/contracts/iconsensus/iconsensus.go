@@ -31,7 +31,7 @@ var (
 
 // IConsensusMetaData contains all meta data concerning the IConsensus contract.
 var IConsensusMetaData = &bind.MetaData{
-	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"appContract\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"lastProcessedBlockNumber\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"claim\",\"type\":\"bytes32\"}],\"name\":\"ClaimAcceptance\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"submitter\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"appContract\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"lastProcessedBlockNumber\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"claim\",\"type\":\"bytes32\"}],\"name\":\"ClaimSubmission\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"getEpochLength\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"appContract\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"lastProcessedBlockNumber\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"claim\",\"type\":\"bytes32\"}],\"name\":\"submitClaim\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"appContract\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"claim\",\"type\":\"bytes32\"}],\"name\":\"wasClaimAccepted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"getEpochLength\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOutputsMerkleRootValid\",\"inputs\":[{\"name\":\"appContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"outputsMerkleRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"submitClaim\",\"inputs\":[{\"name\":\"appContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"lastProcessedBlockNumber\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"outputsMerkleRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supportsInterface\",\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"ClaimAccepted\",\"inputs\":[{\"name\":\"appContract\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"lastProcessedBlockNumber\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"outputsMerkleRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ClaimSubmitted\",\"inputs\":[{\"name\":\"submitter\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"appContract\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"lastProcessedBlockNumber\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"outputsMerkleRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false}]",
 }
 
 // IConsensusABI is the input ABI used to generate the binding from.
@@ -211,12 +211,12 @@ func (_IConsensus *IConsensusCallerSession) GetEpochLength() (*big.Int, error) {
 	return _IConsensus.Contract.GetEpochLength(&_IConsensus.CallOpts)
 }
 
-// WasClaimAccepted is a free data retrieval call binding the contract method 0x9618f35b.
+// IsOutputsMerkleRootValid is a free data retrieval call binding the contract method 0xe5cc8664.
 //
-// Solidity: function wasClaimAccepted(address appContract, bytes32 claim) view returns(bool)
-func (_IConsensus *IConsensusCaller) WasClaimAccepted(opts *bind.CallOpts, appContract common.Address, claim [32]byte) (bool, error) {
+// Solidity: function isOutputsMerkleRootValid(address appContract, bytes32 outputsMerkleRoot) view returns(bool)
+func (_IConsensus *IConsensusCaller) IsOutputsMerkleRootValid(opts *bind.CallOpts, appContract common.Address, outputsMerkleRoot [32]byte) (bool, error) {
 	var out []interface{}
-	err := _IConsensus.contract.Call(opts, &out, "wasClaimAccepted", appContract, claim)
+	err := _IConsensus.contract.Call(opts, &out, "isOutputsMerkleRootValid", appContract, outputsMerkleRoot)
 
 	if err != nil {
 		return *new(bool), err
@@ -228,44 +228,75 @@ func (_IConsensus *IConsensusCaller) WasClaimAccepted(opts *bind.CallOpts, appCo
 
 }
 
-// WasClaimAccepted is a free data retrieval call binding the contract method 0x9618f35b.
+// IsOutputsMerkleRootValid is a free data retrieval call binding the contract method 0xe5cc8664.
 //
-// Solidity: function wasClaimAccepted(address appContract, bytes32 claim) view returns(bool)
-func (_IConsensus *IConsensusSession) WasClaimAccepted(appContract common.Address, claim [32]byte) (bool, error) {
-	return _IConsensus.Contract.WasClaimAccepted(&_IConsensus.CallOpts, appContract, claim)
+// Solidity: function isOutputsMerkleRootValid(address appContract, bytes32 outputsMerkleRoot) view returns(bool)
+func (_IConsensus *IConsensusSession) IsOutputsMerkleRootValid(appContract common.Address, outputsMerkleRoot [32]byte) (bool, error) {
+	return _IConsensus.Contract.IsOutputsMerkleRootValid(&_IConsensus.CallOpts, appContract, outputsMerkleRoot)
 }
 
-// WasClaimAccepted is a free data retrieval call binding the contract method 0x9618f35b.
+// IsOutputsMerkleRootValid is a free data retrieval call binding the contract method 0xe5cc8664.
 //
-// Solidity: function wasClaimAccepted(address appContract, bytes32 claim) view returns(bool)
-func (_IConsensus *IConsensusCallerSession) WasClaimAccepted(appContract common.Address, claim [32]byte) (bool, error) {
-	return _IConsensus.Contract.WasClaimAccepted(&_IConsensus.CallOpts, appContract, claim)
+// Solidity: function isOutputsMerkleRootValid(address appContract, bytes32 outputsMerkleRoot) view returns(bool)
+func (_IConsensus *IConsensusCallerSession) IsOutputsMerkleRootValid(appContract common.Address, outputsMerkleRoot [32]byte) (bool, error) {
+	return _IConsensus.Contract.IsOutputsMerkleRootValid(&_IConsensus.CallOpts, appContract, outputsMerkleRoot)
+}
+
+// SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
+//
+// Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
+func (_IConsensus *IConsensusCaller) SupportsInterface(opts *bind.CallOpts, interfaceId [4]byte) (bool, error) {
+	var out []interface{}
+	err := _IConsensus.contract.Call(opts, &out, "supportsInterface", interfaceId)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
+//
+// Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
+func (_IConsensus *IConsensusSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
+	return _IConsensus.Contract.SupportsInterface(&_IConsensus.CallOpts, interfaceId)
+}
+
+// SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
+//
+// Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
+func (_IConsensus *IConsensusCallerSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
+	return _IConsensus.Contract.SupportsInterface(&_IConsensus.CallOpts, interfaceId)
 }
 
 // SubmitClaim is a paid mutator transaction binding the contract method 0x6470af00.
 //
-// Solidity: function submitClaim(address appContract, uint256 lastProcessedBlockNumber, bytes32 claim) returns()
-func (_IConsensus *IConsensusTransactor) SubmitClaim(opts *bind.TransactOpts, appContract common.Address, lastProcessedBlockNumber *big.Int, claim [32]byte) (*types.Transaction, error) {
-	return _IConsensus.contract.Transact(opts, "submitClaim", appContract, lastProcessedBlockNumber, claim)
+// Solidity: function submitClaim(address appContract, uint256 lastProcessedBlockNumber, bytes32 outputsMerkleRoot) returns()
+func (_IConsensus *IConsensusTransactor) SubmitClaim(opts *bind.TransactOpts, appContract common.Address, lastProcessedBlockNumber *big.Int, outputsMerkleRoot [32]byte) (*types.Transaction, error) {
+	return _IConsensus.contract.Transact(opts, "submitClaim", appContract, lastProcessedBlockNumber, outputsMerkleRoot)
 }
 
 // SubmitClaim is a paid mutator transaction binding the contract method 0x6470af00.
 //
-// Solidity: function submitClaim(address appContract, uint256 lastProcessedBlockNumber, bytes32 claim) returns()
-func (_IConsensus *IConsensusSession) SubmitClaim(appContract common.Address, lastProcessedBlockNumber *big.Int, claim [32]byte) (*types.Transaction, error) {
-	return _IConsensus.Contract.SubmitClaim(&_IConsensus.TransactOpts, appContract, lastProcessedBlockNumber, claim)
+// Solidity: function submitClaim(address appContract, uint256 lastProcessedBlockNumber, bytes32 outputsMerkleRoot) returns()
+func (_IConsensus *IConsensusSession) SubmitClaim(appContract common.Address, lastProcessedBlockNumber *big.Int, outputsMerkleRoot [32]byte) (*types.Transaction, error) {
+	return _IConsensus.Contract.SubmitClaim(&_IConsensus.TransactOpts, appContract, lastProcessedBlockNumber, outputsMerkleRoot)
 }
 
 // SubmitClaim is a paid mutator transaction binding the contract method 0x6470af00.
 //
-// Solidity: function submitClaim(address appContract, uint256 lastProcessedBlockNumber, bytes32 claim) returns()
-func (_IConsensus *IConsensusTransactorSession) SubmitClaim(appContract common.Address, lastProcessedBlockNumber *big.Int, claim [32]byte) (*types.Transaction, error) {
-	return _IConsensus.Contract.SubmitClaim(&_IConsensus.TransactOpts, appContract, lastProcessedBlockNumber, claim)
+// Solidity: function submitClaim(address appContract, uint256 lastProcessedBlockNumber, bytes32 outputsMerkleRoot) returns()
+func (_IConsensus *IConsensusTransactorSession) SubmitClaim(appContract common.Address, lastProcessedBlockNumber *big.Int, outputsMerkleRoot [32]byte) (*types.Transaction, error) {
+	return _IConsensus.Contract.SubmitClaim(&_IConsensus.TransactOpts, appContract, lastProcessedBlockNumber, outputsMerkleRoot)
 }
 
-// IConsensusClaimAcceptanceIterator is returned from FilterClaimAcceptance and is used to iterate over the raw logs and unpacked data for ClaimAcceptance events raised by the IConsensus contract.
-type IConsensusClaimAcceptanceIterator struct {
-	Event *IConsensusClaimAcceptance // Event containing the contract specifics and raw log
+// IConsensusClaimAcceptedIterator is returned from FilterClaimAccepted and is used to iterate over the raw logs and unpacked data for ClaimAccepted events raised by the IConsensus contract.
+type IConsensusClaimAcceptedIterator struct {
+	Event *IConsensusClaimAccepted // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -279,7 +310,7 @@ type IConsensusClaimAcceptanceIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IConsensusClaimAcceptanceIterator) Next() bool {
+func (it *IConsensusClaimAcceptedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -288,7 +319,7 @@ func (it *IConsensusClaimAcceptanceIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IConsensusClaimAcceptance)
+			it.Event = new(IConsensusClaimAccepted)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -303,7 +334,7 @@ func (it *IConsensusClaimAcceptanceIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IConsensusClaimAcceptance)
+		it.Event = new(IConsensusClaimAccepted)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -319,53 +350,53 @@ func (it *IConsensusClaimAcceptanceIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IConsensusClaimAcceptanceIterator) Error() error {
+func (it *IConsensusClaimAcceptedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IConsensusClaimAcceptanceIterator) Close() error {
+func (it *IConsensusClaimAcceptedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IConsensusClaimAcceptance represents a ClaimAcceptance event raised by the IConsensus contract.
-type IConsensusClaimAcceptance struct {
+// IConsensusClaimAccepted represents a ClaimAccepted event raised by the IConsensus contract.
+type IConsensusClaimAccepted struct {
 	AppContract              common.Address
 	LastProcessedBlockNumber *big.Int
-	Claim                    [32]byte
+	OutputsMerkleRoot        [32]byte
 	Raw                      types.Log // Blockchain specific contextual infos
 }
 
-// FilterClaimAcceptance is a free log retrieval operation binding the contract event 0xd3e4892959c6ddb27e02bcaaebc0c1898d0f677b7360bf80339f10a8717957d3.
+// FilterClaimAccepted is a free log retrieval operation binding the contract event 0x0f2cd00a405c0d1a66050307b6722c4788db6ed57aa3589a5c38da535cc3ce63.
 //
-// Solidity: event ClaimAcceptance(address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 claim)
-func (_IConsensus *IConsensusFilterer) FilterClaimAcceptance(opts *bind.FilterOpts, appContract []common.Address) (*IConsensusClaimAcceptanceIterator, error) {
+// Solidity: event ClaimAccepted(address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 outputsMerkleRoot)
+func (_IConsensus *IConsensusFilterer) FilterClaimAccepted(opts *bind.FilterOpts, appContract []common.Address) (*IConsensusClaimAcceptedIterator, error) {
 
 	var appContractRule []interface{}
 	for _, appContractItem := range appContract {
 		appContractRule = append(appContractRule, appContractItem)
 	}
 
-	logs, sub, err := _IConsensus.contract.FilterLogs(opts, "ClaimAcceptance", appContractRule)
+	logs, sub, err := _IConsensus.contract.FilterLogs(opts, "ClaimAccepted", appContractRule)
 	if err != nil {
 		return nil, err
 	}
-	return &IConsensusClaimAcceptanceIterator{contract: _IConsensus.contract, event: "ClaimAcceptance", logs: logs, sub: sub}, nil
+	return &IConsensusClaimAcceptedIterator{contract: _IConsensus.contract, event: "ClaimAccepted", logs: logs, sub: sub}, nil
 }
 
-// WatchClaimAcceptance is a free log subscription operation binding the contract event 0xd3e4892959c6ddb27e02bcaaebc0c1898d0f677b7360bf80339f10a8717957d3.
+// WatchClaimAccepted is a free log subscription operation binding the contract event 0x0f2cd00a405c0d1a66050307b6722c4788db6ed57aa3589a5c38da535cc3ce63.
 //
-// Solidity: event ClaimAcceptance(address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 claim)
-func (_IConsensus *IConsensusFilterer) WatchClaimAcceptance(opts *bind.WatchOpts, sink chan<- *IConsensusClaimAcceptance, appContract []common.Address) (event.Subscription, error) {
+// Solidity: event ClaimAccepted(address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 outputsMerkleRoot)
+func (_IConsensus *IConsensusFilterer) WatchClaimAccepted(opts *bind.WatchOpts, sink chan<- *IConsensusClaimAccepted, appContract []common.Address) (event.Subscription, error) {
 
 	var appContractRule []interface{}
 	for _, appContractItem := range appContract {
 		appContractRule = append(appContractRule, appContractItem)
 	}
 
-	logs, sub, err := _IConsensus.contract.WatchLogs(opts, "ClaimAcceptance", appContractRule)
+	logs, sub, err := _IConsensus.contract.WatchLogs(opts, "ClaimAccepted", appContractRule)
 	if err != nil {
 		return nil, err
 	}
@@ -375,8 +406,8 @@ func (_IConsensus *IConsensusFilterer) WatchClaimAcceptance(opts *bind.WatchOpts
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IConsensusClaimAcceptance)
-				if err := _IConsensus.contract.UnpackLog(event, "ClaimAcceptance", log); err != nil {
+				event := new(IConsensusClaimAccepted)
+				if err := _IConsensus.contract.UnpackLog(event, "ClaimAccepted", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -397,21 +428,21 @@ func (_IConsensus *IConsensusFilterer) WatchClaimAcceptance(opts *bind.WatchOpts
 	}), nil
 }
 
-// ParseClaimAcceptance is a log parse operation binding the contract event 0xd3e4892959c6ddb27e02bcaaebc0c1898d0f677b7360bf80339f10a8717957d3.
+// ParseClaimAccepted is a log parse operation binding the contract event 0x0f2cd00a405c0d1a66050307b6722c4788db6ed57aa3589a5c38da535cc3ce63.
 //
-// Solidity: event ClaimAcceptance(address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 claim)
-func (_IConsensus *IConsensusFilterer) ParseClaimAcceptance(log types.Log) (*IConsensusClaimAcceptance, error) {
-	event := new(IConsensusClaimAcceptance)
-	if err := _IConsensus.contract.UnpackLog(event, "ClaimAcceptance", log); err != nil {
+// Solidity: event ClaimAccepted(address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 outputsMerkleRoot)
+func (_IConsensus *IConsensusFilterer) ParseClaimAccepted(log types.Log) (*IConsensusClaimAccepted, error) {
+	event := new(IConsensusClaimAccepted)
+	if err := _IConsensus.contract.UnpackLog(event, "ClaimAccepted", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IConsensusClaimSubmissionIterator is returned from FilterClaimSubmission and is used to iterate over the raw logs and unpacked data for ClaimSubmission events raised by the IConsensus contract.
-type IConsensusClaimSubmissionIterator struct {
-	Event *IConsensusClaimSubmission // Event containing the contract specifics and raw log
+// IConsensusClaimSubmittedIterator is returned from FilterClaimSubmitted and is used to iterate over the raw logs and unpacked data for ClaimSubmitted events raised by the IConsensus contract.
+type IConsensusClaimSubmittedIterator struct {
+	Event *IConsensusClaimSubmitted // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -425,7 +456,7 @@ type IConsensusClaimSubmissionIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IConsensusClaimSubmissionIterator) Next() bool {
+func (it *IConsensusClaimSubmittedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -434,7 +465,7 @@ func (it *IConsensusClaimSubmissionIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IConsensusClaimSubmission)
+			it.Event = new(IConsensusClaimSubmitted)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -449,7 +480,7 @@ func (it *IConsensusClaimSubmissionIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IConsensusClaimSubmission)
+		it.Event = new(IConsensusClaimSubmitted)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -465,30 +496,30 @@ func (it *IConsensusClaimSubmissionIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IConsensusClaimSubmissionIterator) Error() error {
+func (it *IConsensusClaimSubmittedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IConsensusClaimSubmissionIterator) Close() error {
+func (it *IConsensusClaimSubmittedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IConsensusClaimSubmission represents a ClaimSubmission event raised by the IConsensus contract.
-type IConsensusClaimSubmission struct {
+// IConsensusClaimSubmitted represents a ClaimSubmitted event raised by the IConsensus contract.
+type IConsensusClaimSubmitted struct {
 	Submitter                common.Address
 	AppContract              common.Address
 	LastProcessedBlockNumber *big.Int
-	Claim                    [32]byte
+	OutputsMerkleRoot        [32]byte
 	Raw                      types.Log // Blockchain specific contextual infos
 }
 
-// FilterClaimSubmission is a free log retrieval operation binding the contract event 0xf5a28e07a1b89d1ca3f9a2a7ef16bd650503a4791baf2e70dc401c21ee505f0a.
+// FilterClaimSubmitted is a free log retrieval operation binding the contract event 0xf4ff953641f10e17dd93c0bc51334cb1f711fdcb4e37992021a5973f7a958f09.
 //
-// Solidity: event ClaimSubmission(address indexed submitter, address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 claim)
-func (_IConsensus *IConsensusFilterer) FilterClaimSubmission(opts *bind.FilterOpts, submitter []common.Address, appContract []common.Address) (*IConsensusClaimSubmissionIterator, error) {
+// Solidity: event ClaimSubmitted(address indexed submitter, address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 outputsMerkleRoot)
+func (_IConsensus *IConsensusFilterer) FilterClaimSubmitted(opts *bind.FilterOpts, submitter []common.Address, appContract []common.Address) (*IConsensusClaimSubmittedIterator, error) {
 
 	var submitterRule []interface{}
 	for _, submitterItem := range submitter {
@@ -499,17 +530,17 @@ func (_IConsensus *IConsensusFilterer) FilterClaimSubmission(opts *bind.FilterOp
 		appContractRule = append(appContractRule, appContractItem)
 	}
 
-	logs, sub, err := _IConsensus.contract.FilterLogs(opts, "ClaimSubmission", submitterRule, appContractRule)
+	logs, sub, err := _IConsensus.contract.FilterLogs(opts, "ClaimSubmitted", submitterRule, appContractRule)
 	if err != nil {
 		return nil, err
 	}
-	return &IConsensusClaimSubmissionIterator{contract: _IConsensus.contract, event: "ClaimSubmission", logs: logs, sub: sub}, nil
+	return &IConsensusClaimSubmittedIterator{contract: _IConsensus.contract, event: "ClaimSubmitted", logs: logs, sub: sub}, nil
 }
 
-// WatchClaimSubmission is a free log subscription operation binding the contract event 0xf5a28e07a1b89d1ca3f9a2a7ef16bd650503a4791baf2e70dc401c21ee505f0a.
+// WatchClaimSubmitted is a free log subscription operation binding the contract event 0xf4ff953641f10e17dd93c0bc51334cb1f711fdcb4e37992021a5973f7a958f09.
 //
-// Solidity: event ClaimSubmission(address indexed submitter, address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 claim)
-func (_IConsensus *IConsensusFilterer) WatchClaimSubmission(opts *bind.WatchOpts, sink chan<- *IConsensusClaimSubmission, submitter []common.Address, appContract []common.Address) (event.Subscription, error) {
+// Solidity: event ClaimSubmitted(address indexed submitter, address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 outputsMerkleRoot)
+func (_IConsensus *IConsensusFilterer) WatchClaimSubmitted(opts *bind.WatchOpts, sink chan<- *IConsensusClaimSubmitted, submitter []common.Address, appContract []common.Address) (event.Subscription, error) {
 
 	var submitterRule []interface{}
 	for _, submitterItem := range submitter {
@@ -520,7 +551,7 @@ func (_IConsensus *IConsensusFilterer) WatchClaimSubmission(opts *bind.WatchOpts
 		appContractRule = append(appContractRule, appContractItem)
 	}
 
-	logs, sub, err := _IConsensus.contract.WatchLogs(opts, "ClaimSubmission", submitterRule, appContractRule)
+	logs, sub, err := _IConsensus.contract.WatchLogs(opts, "ClaimSubmitted", submitterRule, appContractRule)
 	if err != nil {
 		return nil, err
 	}
@@ -530,8 +561,8 @@ func (_IConsensus *IConsensusFilterer) WatchClaimSubmission(opts *bind.WatchOpts
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IConsensusClaimSubmission)
-				if err := _IConsensus.contract.UnpackLog(event, "ClaimSubmission", log); err != nil {
+				event := new(IConsensusClaimSubmitted)
+				if err := _IConsensus.contract.UnpackLog(event, "ClaimSubmitted", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -552,12 +583,12 @@ func (_IConsensus *IConsensusFilterer) WatchClaimSubmission(opts *bind.WatchOpts
 	}), nil
 }
 
-// ParseClaimSubmission is a log parse operation binding the contract event 0xf5a28e07a1b89d1ca3f9a2a7ef16bd650503a4791baf2e70dc401c21ee505f0a.
+// ParseClaimSubmitted is a log parse operation binding the contract event 0xf4ff953641f10e17dd93c0bc51334cb1f711fdcb4e37992021a5973f7a958f09.
 //
-// Solidity: event ClaimSubmission(address indexed submitter, address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 claim)
-func (_IConsensus *IConsensusFilterer) ParseClaimSubmission(log types.Log) (*IConsensusClaimSubmission, error) {
-	event := new(IConsensusClaimSubmission)
-	if err := _IConsensus.contract.UnpackLog(event, "ClaimSubmission", log); err != nil {
+// Solidity: event ClaimSubmitted(address indexed submitter, address indexed appContract, uint256 lastProcessedBlockNumber, bytes32 outputsMerkleRoot)
+func (_IConsensus *IConsensusFilterer) ParseClaimSubmitted(log types.Log) (*IConsensusClaimSubmitted, error) {
+	event := new(IConsensusClaimSubmitted)
+	if err := _IConsensus.contract.UnpackLog(event, "ClaimSubmitted", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

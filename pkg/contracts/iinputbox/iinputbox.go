@@ -31,7 +31,7 @@ var (
 
 // IInputBoxMetaData contains all meta data concerning the IInputBox contract.
 var IInputBoxMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"appContract\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"inputLength\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxInputLength\",\"type\":\"uint256\"}],\"name\":\"InputTooLarge\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"appContract\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"input\",\"type\":\"bytes\"}],\"name\":\"InputAdded\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"appContract\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"payload\",\"type\":\"bytes\"}],\"name\":\"addInput\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"appContract\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getInputHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"appContract\",\"type\":\"address\"}],\"name\":\"getNumberOfInputs\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"addInput\",\"inputs\":[{\"name\":\"appContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getDeploymentBlockNumber\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getInputHash\",\"inputs\":[{\"name\":\"appContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumberOfInputs\",\"inputs\":[{\"name\":\"appContract\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"InputAdded\",\"inputs\":[{\"name\":\"appContract\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"input\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InputTooLarge\",\"inputs\":[{\"name\":\"appContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"inputLength\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxInputLength\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]",
 }
 
 // IInputBoxABI is the input ABI used to generate the binding from.
@@ -178,6 +178,37 @@ func (_IInputBox *IInputBoxTransactorRaw) Transfer(opts *bind.TransactOpts) (*ty
 // Transact invokes the (paid) contract method with params as input values.
 func (_IInputBox *IInputBoxTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _IInputBox.Contract.contract.Transact(opts, method, params...)
+}
+
+// GetDeploymentBlockNumber is a free data retrieval call binding the contract method 0xb3a1acd8.
+//
+// Solidity: function getDeploymentBlockNumber() view returns(uint256)
+func (_IInputBox *IInputBoxCaller) GetDeploymentBlockNumber(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _IInputBox.contract.Call(opts, &out, "getDeploymentBlockNumber")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetDeploymentBlockNumber is a free data retrieval call binding the contract method 0xb3a1acd8.
+//
+// Solidity: function getDeploymentBlockNumber() view returns(uint256)
+func (_IInputBox *IInputBoxSession) GetDeploymentBlockNumber() (*big.Int, error) {
+	return _IInputBox.Contract.GetDeploymentBlockNumber(&_IInputBox.CallOpts)
+}
+
+// GetDeploymentBlockNumber is a free data retrieval call binding the contract method 0xb3a1acd8.
+//
+// Solidity: function getDeploymentBlockNumber() view returns(uint256)
+func (_IInputBox *IInputBoxCallerSession) GetDeploymentBlockNumber() (*big.Int, error) {
+	return _IInputBox.Contract.GetDeploymentBlockNumber(&_IInputBox.CallOpts)
 }
 
 // GetInputHash is a free data retrieval call binding the contract method 0x677087c9.

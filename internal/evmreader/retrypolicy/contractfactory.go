@@ -14,10 +14,9 @@ import (
 // Builds contracts delegates that will
 // use retry policy on contract methods calls
 type EvmReaderContractFactory struct {
-	maxRetries      uint64
-	maxDelay        time.Duration
-	ethClient       *ethclient.Client
-	iConsensusCache map[common.Address]evmreader.ConsensusContract
+	maxRetries uint64
+	maxDelay   time.Duration
+	ethClient  *ethclient.Client
 }
 
 func NewEvmReaderContractFactory(
@@ -27,10 +26,9 @@ func NewEvmReaderContractFactory(
 
 ) *EvmReaderContractFactory {
 	return &EvmReaderContractFactory{
-		ethClient:       ethClient,
-		maxRetries:      maxRetries,
-		maxDelay:        maxDelay,
-		iConsensusCache: make(map[common.Address]evmreader.ConsensusContract),
+		ethClient:  ethClient,
+		maxRetries: maxRetries,
+		maxDelay:   maxDelay,
 	}
 }
 
@@ -49,23 +47,17 @@ func (f *EvmReaderContractFactory) NewApplication(
 
 }
 
-func (f *EvmReaderContractFactory) NewIConsensus(
+func (f *EvmReaderContractFactory) NewInputSource(
 	address common.Address,
-) (evmreader.ConsensusContract, error) {
+) (evmreader.InputSource, error) {
 
-	delegator, ok := f.iConsensusCache[address]
-	if !ok {
-		// Building a contract does not fail due to network errors.
-		// No need to retry this operation
-		consensus, err := evmreader.NewConsensusContractAdapter(address, f.ethClient)
-		if err != nil {
-			return nil, err
-		}
-
-		delegator = NewConsensusWithRetryPolicy(consensus, f.maxRetries, f.maxDelay)
-
-		f.iConsensusCache[address] = delegator
+	// Building a contract does not fail due to network errors.
+	// No need to retry this operation
+	inputSourceContract, err := evmreader.NewInputSourceAdapter(address, f.ethClient)
+	if err != nil {
+		return nil, err
 	}
-	return delegator, nil
+
+	return NewInputSourceWithRetryPolicy(inputSourceContract, f.maxRetries, f.maxDelay), nil
 
 }

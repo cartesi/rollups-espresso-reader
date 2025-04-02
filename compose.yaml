@@ -54,7 +54,7 @@ services:
     ports:
       - 10000:10000
     environment:
-      CARTESI_POSTGRES_ENDPOINT: postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
+      CARTESI_DATABASE_CONNECTION: postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
       CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: http://devnet:8545/
       CARTESI_BLOCKCHAIN_WS_ENDPOINT: ws://devnet:8545/
       ESPRESSO_BASE_URL: http://espresso-dev-node:24000

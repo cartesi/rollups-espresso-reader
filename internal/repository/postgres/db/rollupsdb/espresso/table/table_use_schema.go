@@ -11,6 +11,7 @@ package table
 // this method only once at the beginning of the program.
 func UseSchema(schema string) {
 	EspressoBlock = EspressoBlock.FromSchema(schema)
+	EspressoConfig = EspressoConfig.FromSchema(schema)
 	EspressoNonce = EspressoNonce.FromSchema(schema)
 	InputIndex = InputIndex.FromSchema(schema)
 }

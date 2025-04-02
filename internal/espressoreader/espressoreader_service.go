@@ -6,7 +6,6 @@ package espressoreader
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader/retrypolicy"
-	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 
 	"github.com/EspressoSystems/espresso-sequencer-go/client"
@@ -32,12 +30,9 @@ type EspressoReaderService struct {
 	blockchainWsEndpoint    string
 	database                repository.Repository
 	EspressoBaseUrl         string
-	EspressoStartingBlock   uint64
-	EspressoNamespace       uint64
 	maxRetries              uint64
 	maxDelay                time.Duration
 	chainId                 uint64
-	inputBoxDeploymentBlock uint64
 	espressoServiceEndpoint string
 }
 
@@ -46,10 +41,7 @@ func NewEspressoReaderService(
 	blockchainWsEndpoint string,
 	database repository.Repository,
 	EspressoBaseUrl string,
-	EspressoStartingBlock uint64,
-	EspressoNamespace uint64,
 	chainId uint64,
-	inputBoxDeploymentBlock uint64,
 	espressoServiceEndpoint string,
 	maxRetries uint64,
 	maxDelay time.Duration,
@@ -59,10 +51,7 @@ func NewEspressoReaderService(
 		blockchainWsEndpoint:    blockchainWsEndpoint,
 		database:                database,
 		EspressoBaseUrl:         EspressoBaseUrl,
-		EspressoStartingBlock:   EspressoStartingBlock,
-		EspressoNamespace:       EspressoNamespace,
 		chainId:                 chainId,
-		inputBoxDeploymentBlock: inputBoxDeploymentBlock,
 		espressoServiceEndpoint: espressoServiceEndpoint,
 		maxRetries:              maxRetries,
 		maxDelay:                maxDelay,
@@ -76,7 +65,7 @@ func (s *EspressoReaderService) Start(
 
 	evmReader := s.setupEvmReader(ctx, s.database)
 
-	espressoReader := NewEspressoReader(s.EspressoBaseUrl, s.EspressoStartingBlock, s.EspressoNamespace, s.database, evmReader, s.chainId, s.inputBoxDeploymentBlock, s.maxRetries, uint64(s.maxDelay))
+	espressoReader := NewEspressoReader(s.EspressoBaseUrl, s.database, evmReader, s.chainId, s.maxRetries, uint64(s.maxDelay), s.blockchainHttpEndpoint)
 
 	go s.setupNonceHttpServer()
 
@@ -100,14 +89,9 @@ func (s *EspressoReaderService) setupEvmReader(ctx context.Context, r repository
 	}
 	defer wsClient.Close()
 
-	config, err := repository.LoadNodeConfig[model.NodeConfigValue](ctx, r, model.BaseConfigKey)
+	config, err := repository.LoadNodeConfig[evmreader.PersistentConfig](ctx, r, evmreader.EvmReaderConfigKey)
 	if err != nil {
 		slog.Error("db config", "error", err)
-	}
-
-	inputSource, err := evmreader.NewInputSourceAdapter(common.HexToAddress(config.Value.InputBoxAddress), client)
-	if err != nil {
-		slog.Error("input source", "error", err)
 	}
 
 	contractFactory := retrypolicy.NewEvmReaderContractFactory(client, s.maxRetries, s.maxDelay)
@@ -115,9 +99,7 @@ func (s *EspressoReaderService) setupEvmReader(ctx context.Context, r repository
 	evmReader := evmreader.NewEvmReader(
 		retrypolicy.NewEhtClientWithRetryPolicy(client, s.maxRetries, s.maxDelay),
 		retrypolicy.NewEthWsClientWithRetryPolicy(wsClient, s.maxRetries, s.maxDelay),
-		retrypolicy.NewInputSourceWithRetryPolicy(inputSource, s.maxRetries, s.maxDelay),
 		r,
-		config.Value.InputBoxDeploymentBlock,
 		config.Value.DefaultBlock,
 		contractFactory,
 		true,
@@ -161,7 +143,7 @@ func (s *EspressoReaderService) requestNonce(w http.ResponseWriter, r *http.Requ
 	}
 	nonceRequest := &NonceRequest{}
 	if err := json.Unmarshal(body, nonceRequest); err != nil {
-		fmt.Println(err)
+		slog.Error("could not unmarshal", "err", err)
 	}
 
 	senderAddress := common.HexToAddress(nonceRequest.MsgSender)
@@ -225,23 +207,26 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	}
 	slog.Debug("got submit request", "request body", string(body))
 
+	msgSender, typedData, sigHash, err := ExtractSigAndData(string(body))
+	if err != nil {
+		slog.Error("transaction not correctly formatted", "error", err)
+		return
+	}
+	submitResponse := SubmitResponse{Id: sigHash}
+
+	appAddressStr := typedData.Message["app"].(string)
+	appAddress := common.HexToAddress(appAddressStr)
 	client := client.NewClient(s.EspressoBaseUrl)
 	ctx := r.Context()
+	_, namespace, err := s.database.GetEspressoConfig(ctx, appAddressStr)
 	var tx types.Transaction
-	tx.Namespace = s.EspressoNamespace
+	tx.Namespace = namespace
 	tx.Payload = body
 	_, err = client.SubmitTransaction(ctx, tx)
 	if err != nil {
 		slog.Error("espresso tx submit error", "err", err)
 		return
 	}
-
-	msgSender, typedData, sigHash, err := ExtractSigAndData(string(tx.Payload))
-	if err != nil {
-		slog.Error("transaction not correctly formatted", "error", err)
-		return
-	}
-	submitResponse := SubmitResponse{Id: sigHash}
 
 	err = json.NewEncoder(w).Encode(submitResponse)
 	if err != nil {
@@ -253,8 +238,6 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// update nonce cache
-	appAddressStr := typedData.Message["app"].(string)
-	appAddress := common.HexToAddress(appAddressStr)
 	if nonceCache[appAddress] == nil {
 		slog.Error("Should query nonce before submit")
 		return
