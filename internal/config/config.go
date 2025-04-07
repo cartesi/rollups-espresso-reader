@@ -16,8 +16,6 @@ type NodeConfig struct {
 	BlockchainBlockTimeout  int
 	PostgresEndpoint        Redacted[string]
 	EspressoBaseUrl         string
-	EspressoStartingBlock   uint64
-	EspressoNamespace       uint64
 	EspressoServiceEndpoint string
 	MaxRetries              uint64
 	MaxDelay                Duration

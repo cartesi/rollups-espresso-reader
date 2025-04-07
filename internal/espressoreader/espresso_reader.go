@@ -92,7 +92,7 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 			apps := e.getAppsForEvmReader(ctx)
 			if len(apps) > 0 {
 				for _, app := range apps {
-					startingBlock, namespace, err := e.getEspressoConfig(ctx, app.IApplicationAddress)
+					startingBlock, namespace, err := getEspressoConfig(ctx, app.IApplicationAddress, e.repository, e.blockchainHttpEndpoint)
 					if err != nil {
 						slog.Error("failed getting espresso config from onchain", "error", err)
 						continue
@@ -108,12 +108,8 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 					if lastProcessedL1Block < app.IInputBoxBlock {
 						lastProcessedL1Block = app.IInputBoxBlock - 1
 					}
-					if lastProcessedEspressoBlock == 0 {
-						if startingBlock != 0 {
-							lastProcessedEspressoBlock = startingBlock - 1
-						} else {
-							lastProcessedEspressoBlock = latestBlockHeight - 1
-						}
+					if lastProcessedEspressoBlock == 0 && startingBlock != 0 {
+						lastProcessedEspressoBlock = startingBlock - 1
 					}
 					// bootstrap if there are more than 100 blocks to catch up
 					if latestBlockHeight-lastProcessedEspressoBlock > 100 {
@@ -455,15 +451,16 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 
 }
 
-func (e *EspressoReader) getEspressoConfig(ctx context.Context, appAddress common.Address) (uint64, uint64, error) {
-	startingBlock, namespace, err := e.repository.GetEspressoConfig(ctx, appAddress.Hex())
+func getEspressoConfig(ctx context.Context, appAddress common.Address, database repository.Repository, blockchainHttpEndpoint string) (uint64, uint64, error) {
+	startingBlock, namespace, err := database.GetEspressoConfig(ctx, appAddress.Hex())
 
 	if err != nil {
 		// da is not available in the db
-		ethClient, err := ethclient.Dial(e.blockchainHttpEndpoint)
+		ethClient, err := ethclient.Dial(blockchainHttpEndpoint)
 		if err != nil {
 			return 0, 0, fmt.Errorf("failed to connect to the blockchain http endpoint: %w", err)
 		}
+		defer ethClient.Close()
 		da, err := ethutil.GetDataAvailability(ctx, ethClient, appAddress)
 		if err != nil {
 			return 0, 0, fmt.Errorf("failed to get data availability for app %s: %w", appAddress.Hex(), err)
@@ -491,7 +488,7 @@ func (e *EspressoReader) getEspressoConfig(ctx context.Context, appAddress commo
 		namespace = uint64(args[2].(uint32))
 
 		// update db
-		e.repository.UpdateEspressoConfig(ctx, appAddress.Hex(), startingBlock, namespace)
+		database.UpdateEspressoConfig(ctx, appAddress.Hex(), startingBlock, namespace)
 	}
 
 	return startingBlock, namespace, nil
