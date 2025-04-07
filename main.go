@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -110,7 +111,13 @@ func run(cmd *cobra.Command, args []string) {
 }
 
 func loadNodeConfig(args loadNodeConfigArgs) (evmreader.PersistentConfig, error) {
-	config, _ := repository.LoadNodeConfig[evmreader.PersistentConfig](args.ctx, args.database, args.configKey)
+	config, err := repository.LoadNodeConfig[evmreader.PersistentConfig](args.ctx, args.database, args.configKey)
+	if err != nil {
+		return evmreader.PersistentConfig{}, err
+	}
+	if config == nil {
+		return evmreader.PersistentConfig{}, fmt.Errorf("no configuration found for key: %s", args.configKey)
+	}
 	return config.Value, nil
 }
 

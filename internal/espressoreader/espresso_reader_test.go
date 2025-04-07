@@ -47,23 +47,23 @@ func (suite *EspressoReaderTestSuite) prepareTxs(ctx context.Context, EspressoBa
 
 	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0xcbefc92066a262b82840515a132a931bc79f9c1c","nonce":0,"data":"0xbb01","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x55894fa93d9120120c875acf73d710d6504d92a80c41254beea3834fc15e486960c85ab0e0631d93e6e8d7d51f5a797d85a9887e15c9fe1e4cd9bd6ae3d83bb81c"}`)
 	_, err := client.SubmitTransaction(ctx, tx)
-	suite.Nil(err)
+	suite.Require().NoError(err)
 	time.Sleep(1 * time.Second)
 
 	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0xcbefc92066a262b82840515a132a931bc79f9c1c","nonce":1,"data":"0xbb02","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x36e608512962f157b218de25a0a6efb9eecb77acd79b2a95fc6b9f7255f958c0238c148b9dad5fa700179466a6b619a964f679a63aa387c0dd0df9724a1d31891c"}`)
 	_, err = client.SubmitTransaction(ctx, tx)
-	suite.Nil(err)
+	suite.Require().NoError(err)
 
 	ethClient, err := ethclient.Dial(blockchainHttpEndpoint)
-	suite.Nil(err)
+	suite.Require().NoError(err)
 	defer ethClient.Close()
 	privateKey, err := ethutil.MnemonicToPrivateKey("test test test test test test test test test test test junk", 0)
-	suite.Nil(err)
+	suite.Require().NoError(err)
 	txOpts, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(suite.chainId)))
-	suite.Nil(err)
+	suite.Require().NoError(err)
 	L1Payload, _ := hex.DecodeString("aa03")
 	_, _, err = ethutil.AddInput(ctx, ethClient, txOpts, suite.application.IInputBoxAddress, suite.application.IApplicationAddress, L1Payload)
-	suite.Nil(err)
+	suite.Require().NoError(err)
 
 	L1Payload, _ = hex.DecodeString("aa04")
 	_, _, err = ethutil.AddInput(ctx, ethClient, txOpts, suite.application.IInputBoxAddress, suite.application.IApplicationAddress, L1Payload)
@@ -72,23 +72,23 @@ func (suite *EspressoReaderTestSuite) prepareTxs(ctx context.Context, EspressoBa
 
 	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0xcbefc92066a262b82840515a132a931bc79f9c1c","nonce":2,"data":"0xbb05","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0xd75d8f9706ef9468724adbddcce48f95a45fef2a9a726132a4fcfb8278d795250fd1a70a9e44e940d578264639db44604af5900cf442ec51b5db815942b23d261b"}`)
 	_, err = client.SubmitTransaction(ctx, tx)
-	suite.Nil(err)
+	suite.Require().NoError(err)
 	time.Sleep(1 * time.Second)
 
 	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0xcbefc92066a262b82840515a132a931bc79f9c1c","nonce":3,"data":"0xbb06","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x2ed0cbf17aaa41c1b0e0acefb100b3fbbdd52df7046b503d10a09ae8d26cfa36654227639050ac1a041f41ecdbaa24b4c6bddea7a7c2df30c699a2bbe555f15f1b"}`)
 	_, err = client.SubmitTransaction(ctx, tx)
-	suite.Nil(err)
+	suite.Require().NoError(err)
 	time.Sleep(10 * time.Second)
 
 	return nil
 }
 
 func (suite *EspressoReaderTestSuite) SetupSuite() {
-	appAddress := "0xcbefc92066a262b82840515a132a931bc79f9c1c"
+	appAddress := "0x01e800bbE852aeb27cE65604709134Ea63782c6B" // appAddress := "0xcbefc92066a262b82840515a132a931bc79f9c1c"
 	consensusAddress := "0x1d76bdb32803ae72fc5aed528779b3f581f93fed"
 	inputboxAddress := "0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c"
 	templatePath := "applications/echo-dapp/"
-	templateHash := "0x1611c2f376328c21520ff4d521eb43d6ca581a5d51eab19e3c354f71ff4bdeae"
+	templateHash := "0x2fa07a837075faedd5be6215cef05e90848d01fd752e2f41b6039f3317bee84d" // templateHash := "0x1611c2f376328c21520ff4d521eb43d6ca581a5d51eab19e3c354f71ff4bdeae"
 	suite.application = model.Application{
 		Name:                 "test-dapp",
 		IApplicationAddress:  common.HexToAddress(appAddress),
@@ -117,6 +117,7 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 	if err != nil {
 		slog.Error("db config", "error", err)
 	}
+	slog.Debug("SetupSuite", "chainID", config.Value.ChainID)
 	suite.chainId = config.Value.ChainID
 
 	_, namespace, err := getEspressoConfig(suite.ctx, common.HexToAddress(appAddress), suite.database, suite.c.BlockchainHttpEndpoint.Value)

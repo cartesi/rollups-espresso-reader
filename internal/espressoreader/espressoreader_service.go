@@ -6,6 +6,7 @@ package espressoreader
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -114,7 +115,11 @@ func (s *EspressoReaderService) setupNonceHttpServer() {
 	http.HandleFunc("/nonce", s.requestNonce)
 	http.HandleFunc("/submit", s.submit)
 
-	http.ListenAndServe(s.espressoServiceEndpoint, nil)
+	err := http.ListenAndServe(s.espressoServiceEndpoint, nil)
+	if err != nil {
+		panic(fmt.Sprintf("failed to start the transaction endpoints /nonce and /submit: %v", err))
+	}
+	slog.Debug("Transaction service started", "espressoServiceEndpoint", s.espressoServiceEndpoint)
 }
 
 type NonceRequest struct {
