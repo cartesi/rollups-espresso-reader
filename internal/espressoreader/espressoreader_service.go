@@ -218,7 +218,7 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	appAddress := common.HexToAddress(appAddressStr)
 	client := client.NewClient(s.EspressoBaseUrl)
 	ctx := r.Context()
-	_, namespace, err := s.database.GetEspressoConfig(ctx, appAddressStr)
+	_, namespace, err := getEspressoConfig(ctx, appAddress, s.database, s.blockchainHttpEndpoint)
 	var tx types.Transaction
 	tx.Namespace = namespace
 	tx.Payload = body

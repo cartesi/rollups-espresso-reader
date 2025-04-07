@@ -167,8 +167,8 @@ func (m *MockRepository) UpdateApplicationState(ctx context.Context, appID int64
 }
 
 // UpdateEventLastCheckBlock implements repository.Repository.
-func (m *MockRepository) UpdateEventLastCheckBlock(ctx context.Context, appIDs []int64, event MonitoredEvent, blockNumber uint64) error {
-	panic("unimplemented")
+func (m *MockRepository) UpdateEventLastCheckBlock(ctx context.Context, appIDs []int64, event model.MonitoredEvent, blockNumber uint64) error {
+	return nil
 }
 
 // UpdateEpoch implements repository.Repository.
@@ -216,6 +216,21 @@ func (m *MockRepository) UpdateOutputsExecution(ctx context.Context, nameOrAddre
 }
 
 func (m *MockRepository) Close() {
+	panic("unimplemented")
+}
+
+func (m *MockRepository) GetEspressoConfig(
+	ctx context.Context,
+	nameOrAddress string,
+) (uint64, uint64, error) {
+	panic("unimplemented")
+}
+
+func (m *MockRepository) UpdateEspressoConfig(
+	ctx context.Context,
+	nameOrAddress string,
+	startingBlock uint64, namespace uint64,
+) error {
 	panic("unimplemented")
 }
 
@@ -322,10 +337,7 @@ var transactions = []types.Bytes{
 
 func (s *EspressoReaderUnitTestSuite) SetupTest() {
 	espressoApiURL := ""
-	startingBlock := 1
-	namespace := 55555
-	chainId := 31337
-	inputBoxDeploymentBlock := 10
+	chainId := 13370
 	maxRetries := 10
 	maxDelay := 1
 	mockDatabase := new(MockRepository)
@@ -335,16 +347,15 @@ func (s *EspressoReaderUnitTestSuite) SetupTest() {
 	evmReader := evmreader.NewEvmReader(
 		mockEthClient, nil, mockDatabase, "0", nil, true,
 	)
+	blockchainHttpEndpoint := "http://localhost:8545"
 	s.espressoReader = NewEspressoReader(
 		espressoApiURL,
-		uint64(startingBlock),
-		uint64(namespace),
 		mockDatabase,
 		&evmReader,
 		uint64(chainId),
-		uint64(inputBoxDeploymentBlock),
 		uint64(maxRetries),
 		uint64(maxDelay),
+		blockchainHttpEndpoint,
 	)
 	mockEspressoClient := new(MockEspressoClient)
 	s.mockEthClient = mockEthClient
@@ -443,9 +454,10 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 	}
 	appEvmType := evmreader.TypeExportApplication{
 		Application: application,
+		InputSource: s.mockInputSource,
 	}
 
-	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
+	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
 
 	s.Equal(1, len(s.mockDatabase.inputs))
 	input := s.mockDatabase.inputs[0]
@@ -532,9 +544,10 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 	}
 	appEvmType := evmreader.TypeExportApplication{
 		Application: application,
+		InputSource: s.mockInputSource,
 	}
 
-	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
+	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
 
 	s.Equal(2, len(s.mockDatabase.inputs))
 	input := s.mockDatabase.inputs[0]
@@ -647,9 +660,10 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 	}
 	appEvmType := evmreader.TypeExportApplication{
 		Application: application,
+		InputSource: s.mockInputSource,
 	}
 
-	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(lastProcessedBlock), uint64(l1FinalizedTimestamp))
+	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(lastProcessedBlock), uint64(l1FinalizedTimestamp))
 	var apps []evmreader.TypeExportApplication
 	apps = append(apps, appEvmType)
 
@@ -776,9 +790,10 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseSkippingL1Blocks() {
 	}
 	appEvmType := evmreader.TypeExportApplication{
 		Application: application,
+		InputSource: s.mockInputSource,
 	}
 
-	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), uint64(lastProcessedBlock), uint64(l1FinalizedTimestamp))
+	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(lastProcessedBlock), uint64(l1FinalizedTimestamp))
 	var apps []evmreader.TypeExportApplication
 	apps = append(apps, appEvmType)
 
