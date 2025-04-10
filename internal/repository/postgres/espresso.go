@@ -19,14 +19,14 @@ func (r *postgresRepository) GetEspressoConfig(
 	nameOrAddress string,
 ) (uint64, uint64, error) {
 	app := common.HexToAddress(nameOrAddress)
-	sel := table.EspressoConfig.
+	sel := table.AppInfo.
 		SELECT(
-			table.EspressoConfig.StartingBlock,
-			table.EspressoConfig.Namespace,
+			table.AppInfo.StartingBlock,
+			table.AppInfo.Namespace,
 		).
-		FROM(table.EspressoConfig).
+		FROM(table.AppInfo).
 		WHERE(
-			table.EspressoConfig.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())),
+			table.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())),
 		)
 
 	sqlStr, args := sel.Sql()
@@ -46,13 +46,14 @@ func (r *postgresRepository) GetEspressoConfig(
 func (r *postgresRepository) UpdateEspressoConfig(
 	ctx context.Context,
 	nameOrAddress string,
-	startingBlock uint64, namespace uint64,
+	startingBlock uint64,
+	namespace uint64,
 ) error {
 	app := common.HexToAddress(nameOrAddress)
-	insertStmt := table.EspressoConfig.INSERT(
-		table.EspressoConfig.ApplicationAddress,
-		table.EspressoConfig.StartingBlock,
-		table.EspressoConfig.Namespace,
+	insertStmt := table.AppInfo.INSERT(
+		table.AppInfo.ApplicationAddress,
+		table.AppInfo.StartingBlock,
+		table.AppInfo.Namespace,
 	).VALUES(
 		postgres.Bytea(app.Bytes()),
 		startingBlock,
@@ -164,27 +165,30 @@ func (r *postgresRepository) GetInputIndex(
 	nameOrAddress string,
 ) (uint64, error) {
 	app := common.HexToAddress(nameOrAddress)
-	sel := table.InputIndex.
-		SELECT(table.InputIndex.Index).
-		FROM(table.InputIndex).
+	sel := table.AppInfo.
+		SELECT(table.AppInfo.Index).
+		FROM(table.AppInfo).
 		WHERE(
-			table.InputIndex.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())),
+			table.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())),
 		)
 
 	sqlStr, args := sel.Sql()
 	row := r.db.QueryRow(ctx, sqlStr, args...)
 
-	var index uint64
+	var index *uint64
 	err := row.Scan(
 		&index,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
 	}
+	if index == nil {
+		return 0, nil
+	}
 	if err != nil {
 		return 0, err
 	}
-	return index, nil
+	return *index, nil
 }
 
 func (r *postgresRepository) UpdateInputIndex(
@@ -198,36 +202,14 @@ func (r *postgresRepository) UpdateInputIndex(
 	}
 	nextIndex := index + 1
 
-	inputIndexInsertStmt := table.InputIndex.INSERT(
-		table.InputIndex.ApplicationAddress,
-		table.InputIndex.Index,
-	).VALUES(
-		postgres.Bytea(app.Bytes()),
-		nextIndex,
-	)
+	updateStmt := table.AppInfo.
+		UPDATE(table.AppInfo.Index).
+		SET(table.AppInfo.Index.SET(postgres.RawInt(fmt.Sprintf("%d", nextIndex)))).
+		WHERE(table.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())))
 
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	sqlStr, args := inputIndexInsertStmt.
-		ON_CONFLICT(table.InputIndex.ApplicationAddress).
-		DO_UPDATE(postgres.SET(
-			table.InputIndex.Index.SET(postgres.RawInt(fmt.Sprintf("%d", nextIndex))),
-		)).Sql()
-	_, err = tx.Exec(ctx, sqlStr, args...)
-
-	if err != nil {
-		return errors.Join(err, tx.Rollback(ctx))
-	}
-
-	// Commit transaction
-	err = tx.Commit(ctx)
-	if err != nil {
-		return errors.Join(err, tx.Rollback(ctx))
-	}
-	return nil
+	sqlStr, args := updateStmt.Sql()
+	_, err = r.db.Exec(ctx, sqlStr, args...)
+	return err
 }
 
 func (r *postgresRepository) GetLastProcessedEspressoBlock(
@@ -235,26 +217,29 @@ func (r *postgresRepository) GetLastProcessedEspressoBlock(
 	nameOrAddress string,
 ) (uint64, error) {
 	app := common.HexToAddress(nameOrAddress)
-	sel := table.EspressoBlock.
-		SELECT(table.EspressoBlock.LastProcessedEspressoBlock).
-		FROM(table.EspressoBlock).
+	sel := table.AppInfo.
+		SELECT(table.AppInfo.LastProcessedEspressoBlock).
+		FROM(table.AppInfo).
 		WHERE(
-			table.EspressoBlock.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())),
+			table.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())),
 		)
 
 	sqlStr, args := sel.Sql()
 	row := r.db.QueryRow(ctx, sqlStr, args...)
-	var lastProcessedEspressoBlock uint64
+	var lastProcessedEspressoBlock *uint64
 	err := row.Scan(
 		&lastProcessedEspressoBlock,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
 	}
+	if lastProcessedEspressoBlock == nil {
+		return 0, nil
+	}
 	if err != nil {
 		return 0, err
 	}
-	return lastProcessedEspressoBlock, nil
+	return *lastProcessedEspressoBlock, nil
 }
 
 func (r *postgresRepository) UpdateLastProcessedEspressoBlock(
@@ -263,34 +248,13 @@ func (r *postgresRepository) UpdateLastProcessedEspressoBlock(
 	lastProcessedEspressoBlock uint64,
 ) error {
 	app := common.HexToAddress(nameOrAddress)
-	insertStmt := table.EspressoBlock.INSERT(
-		table.EspressoBlock.ApplicationAddress,
-		table.EspressoBlock.LastProcessedEspressoBlock,
-	).VALUES(
-		postgres.Bytea(app.Bytes()),
-		lastProcessedEspressoBlock,
-	)
 
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
+	updateStmt := table.AppInfo.
+		UPDATE(table.AppInfo.LastProcessedEspressoBlock).
+		SET(table.AppInfo.LastProcessedEspressoBlock.SET(postgres.RawFloat(fmt.Sprintf("%d", lastProcessedEspressoBlock)))).
+		WHERE(table.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())))
 
-	sqlStr, args := insertStmt.
-		ON_CONFLICT(table.EspressoBlock.ApplicationAddress).
-		DO_UPDATE(postgres.SET(
-			table.EspressoBlock.LastProcessedEspressoBlock.SET(postgres.RawFloat(fmt.Sprintf("%d", lastProcessedEspressoBlock))),
-		)).Sql()
-	_, err = tx.Exec(ctx, sqlStr, args...)
-
-	if err != nil {
-		return errors.Join(err, tx.Rollback(ctx))
-	}
-
-	// Commit transaction
-	err = tx.Commit(ctx)
-	if err != nil {
-		return errors.Join(err, tx.Rollback(ctx))
-	}
-	return nil
+	sqlStr, args := updateStmt.Sql()
+	_, err := r.db.Exec(ctx, sqlStr, args...)
+	return err
 }
