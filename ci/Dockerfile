@@ -66,11 +66,6 @@ ENV GOCACHE=${GO_BUILD_PATH}/.cache
 ENV GOENV=${GO_BUILD_PATH}/.config/go/env
 ENV GOPATH=${GO_BUILD_PATH}/.go
 
-# Download external dependencies.
-# COPY --chown=cartesi:cartesi ./rollups-node/go.mod ${GO_BUILD_PATH}/rollups-node/
-# COPY --chown=cartesi:cartesi ./rollups-node/go.sum ${GO_BUILD_PATH}/rollups-node/
-# RUN cd ${GO_BUILD_PATH}/rollups-node && go mod download
-
 # =============================================================================
 # STAGE: go-builder
 #
