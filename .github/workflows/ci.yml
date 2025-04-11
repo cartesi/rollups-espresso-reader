@@ -78,7 +78,8 @@ jobs:
       
       - name: Migrate Espresso DB
         run: |
-          # migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_DATABASE_CONNECTION" up
+          # remove in the future
+          go get github.com/go-jet/jet/v2/cmd/jet@v2.12.0
           eval $(make env)
           make migrate
           make generate-db
