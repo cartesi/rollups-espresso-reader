@@ -23,9 +23,9 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/dataavailability"
 	"github.com/cartesi/rollups-espresso-reader/pkg/ethutil"
 
-	"github.com/EspressoSystems/espresso-sequencer-go/client"
-	"github.com/EspressoSystems/espresso-sequencer-go/types"
-	espresso "github.com/EspressoSystems/espresso-sequencer-go/types/common"
+	"github.com/EspressoSystems/espresso-network-go/client"
+	"github.com/EspressoSystems/espresso-network-go/types"
+	espresso "github.com/EspressoSystems/espresso-network-go/types/common"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -61,7 +61,7 @@ type EspressoReader struct {
 }
 
 func NewEspressoReader(url string, repository repository.Repository, evmReader *evmreader.EvmReader, chainId uint64, maxRetries uint64, maxDelay uint64, blockchainHttpEndpoint string) EspressoReader {
-	client := client.NewClient(url)
+	client := client.NewClient(url, url)
 	espressoHelper := &EspressoHelper{}
 	return EspressoReader{url: url, client: client, espressoHelper: espressoHelper, repository: repository, evmReader: evmReader, chainId: chainId, maxRetries: maxRetries, maxDelay: maxDelay, blockchainHttpEndpoint: blockchainHttpEndpoint}
 }

@@ -16,8 +16,8 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader/retrypolicy"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 
-	"github.com/EspressoSystems/espresso-sequencer-go/client"
-	"github.com/EspressoSystems/espresso-sequencer-go/types"
+	"github.com/EspressoSystems/espresso-network-go/client"
+	"github.com/EspressoSystems/espresso-network-go/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -221,7 +221,7 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 
 	appAddressStr := typedData.Message["app"].(string)
 	appAddress := common.HexToAddress(appAddressStr)
-	client := client.NewClient(s.EspressoBaseUrl)
+	client := client.NewClient(s.EspressoBaseUrl, s.EspressoBaseUrl)
 	ctx := r.Context()
 	_, namespace, err := getEspressoConfig(ctx, appAddress, s.database, s.blockchainHttpEndpoint)
 	var tx types.Transaction

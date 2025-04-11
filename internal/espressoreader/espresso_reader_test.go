@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/EspressoSystems/espresso-sequencer-go/client"
-	"github.com/EspressoSystems/espresso-sequencer-go/types"
+	"github.com/EspressoSystems/espresso-network-go/client"
+	"github.com/EspressoSystems/espresso-network-go/types"
 	"github.com/cartesi/rollups-espresso-reader/internal/config"
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
@@ -41,7 +41,7 @@ type EspressoReaderTestSuite struct {
 }
 
 func (suite *EspressoReaderTestSuite) prepareTxs(ctx context.Context, EspressoBaseUrl string, namespace uint64, blockchainHttpEndpoint string) error {
-	client := client.NewClient(EspressoBaseUrl)
+	client := client.NewClient(EspressoBaseUrl, EspressoBaseUrl)
 	var tx types.Transaction
 	tx.Namespace = namespace
 
