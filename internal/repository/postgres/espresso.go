@@ -7,14 +7,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/espresso/table"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-jet/jet/v2/postgres"
 )
 
-func (r *postgresRepository) GetEspressoConfig(
+func (r *PostgresRepository) GetEspressoConfig(
 	ctx context.Context,
 	nameOrAddress string,
 ) (uint64, uint64, error) {
@@ -43,7 +42,7 @@ func (r *postgresRepository) GetEspressoConfig(
 	return startingBlock, namespace, nil
 }
 
-func (r *postgresRepository) UpdateEspressoConfig(
+func (r *PostgresRepository) UpdateEspressoConfig(
 	ctx context.Context,
 	nameOrAddress string,
 	startingBlock uint64,
@@ -80,7 +79,7 @@ func (r *postgresRepository) UpdateEspressoConfig(
 	return nil
 }
 
-func (r *postgresRepository) GetEspressoNonce(
+func (r *PostgresRepository) GetEspressoNonce(
 	ctx context.Context,
 	senderAddress string,
 	nameOrAddress string,
@@ -112,55 +111,7 @@ func (r *postgresRepository) GetEspressoNonce(
 	return nonce, nil
 }
 
-func (r *postgresRepository) UpdateEspressoNonce(
-	ctx context.Context,
-	senderAddress string,
-	nameOrAddress string,
-) error {
-	// assume all are hex address string
-	sender := common.HexToAddress(senderAddress)
-	app := common.HexToAddress(nameOrAddress)
-	nonce, err := r.GetEspressoNonce(ctx, senderAddress, nameOrAddress)
-	if err != nil {
-		return err
-	}
-	nextNonce := nonce + 1
-
-	nonceInsertStmt := table.EspressoNonce.INSERT(
-		table.EspressoNonce.SenderAddress,
-		table.EspressoNonce.ApplicationAddress,
-		table.EspressoNonce.Nonce,
-	).VALUES(
-		postgres.Bytea(sender.Bytes()),
-		postgres.Bytea(app.Bytes()),
-		nextNonce,
-	)
-
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	sqlStr, args := nonceInsertStmt.
-		ON_CONFLICT(table.EspressoNonce.SenderAddress, table.EspressoNonce.ApplicationAddress).
-		DO_UPDATE(postgres.SET(
-			table.EspressoNonce.Nonce.SET(postgres.RawInt(fmt.Sprintf("%d", nextNonce))),
-		)).Sql()
-	_, err = tx.Exec(ctx, sqlStr, args...)
-
-	if err != nil {
-		return errors.Join(err, tx.Rollback(ctx))
-	}
-
-	// Commit transaction
-	err = tx.Commit(ctx)
-	if err != nil {
-		return errors.Join(err, tx.Rollback(ctx))
-	}
-	return nil
-}
-
-func (r *postgresRepository) GetInputIndex(
+func (r *PostgresRepository) GetInputIndex(
 	ctx context.Context,
 	nameOrAddress string,
 ) (uint64, error) {
@@ -191,28 +142,7 @@ func (r *postgresRepository) GetInputIndex(
 	return *index, nil
 }
 
-func (r *postgresRepository) UpdateInputIndex(
-	ctx context.Context,
-	nameOrAddress string,
-) error {
-	app := common.HexToAddress(nameOrAddress)
-	index, err := r.GetInputIndex(ctx, nameOrAddress)
-	if err != nil {
-		return err
-	}
-	nextIndex := index + 1
-
-	updateStmt := table.AppInfo.
-		UPDATE(table.AppInfo.Index).
-		SET(table.AppInfo.Index.SET(postgres.RawInt(fmt.Sprintf("%d", nextIndex)))).
-		WHERE(table.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())))
-
-	sqlStr, args := updateStmt.Sql()
-	_, err = r.db.Exec(ctx, sqlStr, args...)
-	return err
-}
-
-func (r *postgresRepository) GetLastProcessedEspressoBlock(
+func (r *PostgresRepository) GetLastProcessedEspressoBlock(
 	ctx context.Context,
 	nameOrAddress string,
 ) (uint64, error) {
@@ -240,21 +170,4 @@ func (r *postgresRepository) GetLastProcessedEspressoBlock(
 		return 0, err
 	}
 	return *lastProcessedEspressoBlock, nil
-}
-
-func (r *postgresRepository) UpdateLastProcessedEspressoBlock(
-	ctx context.Context,
-	nameOrAddress string,
-	lastProcessedEspressoBlock uint64,
-) error {
-	app := common.HexToAddress(nameOrAddress)
-
-	updateStmt := table.AppInfo.
-		UPDATE(table.AppInfo.LastProcessedEspressoBlock).
-		SET(table.AppInfo.LastProcessedEspressoBlock.SET(postgres.RawFloat(fmt.Sprintf("%d", lastProcessedEspressoBlock)))).
-		WHERE(table.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())))
-
-	sqlStr, args := updateStmt.Sql()
-	_, err := r.db.Exec(ctx, sqlStr, args...)
-	return err
 }
