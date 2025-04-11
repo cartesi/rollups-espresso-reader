@@ -18,7 +18,7 @@ import (
 
 // ------------------------ ApplicationRepository Methods ------------------------ //
 
-func (r *postgresRepository) CreateApplication(
+func (r *PostgresRepository) CreateApplication(
 	ctx context.Context,
 	app *model.Application,
 ) (int64, error) {
@@ -89,7 +89,7 @@ func (r *postgresRepository) CreateApplication(
 }
 
 // GetApplication retrieves one application by ID, optionally loading status & execution parameters.
-func (r *postgresRepository) GetApplication(
+func (r *PostgresRepository) GetApplication(
 	ctx context.Context,
 	nameOrAddress string,
 ) (*model.Application, error) {
@@ -195,7 +195,7 @@ func (r *postgresRepository) GetApplication(
 }
 
 // UpdateApplication updates an existing application row.
-func (r *postgresRepository) UpdateApplication(
+func (r *PostgresRepository) UpdateApplication(
 	ctx context.Context,
 	app *model.Application,
 ) error {
@@ -240,7 +240,7 @@ func (r *postgresRepository) UpdateApplication(
 	return err
 }
 
-func (r *postgresRepository) UpdateApplicationState(
+func (r *PostgresRepository) UpdateApplicationState(
 	ctx context.Context,
 	appID int64,
 	state model.ApplicationState,
@@ -263,7 +263,7 @@ func (r *postgresRepository) UpdateApplicationState(
 	return err
 }
 
-func (r *postgresRepository) UpdateEventLastCheckBlock(
+func (r *PostgresRepository) UpdateEventLastCheckBlock(
 	ctx context.Context,
 	appIDs []int64,
 	event model.MonitoredEvent,
@@ -306,7 +306,7 @@ func (r *postgresRepository) UpdateEventLastCheckBlock(
 }
 
 // DeleteApplication removes the row from "application" by ID.
-func (r *postgresRepository) DeleteApplication(
+func (r *PostgresRepository) DeleteApplication(
 	ctx context.Context,
 	id int64,
 ) error {
@@ -327,7 +327,7 @@ func (r *postgresRepository) DeleteApplication(
 }
 
 // ListApplications queries multiple apps with optional filters & pagination.
-func (r *postgresRepository) ListApplications(
+func (r *PostgresRepository) ListApplications(
 	ctx context.Context,
 	f repository.ApplicationFilter,
 	p repository.Pagination,

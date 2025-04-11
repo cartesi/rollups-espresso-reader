@@ -15,7 +15,7 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
 )
 
-func (r *postgresRepository) GetReport(
+func (r *PostgresRepository) GetReport(
 	ctx context.Context,
 	nameOrAddress string,
 	reportIndex uint64,
