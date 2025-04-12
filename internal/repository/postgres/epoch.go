@@ -145,6 +145,8 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 		return err
 	}
 
+	app := common.HexToAddress(nameOrAddress)
+
 	epochs := orderEpochs(epochInputsMap)
 	for _, epoch := range epochs {
 		inputs := epochInputsMap[epoch]
@@ -194,77 +196,76 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 			if err != nil {
 				return errors.Join(err, tx.Rollback(ctx))
 			}
+
+			if espressoUpdateInfo != nil {
+				// update espresso nonce
+				senderAddress := espressoUpdateInfo.SenderAddress
+				sender := common.HexToAddress(senderAddress)
+				nonce, err := r.GetEspressoNonce(ctx, senderAddress, nameOrAddress)
+				if err != nil {
+					return errors.Join(err, tx.Rollback(ctx))
+				}
+				nextNonce := nonce + 1
+				nonceInsertStmt := espressoTable.EspressoNonce.INSERT(
+					espressoTable.EspressoNonce.SenderAddress,
+					espressoTable.EspressoNonce.ApplicationAddress,
+					espressoTable.EspressoNonce.Nonce,
+				).VALUES(
+					postgres.Bytea(sender.Bytes()),
+					postgres.Bytea(app.Bytes()),
+					nextNonce,
+				)
+				sqlStr, args := nonceInsertStmt.
+					ON_CONFLICT(espressoTable.EspressoNonce.SenderAddress, espressoTable.EspressoNonce.ApplicationAddress).
+					DO_UPDATE(postgres.SET(
+						espressoTable.EspressoNonce.Nonce.SET(postgres.RawInt(fmt.Sprintf("%d", nextNonce))),
+					)).Sql()
+				_, err = tx.Exec(ctx, sqlStr, args...)
+				if err != nil {
+					return errors.Join(err, tx.Rollback(ctx))
+				}
+				// update last processed espresso block
+				lastProcessedEspressoBlock := espressoUpdateInfo.LastProcessedEspressoBlock
+				sqlStr, args = espressoTable.AppInfo.
+					UPDATE(espressoTable.AppInfo.LastProcessedEspressoBlock).
+					SET(espressoTable.AppInfo.LastProcessedEspressoBlock.SET(postgres.RawFloat(fmt.Sprintf("%d", lastProcessedEspressoBlock)))).
+					WHERE(espressoTable.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))).Sql()
+				_, err = tx.Exec(ctx, sqlStr, args...)
+				if err != nil {
+					return errors.Join(err, tx.Rollback(ctx))
+				}
+			}
+			// update input index
+			index, err := r.GetInputIndex(ctx, nameOrAddress)
+			if err != nil {
+				return err
+			}
+			nextIndex := index + 1
+			sqlStr, args = espressoTable.AppInfo.
+				UPDATE(espressoTable.AppInfo.Index).
+				SET(espressoTable.AppInfo.Index.SET(postgres.RawInt(fmt.Sprintf("%d", nextIndex)))).
+				WHERE(espressoTable.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))).Sql()
+			_, err = tx.Exec(ctx, sqlStr, args...)
+			if err != nil {
+				return errors.Join(err, tx.Rollback(ctx))
+			}
 		}
 	}
 
-	// update input index
-	app := common.HexToAddress(nameOrAddress)
-	index, err := r.GetInputIndex(ctx, nameOrAddress)
-	if err != nil {
-		return err
-	}
-	nextIndex := index + 1
-	sqlStr, args := espressoTable.AppInfo.
-		UPDATE(espressoTable.AppInfo.Index).
-		SET(espressoTable.AppInfo.Index.SET(postgres.RawInt(fmt.Sprintf("%d", nextIndex)))).
-		WHERE(espressoTable.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))).Sql()
+	// Update last processed block
+	appUpdateStmt := table.Application.
+		UPDATE(
+			table.Application.LastInputCheckBlock,
+		).
+		SET(
+			postgres.RawFloat(fmt.Sprintf("%d", blockNumber)),
+		).
+		WHERE(whereClause)
+
+	sqlStr, args := appUpdateStmt.Sql()
 	_, err = tx.Exec(ctx, sqlStr, args...)
 	if err != nil {
 		return errors.Join(err, tx.Rollback(ctx))
-	}
-	if espressoUpdateInfo == nil {
-		// Update last processed block
-		appUpdateStmt := table.Application.
-			UPDATE(
-				table.Application.LastInputCheckBlock,
-			).
-			SET(
-				postgres.RawFloat(fmt.Sprintf("%d", blockNumber)),
-			).
-			WHERE(whereClause)
-
-		sqlStr, args := appUpdateStmt.Sql()
-		_, err = tx.Exec(ctx, sqlStr, args...)
-		if err != nil {
-			return errors.Join(err, tx.Rollback(ctx))
-		}
-	} else {
-		// update espresso nonce
-		senderAddress := espressoUpdateInfo.SenderAddress
-		sender := common.HexToAddress(senderAddress)
-		nonce, err := r.GetEspressoNonce(ctx, senderAddress, nameOrAddress)
-		if err != nil {
-			return errors.Join(err, tx.Rollback(ctx))
-		}
-		nextNonce := nonce + 1
-		nonceInsertStmt := espressoTable.EspressoNonce.INSERT(
-			espressoTable.EspressoNonce.SenderAddress,
-			espressoTable.EspressoNonce.ApplicationAddress,
-			espressoTable.EspressoNonce.Nonce,
-		).VALUES(
-			postgres.Bytea(sender.Bytes()),
-			postgres.Bytea(app.Bytes()),
-			nextNonce,
-		)
-		sqlStr, args := nonceInsertStmt.
-			ON_CONFLICT(espressoTable.EspressoNonce.SenderAddress, espressoTable.EspressoNonce.ApplicationAddress).
-			DO_UPDATE(postgres.SET(
-				espressoTable.EspressoNonce.Nonce.SET(postgres.RawInt(fmt.Sprintf("%d", nextNonce))),
-			)).Sql()
-		_, err = tx.Exec(ctx, sqlStr, args...)
-		if err != nil {
-			return errors.Join(err, tx.Rollback(ctx))
-		}
-		// update last processed espresso block
-		lastProcessedEspressoBlock := espressoUpdateInfo.LastProcessedEspressoBlock
-		sqlStr, args = espressoTable.AppInfo.
-			UPDATE(espressoTable.AppInfo.LastProcessedEspressoBlock).
-			SET(espressoTable.AppInfo.LastProcessedEspressoBlock.SET(postgres.RawFloat(fmt.Sprintf("%d", lastProcessedEspressoBlock)))).
-			WHERE(espressoTable.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))).Sql()
-		_, err = tx.Exec(ctx, sqlStr, args...)
-		if err != nil {
-			return errors.Join(err, tx.Rollback(ctx))
-		}
 	}
 
 	// Commit transaction
