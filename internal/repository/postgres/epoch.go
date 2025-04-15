@@ -144,6 +144,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback(ctx)
 
 	app := common.HexToAddress(nameOrAddress)
 
@@ -175,7 +176,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 		_, err = tx.Exec(ctx, sqlStr, args...)
 
 		if err != nil {
-			return errors.Join(err, tx.Rollback(ctx))
+			return err
 		}
 
 		for _, input := range inputs {
@@ -194,7 +195,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 			sqlStr, args := inputInsertStmt.QUERY(inputSelectQuery).Sql()
 			_, err := tx.Exec(ctx, sqlStr, args...)
 			if err != nil {
-				return errors.Join(err, tx.Rollback(ctx))
+				return err
 			}
 
 			if espressoUpdateInfo != nil {
@@ -203,7 +204,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 				sender := common.HexToAddress(senderAddress)
 				nonce, err := r.GetEspressoNonce(ctx, senderAddress, nameOrAddress)
 				if err != nil {
-					return errors.Join(err, tx.Rollback(ctx))
+					return err
 				}
 				nextNonce := nonce + 1
 				nonceInsertStmt := espressoTable.EspressoNonce.INSERT(
@@ -222,7 +223,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 					)).Sql()
 				_, err = tx.Exec(ctx, sqlStr, args...)
 				if err != nil {
-					return errors.Join(err, tx.Rollback(ctx))
+					return err
 				}
 				// update last processed espresso block
 				lastProcessedEspressoBlock := espressoUpdateInfo.LastProcessedEspressoBlock
@@ -232,7 +233,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 					WHERE(espressoTable.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))).Sql()
 				_, err = tx.Exec(ctx, sqlStr, args...)
 				if err != nil {
-					return errors.Join(err, tx.Rollback(ctx))
+					return err
 				}
 			}
 			// update input index
@@ -247,7 +248,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 				WHERE(espressoTable.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))).Sql()
 			_, err = tx.Exec(ctx, sqlStr, args...)
 			if err != nil {
-				return errors.Join(err, tx.Rollback(ctx))
+				return err
 			}
 		}
 	}
@@ -265,13 +266,13 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 	sqlStr, args := appUpdateStmt.Sql()
 	_, err = tx.Exec(ctx, sqlStr, args...)
 	if err != nil {
-		return errors.Join(err, tx.Rollback(ctx))
+		return err
 	}
 
 	// Commit transaction
 	err = tx.Commit(ctx)
 	if err != nil {
-		return errors.Join(err, tx.Rollback(ctx))
+		return err
 	}
 
 	return nil
