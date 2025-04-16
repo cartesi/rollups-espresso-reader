@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
@@ -180,6 +181,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 		}
 
 		for _, input := range inputs {
+			slog.Debug("inserting input to db", "epoch", epoch.Index, "input block#", input.BlockNumber, "input index", input.Index)
 			inputSelectQuery := table.Application.SELECT(
 				table.Application.ID,
 				postgres.RawFloat(fmt.Sprintf("%d", epoch.Index)),
@@ -250,6 +252,10 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 			if err != nil {
 				return err
 			}
+
+			// debug message
+			index, _ = r.GetInputIndex(ctx, nameOrAddress)
+			slog.Debug("input index is now", "index", index)
 		}
 	}
 
