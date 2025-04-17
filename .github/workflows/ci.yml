@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Run Espresso Dev Node
     steps:
-      - name: Clone
+      - name: Clone and Run Espresso Network
         run: |
           export DOCKER_TAG=${ESPRESSO_DEV_NODE_VERSION}
           git clone -b ${ESPRESSO_DEV_NODE_VERSION} --depth 1 --recurse-submodules https://github.com/EspressoSystems/espresso-network.git
@@ -233,17 +233,23 @@ jobs:
           echo "Anvil did not start in time!" >&2
           exit 1
 
-      - name: Run Espresso dev node
+      # - name: Run Espresso dev node
+      #   run: |
+      #     docker run -d --network=host \
+      #       -e ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/ \
+      #       -e ESPRESSO_SEQUENCER_API_PORT=24000 \
+      #       -e ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL=1s \
+      #       -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
+      #       --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:${ESPRESSO_DEV_NODE_VERSION}
+      - name: Clone and Run Espresso Network
         run: |
-          docker run -d --network=host \
-            -e ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/ \
-            -e ESPRESSO_SEQUENCER_API_PORT=24000 \
-            -e ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL=1s \
-            -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
-            --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:${ESPRESSO_DEV_NODE_VERSION}
+          export DOCKER_TAG=${ESPRESSO_DEV_NODE_VERSION}
+          git clone -b ${ESPRESSO_DEV_NODE_VERSION} --depth 1 --recurse-submodules https://github.com/EspressoSystems/espresso-network.git
+          cd espresso-network
+          docker compose up -d
       
       - name: Wait for a while
-        run: sleep 15
+        run: sleep 60
 
       - name: Run Espresso Reader image (Default input disabled)
         env:
@@ -281,11 +287,11 @@ jobs:
           sleep 10
           docker logs --timestamps c_espresso
 
-      - name: Espresso dev node logs
-        run: docker logs --timestamps espresso-dev-node
+      # - name: Espresso dev node logs
+      #   run: docker logs --timestamps espresso-dev-node
 
-      - name: Espresso dev node debug hotshot.header
-        run: docker exec -i espresso-dev-node psql -U root -d root -t -c "SELECT height, timestamp FROM hotshot.header ORDER BY height;"
+      # - name: Espresso dev node debug hotshot.header
+      #   run: docker exec -i espresso-dev-node psql -U root -d root -t -c "SELECT height, timestamp FROM hotshot.header ORDER BY height;"
 
       - name: Query Database for Output
         run: |
