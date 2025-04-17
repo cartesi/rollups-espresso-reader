@@ -18,7 +18,7 @@ jobs:
           export DOCKER_TAG=${ESPRESSO_DEV_NODE_VERSION}
           git clone -b ${ESPRESSO_DEV_NODE_VERSION} --depth 1 --recurse-submodules https://github.com/EspressoSystems/espresso-network.git
           cd espresso-network
-          docker compose up
+          docker compose up -d
           sleep 60
       
       - name: Check Docker
