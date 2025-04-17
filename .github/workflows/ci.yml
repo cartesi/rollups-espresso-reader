@@ -15,7 +15,8 @@ jobs:
     steps:
       - name: Clone
         run: |
-          git clone -b 20250412-dev-node-pos-preview --depth 1 --recurse-submodules https://github.com/EspressoSystems/espresso-network.git
+          export DOCKER_TAG=${ESPRESSO_DEV_NODE_VERSION}
+          git clone -b ${ESPRESSO_DEV_NODE_VERSION} --depth 1 --recurse-submodules https://github.com/EspressoSystems/espresso-network.git
           cd espresso-network
           docker compose up --pull never
           sleep 60
