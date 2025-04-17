@@ -4,6 +4,8 @@ on: push
 
 permissions:
   contents: write
+env:
+  ESPRESSO_DEV_NODE_VERSION: 20250411-patch4
 
 jobs:
   build:
@@ -221,7 +223,7 @@ jobs:
             -e ESPRESSO_SEQUENCER_API_PORT=24000 \
             -e ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL=1s \
             -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
-            --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
+            --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:${ESPRESSO_DEV_NODE_VERSION}
       
       - name: Wait for a while
         run: sleep 15
@@ -358,7 +360,7 @@ jobs:
             -e ESPRESSO_SEQUENCER_API_PORT=24000 \
             -e ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL=1s \
             -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
-            --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
+            --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:${ESPRESSO_DEV_NODE_VERSION}
 
       - name: Wait for a while
         run: |
