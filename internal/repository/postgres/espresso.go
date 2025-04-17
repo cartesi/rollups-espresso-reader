@@ -11,6 +11,7 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/espresso/table"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-jet/jet/v2/postgres"
+	"github.com/jackc/pgx/v5"
 )
 
 func (r *PostgresRepository) GetEspressoConfig(
@@ -111,6 +112,40 @@ func (r *PostgresRepository) GetEspressoNonce(
 	return nonce, nil
 }
 
+// db read within the same tx
+func (r *PostgresRepository) GetEspressoNonceWithTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	senderAddress string,
+	nameOrAddress string,
+) (uint64, error) {
+	// assume all are hex address string
+	sender := common.HexToAddress(senderAddress)
+	app := common.HexToAddress(nameOrAddress)
+	sel := table.EspressoNonce.
+		SELECT(table.EspressoNonce.Nonce).
+		FROM(table.EspressoNonce).
+		WHERE(
+			table.EspressoNonce.SenderAddress.EQ(postgres.Bytea(sender.Bytes())).
+				AND(table.EspressoNonce.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))),
+		)
+
+	sqlStr, args := sel.Sql()
+	row := tx.QueryRow(ctx, sqlStr, args...)
+
+	var nonce uint64
+	err := row.Scan(
+		&nonce,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	return nonce, nil
+}
+
 func (r *PostgresRepository) GetInputIndex(
 	ctx context.Context,
 	nameOrAddress string,
@@ -125,6 +160,39 @@ func (r *PostgresRepository) GetInputIndex(
 
 	sqlStr, args := sel.Sql()
 	row := r.db.QueryRow(ctx, sqlStr, args...)
+
+	var index *uint64
+	err := row.Scan(
+		&index,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if index == nil {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	return *index, nil
+}
+
+// db read within the same tx
+func (r *PostgresRepository) GetInputIndexWithTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	nameOrAddress string,
+) (uint64, error) {
+	app := common.HexToAddress(nameOrAddress)
+	sel := table.AppInfo.
+		SELECT(table.AppInfo.Index).
+		FROM(table.AppInfo).
+		WHERE(
+			table.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes())),
+		)
+
+	sqlStr, args := sel.Sql()
+	row := tx.QueryRow(ctx, sqlStr, args...)
 
 	var index *uint64
 	err := row.Scan(

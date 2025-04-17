@@ -22,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	eth_types "github.com/ethereum/go-ethereum/core/types"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -99,6 +100,12 @@ func (m *MockRepository) GetEspressoNonce(ctx context.Context, senderAddress str
 	return uint64(m.nonce), args.Error(1)
 }
 
+// GetEspressoNonce implements repository.Repository.
+func (m *MockRepository) GetEspressoNonceWithTx(ctx context.Context, tx pgx.Tx, senderAddress string, nameOrAddress string) (uint64, error) {
+	args := m.Called(ctx, tx, senderAddress, nameOrAddress)
+	return uint64(m.nonce), args.Error(1)
+}
+
 // GetExecutionParameters implements repository.Repository.
 func (m *MockRepository) GetExecutionParameters(ctx context.Context, applicationID int64) (*model.ExecutionParameters, error) {
 	panic("unimplemented")
@@ -117,6 +124,12 @@ func (m *MockRepository) GetInputByTxReference(ctx context.Context, nameOrAddres
 // GetInputIndex implements repository.Repository.
 func (m *MockRepository) GetInputIndex(ctx context.Context, nameOrAddress string) (uint64, error) {
 	args := m.Called(ctx, nameOrAddress)
+	return uint64(m.inputIndex), args.Error(1)
+}
+
+// GetInputIndexWithTx implements repository.Repository.
+func (m *MockRepository) GetInputIndexWithTx(ctx context.Context, tx pgx.Tx, nameOrAddress string) (uint64, error) {
+	args := m.Called(ctx, tx, nameOrAddress)
 	return uint64(m.inputIndex), args.Error(1)
 }
 
@@ -401,6 +414,12 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 		mock.Anything, // nameOrAddress
 	).Return(currentInputIndex, nil)
 
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // tx
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
 	s.mockDatabase.On("GetEpoch",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
@@ -478,6 +497,12 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 
 	s.mockDatabase.On("GetInputIndex",
 		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // tx
 		mock.Anything, // nameOrAddress
 	).Return(currentInputIndex, nil)
 
@@ -566,6 +591,12 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 
 	s.mockDatabase.On("GetInputIndex",
 		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // tx
 		mock.Anything, // nameOrAddress
 	).Return(currentInputIndex, nil)
 
@@ -664,6 +695,12 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseSkippingL1Blocks() {
 
 	s.mockDatabase.On("GetInputIndex",
 		mock.Anything, // context.Context
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // tx
 		mock.Anything, // nameOrAddress
 	).Return(currentInputIndex, nil)
 

@@ -11,6 +11,7 @@ import (
 
 	. "github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/jackc/pgx/v5"
 )
 
 type Pagination struct {
@@ -107,8 +108,19 @@ type EspressoRepository interface {
 		senderAddress string,
 		nameOrAddress string,
 	) (uint64, error)
+	GetEspressoNonceWithTx(
+		ctx context.Context,
+		tx pgx.Tx,
+		senderAddress string,
+		nameOrAddress string,
+	) (uint64, error)
 	GetInputIndex(
 		ctx context.Context,
+		nameOrAddress string,
+	) (uint64, error)
+	GetInputIndexWithTx(
+		ctx context.Context,
+		tx pgx.Tx,
 		nameOrAddress string,
 	) (uint64, error)
 	GetLastProcessedEspressoBlock(

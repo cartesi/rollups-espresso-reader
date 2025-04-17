@@ -204,7 +204,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 				// update espresso nonce
 				senderAddress := espressoUpdateInfo.SenderAddress
 				sender := common.HexToAddress(senderAddress)
-				nonce, err := r.GetEspressoNonce(ctx, senderAddress, nameOrAddress)
+				nonce, err := r.GetEspressoNonceWithTx(ctx, tx, senderAddress, nameOrAddress)
 				if err != nil {
 					return err
 				}
@@ -239,7 +239,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 				}
 			}
 			// update input index
-			index, err := r.GetInputIndex(ctx, nameOrAddress)
+			index, err := r.GetInputIndexWithTx(ctx, tx, nameOrAddress)
 			if err != nil {
 				return err
 			}
@@ -253,8 +253,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 				return err
 			}
 
-			// debug message
-			index, _ = r.GetInputIndex(ctx, nameOrAddress)
+			index, _ = r.GetInputIndexWithTx(ctx, tx, nameOrAddress)
 			slog.Debug("input index is now", "index", index)
 		}
 	}
