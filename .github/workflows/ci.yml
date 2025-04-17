@@ -5,7 +5,8 @@ on: push
 permissions:
   contents: write
 env:
-  ESPRESSO_DEV_NODE_VERSION: 20250411-patch4
+  # ESPRESSO_DEV_NODE_VERSION: 20250411-patch4
+  ESPRESSO_DEV_NODE_VERSION: 20250412-dev-node-pos-preview
 
 jobs:
   build:
