@@ -135,9 +135,9 @@ RUN curl -L https://github.com/cartesi/machine-emulator-tools/releases/download/
 # Install rollups node
 RUN <<EOF
     set -e
-    curl -LO https://github.com/cartesi/rollups-node/releases/download/v2.0.0-alpha.2/cartesi-rollups-node-v2.0.0-alpha.2_${TARGETARCH}.deb
-    dpkg -i ./cartesi-rollups-node-v2.0.0-alpha.2_${TARGETARCH}.deb
-    rm ./cartesi-rollups-node-v2.0.0-alpha.2_${TARGETARCH}.deb
+    curl -LO https://github.com/cartesi/rollups-node/releases/download/v2.0.0-alpha.4/cartesi-rollups-node-v2.0.0-alpha.4_${TARGETARCH}.deb
+    dpkg -i ./cartesi-rollups-node-v2.0.0-alpha.4_${TARGETARCH}.deb
+    rm ./cartesi-rollups-node-v2.0.0-alpha.4_${TARGETARCH}.deb
 EOF
 
 WORKDIR ${NODE_RUNTIME_DIR}

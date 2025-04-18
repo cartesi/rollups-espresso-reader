@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
-	"github.com/cartesi/rollups-espresso-reader/internal/evmreader/retrypolicy"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 
 	"github.com/EspressoSystems/espresso-sequencer-go/client"
@@ -95,14 +94,13 @@ func (s *EspressoReaderService) setupEvmReader(ctx context.Context, r repository
 		slog.Error("db config", "error", err)
 	}
 
-	contractFactory := retrypolicy.NewEvmReaderContractFactory(client, s.maxRetries, s.maxDelay)
-
 	evmReader := evmreader.NewEvmReader(
-		retrypolicy.NewEhtClientWithRetryPolicy(client, s.maxRetries, s.maxDelay),
-		retrypolicy.NewEthWsClientWithRetryPolicy(wsClient, s.maxRetries, s.maxDelay),
+		client,
+		wsClient,
 		r,
+		config.Value.ChainID,
 		config.Value.DefaultBlock,
-		contractFactory,
+		config.Value.InputReaderEnabled,
 		true,
 	)
 
