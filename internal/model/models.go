@@ -532,3 +532,8 @@ func (e MonitoredEvent) String() string {
 func Pointer[T any](v T) *T {
 	return &v
 }
+
+type EspressoUpdateInfo struct {
+	SenderAddress              string
+	LastProcessedEspressoBlock uint64
+}

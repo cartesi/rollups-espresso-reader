@@ -52,6 +52,7 @@ type EvmReaderRepository interface {
 	CreateEpochsAndInputs(
 		ctx context.Context, nameOrAddress string,
 		epochInputMap map[*Epoch][]*Input, blockNumber uint64,
+		espressoUpdateInfo *model.EspressoUpdateInfo,
 	) error
 	GetEpoch(ctx context.Context, nameOrAddress string, index uint64) (*Epoch, error)
 
@@ -59,10 +60,6 @@ type EvmReaderRepository interface {
 		ctx context.Context,
 		nameOrAddress string,
 	) (uint64, error)
-	UpdateInputIndex(
-		ctx context.Context,
-		nameOrAddress string,
-	) error
 }
 
 // EthClient mimics part of ethclient.Client functions to narrow down the

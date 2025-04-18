@@ -14,12 +14,12 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/schema"
 )
 
-// postgresRepository is the concrete type that implements the repository.Repository interface.
-type postgresRepository struct {
+// PostgresRepository is the concrete type that implements the repository.Repository interface.
+type PostgresRepository struct {
 	db *pgxpool.Pool
 }
 
-func (r *postgresRepository) Close() {
+func (r *PostgresRepository) Close() {
 	if r.db != nil {
 		r.db.Close()
 	}
@@ -52,7 +52,7 @@ func NewPostgresRepository(ctx context.Context, conn string, maxRetries int, del
 	for i := 0; i < maxRetries; i++ {
 		err = validateSchema(pool)
 		if err == nil {
-			return &postgresRepository{db: pool}, nil
+			return &PostgresRepository{db: pool}, nil
 		}
 		if i == maxRetries-1 {
 			pool.Close()

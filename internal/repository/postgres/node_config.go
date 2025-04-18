@@ -13,7 +13,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
-func (r *postgresRepository) SaveNodeConfigRaw(ctx context.Context, key string, rawJSON []byte) error {
+func (r *PostgresRepository) SaveNodeConfigRaw(ctx context.Context, key string, rawJSON []byte) error {
 
 	insertStmt := table.NodeConfig.
 		INSERT(
@@ -32,7 +32,7 @@ func (r *postgresRepository) SaveNodeConfigRaw(ctx context.Context, key string, 
 	return err
 }
 
-func (r *postgresRepository) LoadNodeConfigRaw(ctx context.Context, key string) ([]byte, time.Time, time.Time, error) {
+func (r *PostgresRepository) LoadNodeConfigRaw(ctx context.Context, key string) ([]byte, time.Time, time.Time, error) {
 	sel := table.NodeConfig.
 		SELECT(
 			table.NodeConfig.Value,

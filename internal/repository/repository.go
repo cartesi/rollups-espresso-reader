@@ -11,6 +11,7 @@ import (
 
 	. "github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/jackc/pgx/v5"
 )
 
 type Pagination struct {
@@ -65,7 +66,7 @@ type ApplicationRepository interface {
 
 type EpochRepository interface {
 	CreateEpoch(ctx context.Context, nameOrAddress string, e *Epoch) error
-	CreateEpochsAndInputs(ctx context.Context, nameOrAddress string, epochInputMap map[*Epoch][]*Input, blockNumber uint64) error
+	CreateEpochsAndInputs(ctx context.Context, nameOrAddress string, epochInputMap map[*Epoch][]*Input, blockNumber uint64, espressoUpdateInfo *EspressoUpdateInfo) error
 
 	GetEpoch(ctx context.Context, nameOrAddress string, index uint64) (*Epoch, error)
 	GetEpochByVirtualIndex(ctx context.Context, nameOrAddress string, index uint64) (*Epoch, error)
@@ -107,28 +108,25 @@ type EspressoRepository interface {
 		senderAddress string,
 		nameOrAddress string,
 	) (uint64, error)
-	UpdateEspressoNonce(
+	GetEspressoNonceWithTx(
 		ctx context.Context,
+		tx pgx.Tx,
 		senderAddress string,
 		nameOrAddress string,
-	) error
+	) (uint64, error)
 	GetInputIndex(
 		ctx context.Context,
 		nameOrAddress string,
 	) (uint64, error)
-	UpdateInputIndex(
+	GetInputIndexWithTx(
 		ctx context.Context,
+		tx pgx.Tx,
 		nameOrAddress string,
-	) error
+	) (uint64, error)
 	GetLastProcessedEspressoBlock(
 		ctx context.Context,
 		nameOrAddress string,
 	) (uint64, error)
-	UpdateLastProcessedEspressoBlock(
-		ctx context.Context,
-		nameOrAddress string,
-		lastProcessedEspressoBlock uint64,
-	) error
 }
 
 type Repository interface {

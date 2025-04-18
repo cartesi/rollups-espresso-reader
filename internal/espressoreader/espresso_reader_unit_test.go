@@ -22,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	eth_types "github.com/ethereum/go-ethereum/core/types"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -46,7 +47,7 @@ func (m *MockRepository) CreateEpoch(ctx context.Context, nameOrAddress string, 
 }
 
 // CreateEpochsAndInputs implements repository.Repository.
-func (m *MockRepository) CreateEpochsAndInputs(ctx context.Context, nameOrAddress string, epochInputMap map[*model.Epoch][]*model.Input, blockNumber uint64) error {
+func (m *MockRepository) CreateEpochsAndInputs(ctx context.Context, nameOrAddress string, epochInputMap map[*model.Epoch][]*model.Input, blockNumber uint64, espressoUpdateInfo *model.EspressoUpdateInfo) error {
 	for e := range epochInputMap {
 		found := false
 		for loopIndex, loopEpoch := range m.epochs {
@@ -61,6 +62,10 @@ func (m *MockRepository) CreateEpochsAndInputs(ctx context.Context, nameOrAddres
 
 		for _, input := range epochInputMap[e] {
 			m.inputs = append(m.inputs, *input)
+			m.inputIndex++
+			if espressoUpdateInfo != nil {
+				m.nonce++
+			}
 		}
 	}
 	args := m.Called(ctx, nameOrAddress, epochInputMap, blockNumber)
@@ -95,6 +100,12 @@ func (m *MockRepository) GetEspressoNonce(ctx context.Context, senderAddress str
 	return uint64(m.nonce), args.Error(1)
 }
 
+// GetEspressoNonce implements repository.Repository.
+func (m *MockRepository) GetEspressoNonceWithTx(ctx context.Context, tx pgx.Tx, senderAddress string, nameOrAddress string) (uint64, error) {
+	args := m.Called(ctx, tx, senderAddress, nameOrAddress)
+	return uint64(m.nonce), args.Error(1)
+}
+
 // GetExecutionParameters implements repository.Repository.
 func (m *MockRepository) GetExecutionParameters(ctx context.Context, applicationID int64) (*model.ExecutionParameters, error) {
 	panic("unimplemented")
@@ -113,6 +124,12 @@ func (m *MockRepository) GetInputByTxReference(ctx context.Context, nameOrAddres
 // GetInputIndex implements repository.Repository.
 func (m *MockRepository) GetInputIndex(ctx context.Context, nameOrAddress string) (uint64, error) {
 	args := m.Called(ctx, nameOrAddress)
+	return uint64(m.inputIndex), args.Error(1)
+}
+
+// GetInputIndexWithTx implements repository.Repository.
+func (m *MockRepository) GetInputIndexWithTx(ctx context.Context, tx pgx.Tx, nameOrAddress string) (uint64, error) {
+	args := m.Called(ctx, tx, nameOrAddress)
 	return uint64(m.inputIndex), args.Error(1)
 }
 
@@ -186,27 +203,8 @@ func (m *MockRepository) UpdateEpochsClaimAccepted(ctx context.Context, nameOrAd
 	panic("unimplemented")
 }
 
-// UpdateEspressoNonce implements repository.Repository.
-func (m *MockRepository) UpdateEspressoNonce(ctx context.Context, senderAddress string, nameOrAddress string) error {
-	args := m.Called(ctx, senderAddress, nameOrAddress)
-	m.nonce++
-	return args.Error(0)
-}
-
 // UpdateExecutionParameters implements repository.Repository.
 func (m *MockRepository) UpdateExecutionParameters(ctx context.Context, ep *model.ExecutionParameters) error {
-	panic("unimplemented")
-}
-
-// UpdateInputIndex implements repository.Repository.
-func (m *MockRepository) UpdateInputIndex(ctx context.Context, nameOrAddress string) error {
-	args := m.Called(ctx, nameOrAddress)
-	m.inputIndex++
-	return args.Error(0)
-}
-
-// UpdateLastProcessedEspressoBlock implements repository.Repository.
-func (m *MockRepository) UpdateLastProcessedEspressoBlock(ctx context.Context, nameOrAddress string, lastProcessedEspressoBlock uint64) error {
 	panic("unimplemented")
 }
 
@@ -416,6 +414,12 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 		mock.Anything, // nameOrAddress
 	).Return(currentInputIndex, nil)
 
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // tx
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
 	s.mockDatabase.On("GetEpoch",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
@@ -427,17 +431,7 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 		mock.Anything, // nameOrAddress
 		mock.Anything, // epochInputMap
 		mock.Anything, // blockNumber
-	).Return(nil)
-
-	s.mockDatabase.On("UpdateEspressoNonce",
-		mock.Anything, // context.Context
-		mock.Anything, // senderAddress
-		mock.Anything, // nameOrAddress
-	).Return(nil)
-
-	s.mockDatabase.On("UpdateInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
+		mock.Anything, // EspressoUpdateInfo
 	).Return(nil)
 
 	s.mockEthClient.On("HeaderByNumber",
@@ -506,6 +500,12 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 		mock.Anything, // nameOrAddress
 	).Return(currentInputIndex, nil)
 
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // tx
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
 	s.mockDatabase.On("GetEpoch",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
@@ -517,17 +517,7 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 		mock.Anything, // nameOrAddress
 		mock.Anything, // epochInputMap
 		mock.Anything, // blockNumber
-	).Return(nil)
-
-	s.mockDatabase.On("UpdateEspressoNonce",
-		mock.Anything, // context.Context
-		mock.Anything, // senderAddress
-		mock.Anything, // nameOrAddress
-	).Return(nil)
-
-	s.mockDatabase.On("UpdateInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
+		mock.Anything, // EspressoUpdateInfo
 	).Return(nil)
 
 	s.mockEthClient.On("HeaderByNumber",
@@ -604,6 +594,12 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 		mock.Anything, // nameOrAddress
 	).Return(currentInputIndex, nil)
 
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // tx
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
 	s.mockDatabase.On("GetEpoch",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
@@ -620,17 +616,7 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 		mock.Anything, // nameOrAddress
 		mock.Anything, // epochInputMap
 		mock.Anything, // blockNumber
-	).Return(nil)
-
-	s.mockDatabase.On("UpdateEspressoNonce",
-		mock.Anything, // context.Context
-		mock.Anything, // senderAddress
-		mock.Anything, // nameOrAddress
-	).Return(nil)
-
-	s.mockDatabase.On("UpdateInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
+		mock.Anything, // EspressoUpdateInfo
 	).Return(nil)
 
 	s.mockEthClient.On("HeaderByNumber",
@@ -712,6 +698,12 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseSkippingL1Blocks() {
 		mock.Anything, // nameOrAddress
 	).Return(currentInputIndex, nil)
 
+	s.mockDatabase.On("GetInputIndex",
+		mock.Anything, // context.Context
+		mock.Anything, // tx
+		mock.Anything, // nameOrAddress
+	).Return(currentInputIndex, nil)
+
 	s.mockDatabase.On("GetEpoch",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
@@ -728,17 +720,7 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseSkippingL1Blocks() {
 		mock.Anything, // nameOrAddress
 		mock.Anything, // epochInputMap
 		mock.Anything, // blockNumber
-	).Return(nil)
-
-	s.mockDatabase.On("UpdateEspressoNonce",
-		mock.Anything, // context.Context
-		mock.Anything, // senderAddress
-		mock.Anything, // nameOrAddress
-	).Return(nil)
-
-	s.mockDatabase.On("UpdateInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
+		mock.Anything, // EspressoUpdateInfo
 	).Return(nil)
 
 	s.mockEthClient.On("HeaderByNumber",

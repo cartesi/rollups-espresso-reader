@@ -65,6 +65,8 @@ func (r *EvmReader) ReadAndStoreInputs(
 			continue
 		}
 
+		combinedIndex, err := r.repository.GetInputIndex(ctx, address.Hex())
+
 		// Initialize epochs inputs map
 		var epochInputMap = make(map[*Epoch][]*Input)
 		// Index Inputs into epochs
@@ -138,7 +140,6 @@ func (r *EvmReader) ReadAndStoreInputs(
 				currentInputs = []*Input{}
 			}
 			// overriding input index
-			combinedIndex, err := r.repository.GetInputIndex(ctx, address.Hex())
 			if err != nil {
 				slog.Error("evmreader: failed to read index", "app", address, "error", err)
 			}
@@ -149,10 +150,7 @@ func (r *EvmReader) ReadAndStoreInputs(
 				if err == nil {
 					input.RawData = modifiedRawData
 				}
-			}
-			err = r.repository.UpdateInputIndex(ctx, address.Hex())
-			if err != nil {
-				slog.Error("evmreader: failed to update index", "app", address, "error", err)
+				combinedIndex++
 			}
 			epochInputMap[currentEpoch] = append(currentInputs, input)
 
@@ -180,6 +178,7 @@ func (r *EvmReader) ReadAndStoreInputs(
 			address.String(),
 			epochInputMap,
 			mostRecentBlockNumber,
+			nil,
 		)
 		if err != nil {
 			slog.Error("Error storing inputs and epochs",

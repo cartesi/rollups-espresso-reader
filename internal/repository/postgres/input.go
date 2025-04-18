@@ -15,7 +15,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
-func (r *postgresRepository) GetInput(
+func (r *PostgresRepository) GetInput(
 	ctx context.Context,
 	nameOrAddress string,
 	inputIndex uint64,
@@ -77,7 +77,7 @@ func (r *postgresRepository) GetInput(
 	return &inp, nil
 }
 
-func (r *postgresRepository) GetInputByTxReference(
+func (r *PostgresRepository) GetInputByTxReference(
 	ctx context.Context,
 	nameOrAddress string,
 	ref *common.Hash,
@@ -143,7 +143,7 @@ func (r *postgresRepository) GetInputByTxReference(
 	return &inp, nil
 }
 
-func (r *postgresRepository) GetLastInput(
+func (r *PostgresRepository) GetLastInput(
 	ctx context.Context,
 	nameOrAddress string,
 	epochIndex uint64,
