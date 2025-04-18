@@ -19,6 +19,7 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/iinputbox"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	eth_types "github.com/ethereum/go-ethereum/core/types"
@@ -104,11 +105,6 @@ func (m *MockRepository) GetEspressoNonce(ctx context.Context, senderAddress str
 func (m *MockRepository) GetEspressoNonceWithTx(ctx context.Context, tx pgx.Tx, senderAddress string, nameOrAddress string) (uint64, error) {
 	args := m.Called(ctx, tx, senderAddress, nameOrAddress)
 	return uint64(m.nonce), args.Error(1)
-}
-
-// GetExecutionParameters implements repository.Repository.
-func (m *MockRepository) GetExecutionParameters(ctx context.Context, applicationID int64) (*model.ExecutionParameters, error) {
-	panic("unimplemented")
 }
 
 // GetInput implements repository.Repository.
@@ -277,14 +273,22 @@ func (m *MockEspressoClient) FetchTransactionsInBlock(ctx context.Context, block
 	return transactions, args.Error(1)
 }
 
-type MockEthClient struct {
+type MockEthClientInterface struct {
 	mock.Mock
 }
 
-func (m *MockEthClient) HeaderByNumber(ctx context.Context, number *big.Int) (*eth_types.Header, error) {
+func (m *MockEthClientInterface) HeaderByNumber(ctx context.Context, number *big.Int) (*eth_types.Header, error) {
 	args := m.Called(ctx, number)
 	header, _ := args.Get(0).(eth_types.Header)
 	return &header, args.Error(1)
+}
+
+func (m *MockEthClientInterface) SubscribeNewHead(ctx context.Context, ch chan<- *eth_types.Header) (ethereum.Subscription, error) {
+	panic("unimplemented")
+}
+
+func (m *MockEthClientInterface) ChainID(ctx context.Context) (*big.Int, error) {
+	panic("unimplemented")
 }
 
 type MockInputSource struct {
@@ -323,7 +327,7 @@ type EspressoReaderUnitTestSuite struct {
 	espressoReader     EspressoReader
 	mockEspressoClient *MockEspressoClient
 	mockDatabase       *MockRepository
-	mockEthClient      *MockEthClient
+	mockEthClient      *MockEthClientInterface
 	mockInputSource    *MockInputSource
 	mockEspressoHelper *MockEspressoHelper
 }
@@ -335,22 +339,22 @@ var transactions = []types.Bytes{
 
 func (s *EspressoReaderUnitTestSuite) SetupTest() {
 	espressoApiURL := ""
-	chainId := 13370
+	chainId := uint64(13370)
 	maxRetries := 10
 	maxDelay := 1
 	mockDatabase := new(MockRepository)
-	mockEthClient := new(MockEthClient)
+	mockEthClient := new(MockEthClientInterface)
 	mockInputSource := new(MockInputSource)
 	s.mockInputSource = mockInputSource
 	evmReader := evmreader.NewEvmReader(
-		mockEthClient, nil, mockDatabase, "0", nil, true,
+		mockEthClient, nil, mockDatabase, chainId, "0", false, true,
 	)
 	blockchainHttpEndpoint := "http://localhost:8545"
 	s.espressoReader = NewEspressoReader(
 		espressoApiURL,
 		mockDatabase,
 		&evmReader,
-		uint64(chainId),
+		chainId,
 		uint64(maxRetries),
 		uint64(maxDelay),
 		blockchainHttpEndpoint,
@@ -447,8 +451,8 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 		EpochLength:         10, // cannot be zero
 	}
 	appEvmType := evmreader.TypeExportApplication{
-		Application: application,
-		InputSource: s.mockInputSource,
+		Application:        application,
+		InputSourceAdapter: s.mockInputSource,
 	}
 
 	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
@@ -533,8 +537,8 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 		EpochLength:         10, // cannot be zero
 	}
 	appEvmType := evmreader.TypeExportApplication{
-		Application: application,
-		InputSource: s.mockInputSource,
+		Application:        application,
+		InputSourceAdapter: s.mockInputSource,
 	}
 
 	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
@@ -645,8 +649,8 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 		EpochLength:         uint64(lastProcessedBlock + 1), // test the edge case
 	}
 	appEvmType := evmreader.TypeExportApplication{
-		Application: application,
-		InputSource: s.mockInputSource,
+		Application:        application,
+		InputSourceAdapter: s.mockInputSource,
 	}
 
 	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(lastProcessedBlock), uint64(l1FinalizedTimestamp))
@@ -771,8 +775,8 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseSkippingL1Blocks() {
 		EpochLength:         uint64(lastProcessedBlock + 1), // test the edge case
 	}
 	appEvmType := evmreader.TypeExportApplication{
-		Application: application,
-		InputSource: s.mockInputSource,
+		Application:        application,
+		InputSourceAdapter: s.mockInputSource,
 	}
 
 	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(lastProcessedBlock), uint64(l1FinalizedTimestamp))

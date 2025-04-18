@@ -18,7 +18,7 @@ import (
 )
 
 // InputBox Wrapper
-type InputSourceAdapter struct {
+type InputSourceAdapterImpl struct {
 	inputbox        *iinputbox.IInputBox
 	client          *ethclient.Client
 	inputBoxAddress common.Address
@@ -27,12 +27,12 @@ type InputSourceAdapter struct {
 func NewInputSourceAdapter(
 	inputBoxAddress common.Address,
 	client *ethclient.Client,
-) (*InputSourceAdapter, error) {
+) (InputSourceAdapter, error) {
 	inputbox, err := iinputbox.NewIInputBox(inputBoxAddress, client)
 	if err != nil {
 		return nil, err
 	}
-	return &InputSourceAdapter{
+	return &InputSourceAdapterImpl{
 		inputbox:        inputbox,
 		client:          client,
 		inputBoxAddress: inputBoxAddress,
@@ -79,7 +79,7 @@ func buildInputAddedFilterQuery(
 	return q, err
 }
 
-func (i *InputSourceAdapter) RetrieveInputs(
+func (i *InputSourceAdapterImpl) RetrieveInputs(
 	opts *bind.FilterOpts,
 	appContract []common.Address,
 	index []*big.Int,

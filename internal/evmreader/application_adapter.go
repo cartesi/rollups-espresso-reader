@@ -18,7 +18,7 @@ import (
 )
 
 // IApplication Wrapper
-type ApplicationContractAdapter struct {
+type ApplicationContractAdapterImpl struct {
 	application        *iapplication.IApplication
 	client             *ethclient.Client
 	applicationAddress common.Address
@@ -27,12 +27,12 @@ type ApplicationContractAdapter struct {
 func NewApplicationContractAdapter(
 	appAddress common.Address,
 	client *ethclient.Client,
-) (*ApplicationContractAdapter, error) {
+) (ApplicationContractAdapter, error) {
 	applicationContract, err := iapplication.NewIApplication(appAddress, client)
 	if err != nil {
 		return nil, err
 	}
-	return &ApplicationContractAdapter{
+	return &ApplicationContractAdapterImpl{
 		application:        applicationContract,
 		applicationAddress: appAddress,
 		client:             client,
@@ -66,7 +66,7 @@ func buildOutputExecutedFilterQuery(
 	return q, err
 }
 
-func (a *ApplicationContractAdapter) RetrieveOutputExecutionEvents(
+func (a *ApplicationContractAdapterImpl) RetrieveOutputExecutionEvents(
 	opts *bind.FilterOpts,
 ) ([]*iapplication.IApplicationOutputExecuted, error) {
 	q, err := buildOutputExecutedFilterQuery(opts, a.applicationAddress)
