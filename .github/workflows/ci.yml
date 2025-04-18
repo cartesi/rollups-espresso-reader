@@ -243,6 +243,8 @@ jobs:
       #       --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:${ESPRESSO_DEV_NODE_VERSION}
       - name: Clone and Run Espresso Network
         run: |
+          export ESPRESSO_SEQUENCER_L1_PORT=8557
+          export ESPRESSO_SEQUENCER_L1_WS_PORT=8558
           export ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/
           export ESPRESSO_SEQUENCER0_DB_PORT=5432
           export ESPRESSO_SEQUENCER1_DB_PORT=5454
