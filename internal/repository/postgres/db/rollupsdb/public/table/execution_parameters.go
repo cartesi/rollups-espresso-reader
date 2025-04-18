@@ -19,7 +19,6 @@ type executionParametersTable struct {
 	// Columns
 	ApplicationID         postgres.ColumnInteger
 	SnapshotPolicy        postgres.ColumnString
-	SnapshotRetention     postgres.ColumnInteger
 	AdvanceIncCycles      postgres.ColumnInteger
 	AdvanceMaxCycles      postgres.ColumnInteger
 	InspectIncCycles      postgres.ColumnInteger
@@ -76,7 +75,6 @@ func newExecutionParametersTableImpl(schemaName, tableName, alias string) execut
 	var (
 		ApplicationIDColumn         = postgres.IntegerColumn("application_id")
 		SnapshotPolicyColumn        = postgres.StringColumn("snapshot_policy")
-		SnapshotRetentionColumn     = postgres.IntegerColumn("snapshot_retention")
 		AdvanceIncCyclesColumn      = postgres.IntegerColumn("advance_inc_cycles")
 		AdvanceMaxCyclesColumn      = postgres.IntegerColumn("advance_max_cycles")
 		InspectIncCyclesColumn      = postgres.IntegerColumn("inspect_inc_cycles")
@@ -91,8 +89,8 @@ func newExecutionParametersTableImpl(schemaName, tableName, alias string) execut
 		MaxConcurrentInspectsColumn = postgres.IntegerColumn("max_concurrent_inspects")
 		CreatedAtColumn             = postgres.TimestampzColumn("created_at")
 		UpdatedAtColumn             = postgres.TimestampzColumn("updated_at")
-		allColumns                  = postgres.ColumnList{ApplicationIDColumn, SnapshotPolicyColumn, SnapshotRetentionColumn, AdvanceIncCyclesColumn, AdvanceMaxCyclesColumn, InspectIncCyclesColumn, InspectMaxCyclesColumn, AdvanceIncDeadlineColumn, AdvanceMaxDeadlineColumn, InspectIncDeadlineColumn, InspectMaxDeadlineColumn, LoadDeadlineColumn, StoreDeadlineColumn, FastDeadlineColumn, MaxConcurrentInspectsColumn, CreatedAtColumn, UpdatedAtColumn}
-		mutableColumns              = postgres.ColumnList{SnapshotPolicyColumn, SnapshotRetentionColumn, AdvanceIncCyclesColumn, AdvanceMaxCyclesColumn, InspectIncCyclesColumn, InspectMaxCyclesColumn, AdvanceIncDeadlineColumn, AdvanceMaxDeadlineColumn, InspectIncDeadlineColumn, InspectMaxDeadlineColumn, LoadDeadlineColumn, StoreDeadlineColumn, FastDeadlineColumn, MaxConcurrentInspectsColumn, CreatedAtColumn, UpdatedAtColumn}
+		allColumns                  = postgres.ColumnList{ApplicationIDColumn, SnapshotPolicyColumn, AdvanceIncCyclesColumn, AdvanceMaxCyclesColumn, InspectIncCyclesColumn, InspectMaxCyclesColumn, AdvanceIncDeadlineColumn, AdvanceMaxDeadlineColumn, InspectIncDeadlineColumn, InspectMaxDeadlineColumn, LoadDeadlineColumn, StoreDeadlineColumn, FastDeadlineColumn, MaxConcurrentInspectsColumn, CreatedAtColumn, UpdatedAtColumn}
+		mutableColumns              = postgres.ColumnList{SnapshotPolicyColumn, AdvanceIncCyclesColumn, AdvanceMaxCyclesColumn, InspectIncCyclesColumn, InspectMaxCyclesColumn, AdvanceIncDeadlineColumn, AdvanceMaxDeadlineColumn, InspectIncDeadlineColumn, InspectMaxDeadlineColumn, LoadDeadlineColumn, StoreDeadlineColumn, FastDeadlineColumn, MaxConcurrentInspectsColumn, CreatedAtColumn, UpdatedAtColumn}
 	)
 
 	return executionParametersTable{
@@ -101,7 +99,6 @@ func newExecutionParametersTableImpl(schemaName, tableName, alias string) execut
 		//Columns
 		ApplicationID:         ApplicationIDColumn,
 		SnapshotPolicy:        SnapshotPolicyColumn,
-		SnapshotRetention:     SnapshotRetentionColumn,
 		AdvanceIncCycles:      AdvanceIncCyclesColumn,
 		AdvanceMaxCycles:      AdvanceMaxCyclesColumn,
 		InspectIncCycles:      InspectIncCyclesColumn,

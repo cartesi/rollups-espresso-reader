@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -43,11 +45,15 @@ func (a *Application) MarshalJSON() ([]byte, error) {
 		IInputBoxBlock       string `json:"iinputbox_block"`
 		LastInputCheckBlock  string `json:"last_input_check_block"`
 		LastOutputCheckBlock string `json:"last_output_check_block"`
+		EpochLength          string `json:"epoch_length"`
+		ProcessedInputs      string `json:"processed_inputs"`
 	}{
 		Alias:                (*Alias)(a),
 		IInputBoxBlock:       fmt.Sprintf("0x%x", a.IInputBoxBlock),
 		LastInputCheckBlock:  fmt.Sprintf("0x%x", a.LastInputCheckBlock),
 		LastOutputCheckBlock: fmt.Sprintf("0x%x", a.LastOutputCheckBlock),
+		EpochLength:          fmt.Sprintf("0x%x", a.EpochLength),
+		ProcessedInputs:      fmt.Sprintf("0x%x", a.ProcessedInputs),
 	}
 	return json.Marshal(aux)
 }
@@ -74,7 +80,7 @@ func (e *ApplicationState) Scan(value any) error {
 	case []byte:
 		enumValue = string(val)
 	default:
-		return errors.New("Invalid value for ApplicationState enum. Enum value has to be of type string or []byte")
+		return errors.New("invalid value for ApplicationState enum. Enum value has to be of type string or []byte")
 	}
 
 	switch enumValue {
@@ -85,7 +91,7 @@ func (e *ApplicationState) Scan(value any) error {
 	case "INOPERABLE":
 		*e = ApplicationState_Inoperable
 	default:
-		return errors.New("Invalid value '" + enumValue + "' for ApplicationState enum")
+		return errors.New("invalid value '" + enumValue + "' for ApplicationState enum")
 	}
 
 	return nil
@@ -117,11 +123,11 @@ func (d *DataAvailabilitySelector) Scan(value any) error {
 	case []byte:
 		selector = v
 	default:
-		return errors.New("Invalid scan value for DataAvailabilitySelector. Value has to be of type []byte")
+		return errors.New("invalid scan value for DataAvailabilitySelector. Value has to be of type []byte")
 	}
 
 	if len(selector) != DATA_AVAILABILITY_SELECTOR_SIZE {
-		return errors.New("Invalid value for DataAvailabilitySelector")
+		return errors.New("invalid value for DataAvailabilitySelector")
 	}
 	copy(d[:], selector[:DATA_AVAILABILITY_SELECTOR_SIZE])
 
@@ -150,7 +156,7 @@ func (e *SnapshotPolicy) Scan(value any) error {
 	case []byte:
 		enumValue = string(val)
 	default:
-		return errors.New("Invalid scan value for SnapshotPolicy enum. Enum value has to be of type string or []byte")
+		return errors.New("invalid scan value for SnapshotPolicy enum. Enum value has to be of type string or []byte")
 	}
 
 	switch enumValue {
@@ -161,7 +167,7 @@ func (e *SnapshotPolicy) Scan(value any) error {
 	case "EACH_EPOCH":
 		*e = SnapshotPolicy_EachEpoch
 	default:
-		return errors.New("Invalid scan value '" + enumValue + "' for SnapshotPolicy enum")
+		return errors.New("invalid scan value '" + enumValue + "' for SnapshotPolicy enum")
 	}
 
 	return nil
@@ -174,7 +180,6 @@ func (e SnapshotPolicy) String() string {
 type ExecutionParameters struct {
 	ApplicationID         int64          `sql:"primary_key" json:"-"`
 	SnapshotPolicy        SnapshotPolicy `json:"snapshot_policy"`
-	SnapshotRetention     uint64         `json:"snapshot_retention"`
 	AdvanceIncCycles      uint64         `json:"advance_inc_cycles"`
 	AdvanceMaxCycles      uint64         `json:"advance_max_cycles"`
 	InspectIncCycles      uint64         `json:"inspect_inc_cycles"`
@@ -189,6 +194,171 @@ type ExecutionParameters struct {
 	MaxConcurrentInspects uint32         `json:"max_concurrent_inspects"`
 	CreatedAt             time.Time      `json:"created_at"`
 	UpdatedAt             time.Time      `json:"updated_at"`
+}
+
+func (e *ExecutionParameters) MarshalJSON() ([]byte, error) {
+	// Create an alias to avoid infinite recursion in MarshalJSON.
+	type Alias ExecutionParameters
+	// Define a new structure that embeds the alias but overrides the hex fields.
+	aux := &struct {
+		AdvanceIncCycles   string `json:"advance_inc_cycles"`
+		AdvanceMaxCycles   string `json:"advance_max_cycles"`
+		InspectIncCycles   string `json:"inspect_inc_cycles"`
+		InspectMaxCycles   string `json:"inspect_max_cycles"`
+		AdvanceIncDeadline string `json:"advance_inc_deadline"`
+		AdvanceMaxDeadline string `json:"advance_max_deadline"`
+		InspectIncDeadline string `json:"inspect_inc_deadline"`
+		InspectMaxDeadline string `json:"inspect_max_deadline"`
+		LoadDeadline       string `json:"load_deadline"`
+		StoreDeadline      string `json:"store_deadline"`
+		FastDeadline       string `json:"fast_deadline"`
+		*Alias
+	}{
+		AdvanceIncCycles:   fmt.Sprintf("0x%x", e.AdvanceIncCycles),
+		AdvanceMaxCycles:   fmt.Sprintf("0x%x", e.AdvanceMaxCycles),
+		InspectIncCycles:   fmt.Sprintf("0x%x", e.InspectIncCycles),
+		InspectMaxCycles:   fmt.Sprintf("0x%x", e.InspectMaxCycles),
+		AdvanceIncDeadline: fmt.Sprintf("0x%x", uint64(e.AdvanceIncDeadline)),
+		AdvanceMaxDeadline: fmt.Sprintf("0x%x", uint64(e.AdvanceMaxDeadline)),
+		InspectIncDeadline: fmt.Sprintf("0x%x", uint64(e.InspectIncDeadline)),
+		InspectMaxDeadline: fmt.Sprintf("0x%x", uint64(e.InspectMaxDeadline)),
+		LoadDeadline:       fmt.Sprintf("0x%x", uint64(e.LoadDeadline)),
+		StoreDeadline:      fmt.Sprintf("0x%x", uint64(e.StoreDeadline)),
+		FastDeadline:       fmt.Sprintf("0x%x", uint64(e.FastDeadline)),
+		Alias:              (*Alias)(e),
+	}
+	return json.Marshal(aux)
+}
+
+func (e *ExecutionParameters) UnmarshalJSON(data []byte) error {
+	// Create an alias to avoid infinite recursion in UnmarshalJSON.
+	type Alias ExecutionParameters
+	// Define a new structure that embeds the alias but overrides the hex fields.
+	aux := &struct {
+		AdvanceIncCycles   string `json:"advance_inc_cycles"`
+		AdvanceMaxCycles   string `json:"advance_max_cycles"`
+		InspectIncCycles   string `json:"inspect_inc_cycles"`
+		InspectMaxCycles   string `json:"inspect_max_cycles"`
+		AdvanceIncDeadline string `json:"advance_inc_deadline"`
+		AdvanceMaxDeadline string `json:"advance_max_deadline"`
+		InspectIncDeadline string `json:"inspect_inc_deadline"`
+		InspectMaxDeadline string `json:"inspect_max_deadline"`
+		LoadDeadline       string `json:"load_deadline"`
+		StoreDeadline      string `json:"store_deadline"`
+		FastDeadline       string `json:"fast_deadline"`
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	if aux.AdvanceIncCycles != "" {
+		val, err := ParseHexUint64(aux.AdvanceIncCycles)
+		if err != nil {
+			return fmt.Errorf("invalid advance_inc_cycles: %w", err)
+		}
+		e.AdvanceIncCycles = val
+	}
+
+	if aux.AdvanceMaxCycles != "" {
+		val, err := ParseHexUint64(aux.AdvanceMaxCycles)
+		if err != nil {
+			return fmt.Errorf("invalid advance_max_cycles: %w", err)
+		}
+		e.AdvanceMaxCycles = val
+	}
+
+	if aux.InspectIncCycles != "" {
+		val, err := ParseHexUint64(aux.InspectIncCycles)
+		if err != nil {
+			return fmt.Errorf("invalid inspect_inc_cycles: %w", err)
+		}
+		e.InspectIncCycles = val
+	}
+
+	if aux.InspectMaxCycles != "" {
+		val, err := ParseHexUint64(aux.InspectMaxCycles)
+		if err != nil {
+			return fmt.Errorf("invalid inspect_max_cycles: %w", err)
+		}
+		e.InspectMaxCycles = val
+	}
+
+	if aux.AdvanceIncDeadline != "" {
+		val, err := ParseHexDuration(aux.AdvanceIncDeadline)
+		if err != nil {
+			return fmt.Errorf("invalid advance_inc_deadline: %w", err)
+		}
+		e.AdvanceIncDeadline = val
+	}
+
+	if aux.AdvanceMaxDeadline != "" {
+		val, err := ParseHexDuration(aux.AdvanceMaxDeadline)
+		if err != nil {
+			return fmt.Errorf("invalid advance_max_deadline: %w", err)
+		}
+		e.AdvanceMaxDeadline = val
+	}
+
+	if aux.InspectIncDeadline != "" {
+		val, err := ParseHexDuration(aux.InspectIncDeadline)
+		if err != nil {
+			return fmt.Errorf("invalid inspect_inc_deadline: %w", err)
+		}
+		e.InspectIncDeadline = val
+	}
+
+	if aux.InspectMaxDeadline != "" {
+		val, err := ParseHexDuration(aux.InspectMaxDeadline)
+		if err != nil {
+			return fmt.Errorf("invalid inspect_max_deadline: %w", err)
+		}
+		e.InspectMaxDeadline = val
+	}
+
+	if aux.LoadDeadline != "" {
+		val, err := ParseHexDuration(aux.LoadDeadline)
+		if err != nil {
+			return fmt.Errorf("invalid load_deadline: %w", err)
+		}
+		e.LoadDeadline = val
+	}
+
+	if aux.StoreDeadline != "" {
+		val, err := ParseHexDuration(aux.StoreDeadline)
+		if err != nil {
+			return fmt.Errorf("invalid store_deadline: %w", err)
+		}
+		e.StoreDeadline = val
+	}
+
+	if aux.FastDeadline != "" {
+		val, err := ParseHexDuration(aux.FastDeadline)
+		if err != nil {
+			return fmt.Errorf("invalid fast_deadline: %w", err)
+		}
+		e.FastDeadline = val
+	}
+
+	return nil
+}
+
+func ParseHexUint64(s string) (uint64, error) {
+	if s == "" || len(s) < 3 || (!strings.HasPrefix(s, "0x") && !strings.HasPrefix(s, "0X")) {
+		return 0, fmt.Errorf("invalid hex string: %s", s)
+	}
+	return strconv.ParseUint(s[2:], 16, 64)
+}
+
+func ParseHexDuration(s string) (time.Duration, error) {
+	ns, err := ParseHexUint64(s)
+	if err != nil {
+		return 0, err
+	}
+	return time.Duration(ns), nil
 }
 
 type Epoch struct {
@@ -254,7 +424,7 @@ func (e *EpochStatus) Scan(value any) error {
 	case []byte:
 		enumValue = string(val)
 	default:
-		return errors.New("Invalid value for EpochStatus enum. Enum value has to be of type string or []byte")
+		return errors.New("invalid value for EpochStatus enum. Enum value has to be of type string or []byte")
 	}
 
 	switch enumValue {
@@ -273,7 +443,7 @@ func (e *EpochStatus) Scan(value any) error {
 	case "CLAIM_REJECTED":
 		*e = EpochStatus_ClaimRejected
 	default:
-		return errors.New("Invalid value '" + enumValue + "' for EpochStatus enum")
+		return errors.New("invalid value '" + enumValue + "' for EpochStatus enum")
 	}
 
 	return nil
@@ -351,7 +521,7 @@ func (e *InputCompletionStatus) Scan(value any) error {
 	case []byte:
 		enumValue = string(val)
 	default:
-		return errors.New("Invalid value for InputCompletionStatus enum. Enum value has to be of type string or []byte")
+		return errors.New("invalid value for InputCompletionStatus enum. Enum value has to be of type string or []byte")
 	}
 
 	switch enumValue {
@@ -372,7 +542,7 @@ func (e *InputCompletionStatus) Scan(value any) error {
 	case "PAYLOAD_LENGTH_LIMIT_EXCEEDED":
 		*e = InputCompletionStatus_PayloadLengthLimitExceeded
 	default:
-		return errors.New("Invalid value '" + enumValue + "' for InputCompletionStatus enum")
+		return errors.New("invalid value '" + enumValue + "' for InputCompletionStatus enum")
 	}
 
 	return nil
@@ -384,6 +554,7 @@ func (e InputCompletionStatus) String() string {
 
 type Output struct {
 	InputEpochApplicationID  int64         `sql:"primary_key" json:"-"`
+	EpochIndex               uint64        `json:"epoch_index"`
 	InputIndex               uint64        `json:"input_index"`
 	Index                    uint64        `sql:"primary_key" json:"index"`
 	RawData                  []byte        `json:"raw_data"`
@@ -399,11 +570,13 @@ func (i *Output) MarshalJSON() ([]byte, error) {
 	type Alias Output
 	// Define a new structure that embeds the alias but overrides the hex fields.
 	aux := &struct {
+		EpochIndex string `json:"epoch_index"`
 		InputIndex string `json:"input_index"`
 		Index      string `json:"index"`
 		RawData    string `json:"raw_data"`
 		*Alias
 	}{
+		EpochIndex: fmt.Sprintf("0x%x", i.EpochIndex),
 		InputIndex: fmt.Sprintf("0x%x", i.InputIndex),
 		Index:      fmt.Sprintf("0x%x", i.Index),
 		RawData:    "0x" + hex.EncodeToString(i.RawData),
@@ -414,6 +587,7 @@ func (i *Output) MarshalJSON() ([]byte, error) {
 
 type Report struct {
 	InputEpochApplicationID int64     `sql:"primary_key" json:"-"`
+	EpochIndex              uint64    `json:"epoch_index"`
 	InputIndex              uint64    `json:"input_index"`
 	Index                   uint64    `sql:"primary_key" json:"index"`
 	RawData                 []byte    `json:"raw_data"`
@@ -426,11 +600,13 @@ func (r *Report) MarshalJSON() ([]byte, error) {
 	type Alias Report
 	// Define a new structure that embeds the alias but overrides the hex fields.
 	aux := &struct {
+		EpochIndex string `json:"epoch_index"`
 		InputIndex string `json:"input_index"`
 		Index      string `json:"index"`
 		RawData    string `json:"raw_data"`
 		*Alias
 	}{
+		EpochIndex: fmt.Sprintf("0x%x", r.EpochIndex),
 		InputIndex: fmt.Sprintf("0x%x", r.InputIndex),
 		Index:      fmt.Sprintf("0x%x", r.Index),
 		RawData:    "0x" + hex.EncodeToString(r.RawData),
@@ -493,7 +669,7 @@ func (e *DefaultBlock) Scan(value any) error {
 	case []byte:
 		enumValue = string(val)
 	default:
-		return errors.New("Invalid value for DefaultBlock enum. Enum value has to be of type string or []byte")
+		return errors.New("invalid value for DefaultBlock enum. Enum value has to be of type string or []byte")
 	}
 
 	switch enumValue {
@@ -506,7 +682,7 @@ func (e *DefaultBlock) Scan(value any) error {
 	case "SAFE":
 		*e = DefaultBlock_Safe
 	default:
-		return errors.New("Invalid value '" + enumValue + "' for DefaultBlock enum")
+		return errors.New("invalid value '" + enumValue + "' for DefaultBlock enum")
 	}
 
 	return nil

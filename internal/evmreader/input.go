@@ -252,7 +252,7 @@ func (r *EvmReader) readInputsFromBlockchain(
 		appsAddresses = append(appsAddresses, app.IApplicationAddress)
 	}
 
-	inputSource := apps[0].InputSource
+	inputSource := apps[0].InputSourceAdapter
 	opts := bind.FilterOpts{
 		Context: ctx,
 		Start:   startBlock,

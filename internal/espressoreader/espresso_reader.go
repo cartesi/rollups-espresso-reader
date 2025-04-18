@@ -92,6 +92,10 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 			apps := e.getAppsForEvmReader(ctx)
 			if len(apps) > 0 {
 				for _, app := range apps {
+					if app.DataAvailability != model.DataAvailability_InputBoxAndEspresso {
+						continue
+					}
+
 					startingBlock, namespace, err := getEspressoConfig(ctx, app.IApplicationAddress, e.repository, e.blockchainHttpEndpoint)
 					if err != nil {
 						slog.Error("failed getting espresso config from onchain", "error", err)
@@ -486,14 +490,16 @@ func (e *EspressoReader) getAppsForEvmReader(ctx context.Context) []evmreader.Ty
 	// Build Contracts
 	var apps []evmreader.TypeExportApplication
 	for _, app := range runningApps {
-		applicationContract, inputSource, err := e.evmReader.GetAppContracts(app)
+		applicationContract, inputSource, err := e.evmReader.ExportedAdapterFactory.CreateAdapters(app, *e.evmReader.GetEthClient())
 		if err != nil {
 			slog.Error("Error retrieving application contracts", "app", app, "error", err)
 			continue
 		}
-		apps = append(apps, evmreader.TypeExportApplication{Application: *app,
-			ApplicationContract: applicationContract,
-			InputSource:         inputSource})
+		apps = append(apps, evmreader.TypeExportApplication{
+			Application:                *app,
+			ApplicationContractAdapter: applicationContract,
+			InputSourceAdapter:         inputSource,
+		})
 	}
 
 	if len(apps) == 0 {
@@ -503,7 +509,7 @@ func (e *EspressoReader) getAppsForEvmReader(ctx context.Context) []evmreader.Ty
 	return apps
 }
 
-func readPrevRandao(ctx context.Context, l1FinalizedLatestHeight uint64, client *evmreader.EthClient) (*big.Int, error) {
+func readPrevRandao(ctx context.Context, l1FinalizedLatestHeight uint64, client *evmreader.EthClientInterface) (*big.Int, error) {
 	header, err := (*client).HeaderByNumber(ctx, big.NewInt(int64(l1FinalizedLatestHeight)))
 	if err != nil {
 		return &big.Int{}, fmt.Errorf("espresso read block header error: %w", err)
