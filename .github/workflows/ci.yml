@@ -5,6 +5,9 @@ on: push
 permissions:
   contents: write
 
+env:
+  ROLLUPS_NODE_VERSION: 2.0.0-alpha.4
+
 jobs:
   build:
     name: Build
@@ -29,7 +32,7 @@ jobs:
 
       - name: Clone Node V2 (avoid submodules)
         run: |
-          git clone -b v2.0.0-alpha.4 --depth 1 --recurse-submodules https://github.com/cartesi/rollups-node.git
+          git clone -b v${ROLLUPS_NODE_VERSION} --depth 1 --recurse-submodules https://github.com/cartesi/rollups-node.git
 
       - name: Wait for PostgreSQL to be ready
         run: |
@@ -101,7 +104,9 @@ jobs:
       
       - name: Build Espresso image
         run: |
-          docker build --build-arg TARGETARCH=amd64 -t espresso -f ./ci/Dockerfile .
+          docker build --build-arg TARGETARCH=amd64 \
+            --build-arg ROLLUPS_NODE_VERSION=${ROLLUPS_NODE_VERSION} \
+            -t espresso -f ./ci/Dockerfile .
 
       - name: Dump database
         env:

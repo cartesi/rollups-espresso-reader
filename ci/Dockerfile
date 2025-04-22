@@ -133,11 +133,12 @@ RUN curl -L https://github.com/cartesi/image-kernel/releases/download/v0.20.0/li
 RUN curl -L https://github.com/cartesi/machine-emulator-tools/releases/download/v0.16.1/rootfs-tools-v0.16.1.ext2 -o /usr/share/cartesi-machine/images/rootfs.ext2
 
 # Install rollups node
+ARG ROLLUPS_NODE_VERSION
 RUN <<EOF
     set -e
-    curl -LO https://github.com/cartesi/rollups-node/releases/download/v2.0.0-alpha.4/cartesi-rollups-node-v2.0.0-alpha.4_${TARGETARCH}.deb
-    dpkg -i ./cartesi-rollups-node-v2.0.0-alpha.4_${TARGETARCH}.deb
-    rm ./cartesi-rollups-node-v2.0.0-alpha.4_${TARGETARCH}.deb
+    curl -LO https://github.com/cartesi/rollups-node/releases/download/v${ROLLUPS_NODE_VERSION}/cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
+    dpkg -i ./cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
+    rm ./cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
 EOF
 
 WORKDIR ${NODE_RUNTIME_DIR}
