@@ -16,24 +16,30 @@ import (
 )
 
 type Application struct {
-	ID                   int64                    `sql:"primary_key" json:"-"`
-	Name                 string                   `json:"name"`
-	IApplicationAddress  common.Address           `json:"iapplication_address"`
-	IConsensusAddress    common.Address           `json:"iconsensus_address"`
-	IInputBoxAddress     common.Address           `json:"iinputbox_address"`
-	TemplateHash         common.Hash              `json:"template_hash"`
-	TemplateURI          string                   `json:"-"`
-	EpochLength          uint64                   `json:"epoch_length"`
-	DataAvailability     DataAvailabilitySelector `json:"data_availability"`
-	State                ApplicationState         `json:"state"`
-	Reason               *string                  `json:"reason"`
-	IInputBoxBlock       uint64                   `json:"iinputbox_block"`
-	LastInputCheckBlock  uint64                   `json:"last_input_check_block"`
-	LastOutputCheckBlock uint64                   `json:"last_output_check_block"`
-	ProcessedInputs      uint64                   `json:"processed_inputs"`
-	CreatedAt            time.Time                `json:"created_at"`
-	UpdatedAt            time.Time                `json:"updated_at"`
-	ExecutionParameters  ExecutionParameters      `json:"execution_parameters"`
+	ID                   int64               `sql:"primary_key" json:"-"`
+	Name                 string              `json:"name"`
+	IApplicationAddress  common.Address      `json:"iapplication_address"`
+	IConsensusAddress    common.Address      `json:"iconsensus_address"`
+	IInputBoxAddress     common.Address      `json:"iinputbox_address"`
+	TemplateHash         common.Hash         `json:"template_hash"`
+	TemplateURI          string              `json:"-"`
+	EpochLength          uint64              `json:"epoch_length"`
+	DataAvailability     []byte              `json:"data_availability"`
+	State                ApplicationState    `json:"state"`
+	Reason               *string             `json:"reason"`
+	IInputBoxBlock       uint64              `json:"iinputbox_block"`
+	LastInputCheckBlock  uint64              `json:"last_input_check_block"`
+	LastOutputCheckBlock uint64              `json:"last_output_check_block"`
+	ProcessedInputs      uint64              `json:"processed_inputs"`
+	CreatedAt            time.Time           `json:"created_at"`
+	UpdatedAt            time.Time           `json:"updated_at"`
+	ExecutionParameters  ExecutionParameters `json:"execution_parameters"`
+}
+
+// HasDataAvailabilitySelector checks if the application's DataAvailability
+// starts with the given DataAvailabilitySelector
+func (a *Application) HasDataAvailabilitySelector(selector DataAvailabilitySelector) bool {
+	return selector.MatchesBytes(a.DataAvailability)
 }
 
 func (a *Application) MarshalJSON() ([]byte, error) {
@@ -42,6 +48,7 @@ func (a *Application) MarshalJSON() ([]byte, error) {
 	// Define a new structure that embeds the alias but overrides the hex fields.
 	aux := &struct {
 		*Alias
+		DataAvailability     string `json:"data_availability"`
 		IInputBoxBlock       string `json:"iinputbox_block"`
 		LastInputCheckBlock  string `json:"last_input_check_block"`
 		LastOutputCheckBlock string `json:"last_output_check_block"`
@@ -49,6 +56,7 @@ func (a *Application) MarshalJSON() ([]byte, error) {
 		ProcessedInputs      string `json:"processed_inputs"`
 	}{
 		Alias:                (*Alias)(a),
+		DataAvailability:     "0x" + hex.EncodeToString(a.DataAvailability),
 		IInputBoxBlock:       fmt.Sprintf("0x%x", a.IInputBoxBlock),
 		LastInputCheckBlock:  fmt.Sprintf("0x%x", a.LastInputCheckBlock),
 		LastOutputCheckBlock: fmt.Sprintf("0x%x", a.LastOutputCheckBlock),
@@ -115,6 +123,19 @@ var (
 
 func (d *DataAvailabilitySelector) MarshalJSON() ([]byte, error) {
 	return json.Marshal("0x" + hex.EncodeToString(d[:]))
+}
+
+// MatchesBytes checks if this selector matches the first bytes of the given byte slice
+func (d DataAvailabilitySelector) MatchesBytes(data []byte) bool {
+	if len(data) < DATA_AVAILABILITY_SELECTOR_SIZE {
+		return false
+	}
+	for i := range DATA_AVAILABILITY_SELECTOR_SIZE {
+		if data[i] != d[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (d *DataAvailabilitySelector) Scan(value any) error {
