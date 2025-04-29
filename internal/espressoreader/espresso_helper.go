@@ -23,10 +23,12 @@ func (eh *EspressoHelper) readEspressoHeader(espressoBlockHeight uint64, url str
 	res, err := http.Get(requestURL)
 	if err != nil {
 		slog.Error("error making http request", "err", err)
+		return "" // it's not the best way to do it
 	}
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		slog.Error("could not read response body", "err", err)
+		return "" // it's not the best way to do it
 	}
 
 	return string(resBody)
