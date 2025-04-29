@@ -66,7 +66,7 @@ func (s *EspressoReaderService) Start(
 
 	evmReader := s.setupEvmReader(ctx, s.database)
 
-	espressoReader := NewEspressoReader(s.EspressoBaseUrl, s.database, evmReader, s.chainId, s.maxRetries, uint64(s.maxDelay), s.blockchainHttpEndpoint)
+	espressoReader := NewEspressoReader(s.EspressoBaseUrl, s.database, evmReader, s.chainId, s.maxRetries, uint64(s.maxDelay))
 
 	go s.setupNonceHttpServer()
 
@@ -197,7 +197,12 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	appAddress := common.HexToAddress(appAddressStr)
 	client := client.NewClient(s.EspressoBaseUrl)
 	ctx := r.Context()
-	_, namespace, err := getEspressoConfig(ctx, appAddress, s.database, s.blockchainHttpEndpoint)
+	app, err := s.database.GetApplication(ctx, appAddressStr)
+	if err != nil {
+		slog.Error("application not registered", "err", err)
+		return
+	}
+	_, namespace, err := getEspressoConfig(ctx, appAddress, s.database, app.DataAvailability)
 	var tx types.Transaction
 	tx.Namespace = namespace
 	tx.Payload = body
