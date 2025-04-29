@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/espresso/table"
 	"github.com/ethereum/go-ethereum/common"
@@ -43,7 +44,36 @@ func (r *PostgresRepository) GetEspressoConfig(
 	return startingBlock, namespace, nil
 }
 
-func (r *PostgresRepository) UpdateEspressoConfig(
+func (r *PostgresRepository) UpdateEspressoBlock(
+	ctx context.Context,
+	appAddress common.Address,
+	lastProcessedEspressoBlock uint64,
+) error {
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	sqlStr, args := table.AppInfo.
+		UPDATE(table.AppInfo.LastProcessedEspressoBlock).
+		SET(table.AppInfo.LastProcessedEspressoBlock.SET(postgres.RawFloat(fmt.Sprintf("%d", lastProcessedEspressoBlock)))).
+		WHERE(table.AppInfo.ApplicationAddress.EQ(postgres.Bytea(appAddress.Bytes()))).Sql()
+	_, err = tx.Exec(ctx, sqlStr, args...)
+
+	if err != nil {
+		return errors.Join(err, tx.Rollback(ctx))
+	}
+
+	// Commit transaction
+	err = tx.Commit(ctx)
+	if err != nil {
+		return errors.Join(err, tx.Rollback(ctx))
+	}
+	return nil
+}
+
+func (r *PostgresRepository) InsertEspressoConfig(
 	ctx context.Context,
 	nameOrAddress string,
 	startingBlock uint64,
