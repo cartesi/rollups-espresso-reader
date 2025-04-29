@@ -380,7 +380,10 @@ func (r *PostgresRepository) ListApplications(
 		conditions = append(conditions, table.Application.State.EQ(postgres.NewEnumValue(f.State.String())))
 	}
 	if f.DataAvailability != nil {
-		conditions = append(conditions, table.Application.DataAvailability.EQ(postgres.Bytea(f.DataAvailability[:])))
+		conditions = append(conditions,
+			postgres.SUBSTR(
+				table.Application.DataAvailability, postgres.Int(1), postgres.Int(4), // nolint: mnd
+			).EQ(postgres.Bytea(f.DataAvailability[:])))
 	}
 
 	if len(conditions) > 0 {
