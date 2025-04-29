@@ -227,16 +227,6 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 				if err != nil {
 					return err
 				}
-				// update last processed espresso block
-				lastProcessedEspressoBlock := espressoUpdateInfo.LastProcessedEspressoBlock
-				sqlStr, args = espressoTable.AppInfo.
-					UPDATE(espressoTable.AppInfo.LastProcessedEspressoBlock).
-					SET(espressoTable.AppInfo.LastProcessedEspressoBlock.SET(postgres.RawFloat(fmt.Sprintf("%d", lastProcessedEspressoBlock)))).
-					WHERE(espressoTable.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))).Sql()
-				_, err = tx.Exec(ctx, sqlStr, args...)
-				if err != nil {
-					return err
-				}
 			}
 			// update input index
 			index, err := r.GetInputIndexWithTx(ctx, tx, nameOrAddress)
@@ -258,7 +248,7 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 		}
 	}
 
-	// Update last processed block
+	// Update last processed L1 block
 	appUpdateStmt := table.Application.
 		UPDATE(
 			table.Application.LastInputCheckBlock,
@@ -272,6 +262,19 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 	_, err = tx.Exec(ctx, sqlStr, args...)
 	if err != nil {
 		return err
+	}
+
+	if espressoUpdateInfo != nil {
+		// update last processed espresso block
+		lastProcessedEspressoBlock := espressoUpdateInfo.LastProcessedEspressoBlock
+		sqlStr, args = espressoTable.AppInfo.
+			UPDATE(espressoTable.AppInfo.LastProcessedEspressoBlock).
+			SET(espressoTable.AppInfo.LastProcessedEspressoBlock.SET(postgres.RawFloat(fmt.Sprintf("%d", lastProcessedEspressoBlock)))).
+			WHERE(espressoTable.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))).Sql()
+		_, err = tx.Exec(ctx, sqlStr, args...)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Commit transaction
