@@ -98,10 +98,15 @@ type EspressoRepository interface {
 		ctx context.Context,
 		nameOrAddress string,
 	) (uint64, uint64, error)
-	UpdateEspressoConfig(
+	InsertEspressoConfig(
 		ctx context.Context,
 		nameOrAddress string,
 		startingBlock uint64, namespace uint64,
+	) error
+	UpdateEspressoBlock(
+		ctx context.Context,
+		appAddress common.Address,
+		lastProcessedEspressoBlock uint64,
 	) error
 	GetEspressoNonce(
 		ctx context.Context,

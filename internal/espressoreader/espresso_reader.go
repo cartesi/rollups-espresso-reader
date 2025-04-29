@@ -126,13 +126,13 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 						}
 					} else {
 						// in sync. Process espresso blocks one-by-one
-						currentBlockHeight := lastProcessedEspressoBlock + 1
-						for ; currentBlockHeight <= latestBlockHeight; currentBlockHeight++ {
-							slog.Debug("Espresso:", "app", appAddress, "currentBlockHeight", currentBlockHeight)
+						currentEspressoBlockHeight := lastProcessedEspressoBlock + 1
+						for ; currentEspressoBlockHeight <= latestBlockHeight; currentEspressoBlockHeight++ {
+							slog.Debug("Espresso:", "app", appAddress, "currentBlockHeight", currentEspressoBlockHeight)
 
 							var l1FinalizedTimestamp uint64
-							lastProcessedL1Block, l1FinalizedTimestamp = e.readL1(ctx, app, currentBlockHeight, lastProcessedL1Block)
-							e.readEspresso(ctx, app, currentBlockHeight, namespace, lastProcessedL1Block, l1FinalizedTimestamp)
+							lastProcessedL1Block, l1FinalizedTimestamp = e.readL1(ctx, app, currentEspressoBlockHeight, lastProcessedL1Block)
+							e.readEspresso(ctx, app, currentEspressoBlockHeight, namespace, lastProcessedL1Block, l1FinalizedTimestamp)
 						}
 					}
 
@@ -357,9 +357,9 @@ func (e *EspressoReader) findOrBuildNewEpoch(ctx context.Context, appEvmType evm
 	return currentEpoch, nil
 }
 
-func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.TypeExportApplication, currentBlockHeight uint64, namespace uint64, l1FinalizedLatestHeight uint64, l1FinalizedTimestamp uint64) {
+func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.TypeExportApplication, currentEspressoBlockHeight uint64, namespace uint64, l1FinalizedLatestHeight uint64, l1FinalizedTimestamp uint64) {
 	app := appEvmType.Application.IApplicationAddress
-	transactions, err := e.client.FetchTransactionsInBlock(ctx, currentBlockHeight, namespace)
+	transactions, err := e.client.FetchTransactionsInBlock(ctx, currentEspressoBlockHeight, namespace)
 	if err != nil {
 		slog.Error("failed fetching espresso tx", "error", err)
 		return
@@ -374,6 +374,13 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 	}
 
 	numTx := len(transactions.Transactions)
+	if numTx == 0 {
+		err = e.repository.UpdateEspressoBlock(ctx, app, currentEspressoBlockHeight)
+		if err != nil {
+			slog.Error("failed to update current espresso block height", "error", err)
+		}
+		return
+	}
 	for i := 0; i < numTx; i++ {
 		transaction := transactions.Transactions[i]
 		espressoInput, err := e.readEspressoInput(transaction)
@@ -415,7 +422,7 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		// Store everything
 		espressoUpdateInfo := &model.EspressoUpdateInfo{
 			SenderAddress:              espressoInput.msgSender.Hex(),
-			LastProcessedEspressoBlock: currentBlockHeight,
+			LastProcessedEspressoBlock: currentEspressoBlockHeight,
 		}
 		err = e.repository.CreateEpochsAndInputs(
 			ctx,
@@ -468,8 +475,7 @@ func getEspressoConfig(ctx context.Context, appAddress common.Address, database 
 		startingBlock = uint64(args[1].(*big.Int).Int64())
 		namespace = uint64(args[2].(uint32))
 
-		// update db
-		database.UpdateEspressoConfig(ctx, appAddress.Hex(), startingBlock, namespace)
+		database.InsertEspressoConfig(ctx, appAddress.Hex(), startingBlock, namespace)
 	}
 
 	return startingBlock, namespace, nil
