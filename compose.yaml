@@ -1,22 +1,22 @@
 services:
   db:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: rollupsdb
-    ports:
-      - 5433:5432
-    volumes:
-      - ./rollupsdb-dump.sql:/docker-entrypoint-initdb.d/rollupsdb-dump.sql
-  db-espresso:
-    image: postgres:16
+    image: postgres:17
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: rollupsdb
     ports:
       - 5432:5432
+    volumes:
+      - ./rollupsdb-dump.sql:/docker-entrypoint-initdb.d/rollupsdb-dump.sql
+  # db-espresso:
+  #   image: postgres:16
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: rollupsdb
+  #   ports:
+  #     - 5432:5432
   devnet:
     container_name: devnet
     build:
@@ -34,13 +34,13 @@ services:
       ESPRESSO_SEQUENCER_API_PORT: 24000
       ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL: 1s
       ESPRESSO_STATE_PROVER_UPDATE_INTERVAL: 1s
-      ESPRESSO_SEQUENCER_POSTGRES_HOST: db-espresso
-      ESPRESSO_SEQUENCER_POSTGRES_PORT: 5432
-      ESPRESSO_SEQUENCER_POSTGRES_DATABASE: rollupsdb
-      ESPRESSO_SEQUENCER_POSTGRES_USER: postgres
-      ESPRESSO_SEQUENCER_POSTGRES_PASSWORD: password
+      # ESPRESSO_SEQUENCER_POSTGRES_HOST: db-espresso
+      # ESPRESSO_SEQUENCER_POSTGRES_PORT: 5432
+      # ESPRESSO_SEQUENCER_POSTGRES_DATABASE: rollupsdb
+      # ESPRESSO_SEQUENCER_POSTGRES_USER: postgres
+      # ESPRESSO_SEQUENCER_POSTGRES_PASSWORD: password
     depends_on:
-      - db-espresso
+      # - db-espresso
       - devnet
     ports:
       - 24000:24000
@@ -49,6 +49,8 @@ services:
     build:
       context: .
       dockerfile: ./ci/Dockerfile
+      args:
+        TARGETARCH: amd64
     env_file:
       - ./ci/env.nodev2-espressolocal
     ports:
