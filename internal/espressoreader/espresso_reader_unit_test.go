@@ -37,6 +37,11 @@ type MockRepository struct {
 	inputIndex int
 }
 
+// UpdateEspressoBlock implements repository.Repository.
+func (m *MockRepository) UpdateEspressoBlock(ctx context.Context, appAddress common.Address, lastProcessedEspressoBlock uint64) error {
+	panic("unimplemented")
+}
+
 // CreateApplication implements repository.Repository.
 func (m *MockRepository) CreateApplication(ctx context.Context, app *model.Application) (int64, error) {
 	panic("unimplemented")
@@ -220,7 +225,7 @@ func (m *MockRepository) GetEspressoConfig(
 	panic("unimplemented")
 }
 
-func (m *MockRepository) UpdateEspressoConfig(
+func (m *MockRepository) InsertEspressoConfig(
 	ctx context.Context,
 	nameOrAddress string,
 	startingBlock uint64, namespace uint64,
