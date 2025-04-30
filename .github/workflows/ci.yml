@@ -224,9 +224,10 @@ jobs:
             -e ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL=1s \
             -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
             --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
-      
-      - name: Wait for a while
-        run: sleep 15
+
+      - name: Wait for Espresso dev node to be available
+        run: |
+          ./ci/scripts/espresso-dev-node-health.sh
 
       - name: Run Espresso Reader image (Default input disabled)
         env:
@@ -372,9 +373,9 @@ jobs:
             -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
             --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
 
-      - name: Wait for a while
+      - name: Wait for Espresso dev node to be available
         run: |
-          sleep 15
+          ./ci/scripts/espresso-dev-node-health.sh
           docker ps
 
       - name: Espresso dev node logs
