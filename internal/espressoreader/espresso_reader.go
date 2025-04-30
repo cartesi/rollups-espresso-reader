@@ -379,6 +379,7 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		if err != nil {
 			slog.Error("failed to update current espresso block height", "error", err)
 		}
+		slog.Info("Espresso block updated", "app", app.Hex(), "currentEspressoBlockHeight", currentEspressoBlockHeight)
 		return
 	}
 	for i := 0; i < numTx; i++ {
