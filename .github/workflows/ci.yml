@@ -83,16 +83,6 @@ jobs:
         run: |
           migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_DATABASE_CONNECTION&x-migrations-table=espresso_schema_migrations" up
 
-      - name: Deps and Cartesi Machine
-        run: |
-          export TARGETARCH=amd64
-          export CARTESI_MACHINE_VERSION=0.19.0
-          sudo apt-get update
-          sudo apt-get install -y libboost-all-dev lua5.4 libslirp0
-          curl -LO https://github.com/cartesi/machine-emulator/releases/download/v0.19.0-alpha3/cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
-          sudo dpkg -i ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
-          rm ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
-      
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
