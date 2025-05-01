@@ -153,7 +153,7 @@ func (f *fakeRepo) UpdateEventLastCheckBlock(ctx context.Context, appIDs []int64
 	panic("unimplemented")
 }
 
-func TestSetupEvmReader_NilPointerException(t *testing.T) {
+func TestTrySetupEvmReader_InvalidEndpointReturnsError(t *testing.T) {
 	ctx := context.Background()
 
 	service := &EspressoReaderService{
@@ -162,5 +162,8 @@ func TestSetupEvmReader_NilPointerException(t *testing.T) {
 	}
 
 	r := &fakeRepo{}
-	_ = service.setupEvmReader(ctx, r)
+	_, err := service.trySetupEvmReader(ctx, r)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
 }
