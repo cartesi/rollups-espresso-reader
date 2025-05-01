@@ -113,10 +113,12 @@ func (s *EspressoReaderService) requestNonce(w http.ResponseWriter, r *http.Requ
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		slog.Error("could not read body", "err", err)
+		// TODO: error?
 	}
 	nonceRequest := &NonceRequest{}
 	if err := json.Unmarshal(body, nonceRequest); err != nil {
 		slog.Error("could not unmarshal", "err", err)
+		// ?
 	}
 
 	senderAddress := common.HexToAddress(nonceRequest.MsgSender)
@@ -139,6 +141,7 @@ func (s *EspressoReaderService) requestNonce(w http.ResponseWriter, r *http.Requ
 	nonceResponse := NonceResponse{Nonce: nonce}
 	if err != nil {
 		slog.Error("error json marshal nonce response", "err", err)
+		// ?
 	}
 
 	err = json.NewEncoder(w).Encode(nonceResponse)
@@ -157,6 +160,7 @@ func (s *EspressoReaderService) queryNonceFromDb(
 	nonce, err := s.database.GetEspressoNonce(ctx, senderAddress.Hex(), applicationAddress.Hex())
 	if err != nil {
 		slog.Error("failed to get espresso nonce", "error", err)
+		// TODO: error?
 	}
 
 	return nonce
@@ -171,6 +175,7 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
 	if r.Method != http.MethodPost {
+		// TODO: error?
 		return
 	}
 
@@ -183,6 +188,7 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	msgSender, typedData, sigHash, err := ExtractSigAndData(string(body))
 	if err != nil {
 		slog.Error("transaction not correctly formatted", "error", err)
+		// TODO: error?
 		return
 	}
 	submitResponse := SubmitResponse{Id: sigHash}
@@ -198,6 +204,7 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	_, err = client.SubmitTransaction(ctx, tx)
 	if err != nil {
 		slog.Error("espresso tx submit error", "err", err)
+		// TODO: error?
 		return
 	}
 
@@ -207,12 +214,14 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 			"service", "espresso submit endpoint",
 			"err", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		// TODO: error?
 		return
 	}
 
 	// update nonce cache
 	if nonceCache[appAddress] == nil {
 		slog.Error("Should query nonce before submit")
+		// TODO: error?
 		return
 	}
 	nonceInRequest := uint64(typedData.Message["nonce"].(float64))
@@ -221,6 +230,7 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 		nonceInDb := s.queryNonceFromDb(ctx, msgSender, appAddress)
 		if nonceInRequest != nonceInDb {
 			slog.Error("Nonce in request is incorrect")
+			// TODO: error?
 			return
 		}
 		nonceCache[appAddress][msgSender] = nonceInDb + 1
