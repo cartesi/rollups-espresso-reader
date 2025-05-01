@@ -77,40 +77,6 @@ func (s *EspressoReaderService) String() string {
 	return "espressoreader"
 }
 
-func (s *EspressoReaderService) setupEvmReader(ctx context.Context, r repository.Repository) *evmreader.EvmReader {
-	client, err := ethclient.DialContext(ctx, s.blockchainHttpEndpoint)
-	if err != nil {
-		slog.Error("eth client http", "error", err)
-		os.Exit(1)
-	}
-	defer client.Close()
-
-	wsClient, err := ethclient.DialContext(ctx, s.blockchainWsEndpoint)
-	if err != nil {
-		slog.Error("eth client ws", "error", err)
-		os.Exit(1)
-	}
-	defer wsClient.Close()
-
-	config, err := repository.LoadNodeConfig[evmreader.PersistentConfig](ctx, r, evmreader.EvmReaderConfigKey)
-	if err != nil {
-		slog.Error("db config", "error", err)
-		os.Exit(1)
-	}
-
-	evmReader := evmreader.NewEvmReader(
-		client,
-		wsClient,
-		r,
-		config.Value.ChainID,
-		config.Value.DefaultBlock,
-		config.Value.InputReaderEnabled,
-		true,
-	)
-
-	return &evmReader
-}
-
 func (s *EspressoReaderService) setupNonceHttpServer() {
 	nonceCache = make(map[common.Address]map[common.Address]uint64)
 
@@ -261,4 +227,44 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	} else {
 		nonceCache[appAddress][msgSender]++
 	}
+}
+
+func (s *EspressoReaderService) trySetupEvmReader(ctx context.Context, r repository.Repository) (*evmreader.EvmReader, error) {
+	client, err := ethclient.DialContext(ctx, s.blockchainHttpEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("eth client http: %w", err)
+	}
+	defer client.Close()
+
+	wsClient, err := ethclient.DialContext(ctx, s.blockchainWsEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("eth client ws: %w", err)
+	}
+	defer wsClient.Close()
+
+	config, err := repository.LoadNodeConfig[evmreader.PersistentConfig](ctx, r, evmreader.EvmReaderConfigKey)
+	if err != nil {
+		return nil, fmt.Errorf("db config: %w", err)
+	}
+
+	evmReader := evmreader.NewEvmReader(
+		client,
+		wsClient,
+		r,
+		config.Value.ChainID,
+		config.Value.DefaultBlock,
+		config.Value.InputReaderEnabled,
+		true,
+	)
+
+	return &evmReader, nil
+}
+
+func (s *EspressoReaderService) setupEvmReader(ctx context.Context, r repository.Repository) *evmreader.EvmReader {
+	evmReader, err := s.trySetupEvmReader(ctx, r)
+	if err != nil {
+		slog.Error("failed to setup evm reader", "error", err)
+		os.Exit(1)
+	}
+	return evmReader
 }
