@@ -10,6 +10,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
@@ -80,18 +81,21 @@ func (s *EspressoReaderService) setupEvmReader(ctx context.Context, r repository
 	client, err := ethclient.DialContext(ctx, s.blockchainHttpEndpoint)
 	if err != nil {
 		slog.Error("eth client http", "error", err)
+		os.Exit(1)
 	}
 	defer client.Close()
 
 	wsClient, err := ethclient.DialContext(ctx, s.blockchainWsEndpoint)
 	if err != nil {
 		slog.Error("eth client ws", "error", err)
+		os.Exit(1)
 	}
 	defer wsClient.Close()
 
 	config, err := repository.LoadNodeConfig[evmreader.PersistentConfig](ctx, r, evmreader.EvmReaderConfigKey)
 	if err != nil {
 		slog.Error("db config", "error", err)
+		os.Exit(1)
 	}
 
 	evmReader := evmreader.NewEvmReader(
