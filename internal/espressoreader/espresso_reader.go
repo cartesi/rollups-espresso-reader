@@ -372,16 +372,8 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 	if err != nil {
 		slog.Error("failed to read prevrandao", "error", err)
 	}
-
+	savedTransaction := 0
 	numTx := len(transactions.Transactions)
-	if numTx == 0 {
-		err = e.repository.UpdateEspressoBlock(ctx, app, currentEspressoBlockHeight)
-		if err != nil {
-			slog.Error("failed to update current espresso block height", "error", err)
-		}
-		slog.Info("Espresso block updated", "app", app.Hex(), "currentEspressoBlockHeight", currentEspressoBlockHeight)
-		return
-	}
 	for i := 0; i < numTx; i++ {
 		transaction := transactions.Transactions[i]
 		espressoInput, err := e.readEspressoInput(transaction)
@@ -436,8 +428,16 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 			slog.Error("could not store Espresso input", "err", err)
 			continue
 		}
+		savedTransaction++
 	}
-
+	if savedTransaction == 0 {
+		err = e.repository.UpdateEspressoBlock(ctx, app, currentEspressoBlockHeight)
+		if err != nil {
+			slog.Error("failed to update current espresso block height", "error", err)
+		}
+		slog.Info("Espresso block updated", "app", app.Hex(), "currentEspressoBlockHeight", currentEspressoBlockHeight)
+		return
+	}
 }
 
 func getEspressoConfig(ctx context.Context, appAddress common.Address, database repository.Repository, blockchainHttpEndpoint string) (uint64, uint64, error) {
