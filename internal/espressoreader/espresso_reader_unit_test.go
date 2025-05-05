@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	eth_types "github.com/ethereum/go-ethereum/core/types"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -33,13 +34,8 @@ type MockRepository struct {
 	mock.Mock
 	inputs     []model.Input
 	epochs     []*model.Epoch
-	nonce      int
-	inputIndex int
-}
-
-// UpdateEspressoBlock implements repository.Repository.
-func (m *MockRepository) UpdateEspressoBlock(ctx context.Context, appAddress common.Address, lastProcessedEspressoBlock uint64) error {
-	panic("unimplemented")
+	nonce      uint64
+	inputIndex uint64
 }
 
 // CreateApplication implements repository.Repository.
@@ -53,7 +49,7 @@ func (m *MockRepository) CreateEpoch(ctx context.Context, nameOrAddress string, 
 }
 
 // CreateEpochsAndInputs implements repository.Repository.
-func (m *MockRepository) CreateEpochsAndInputs(ctx context.Context, nameOrAddress string, epochInputMap map[*model.Epoch][]*model.Input, blockNumber uint64, espressoUpdateInfo *model.EspressoUpdateInfo) error {
+func (m *MockRepository) CreateEpochsAndInputs(ctx context.Context, tx pgx.Tx, nameOrAddress string, epochInputMap map[*model.Epoch][]*model.Input, blockNumber uint64) error {
 	for e := range epochInputMap {
 		found := false
 		for loopIndex, loopEpoch := range m.epochs {
@@ -68,10 +64,6 @@ func (m *MockRepository) CreateEpochsAndInputs(ctx context.Context, nameOrAddres
 
 		for _, input := range epochInputMap[e] {
 			m.inputs = append(m.inputs, *input)
-			m.inputIndex++
-			if espressoUpdateInfo != nil {
-				m.nonce++
-			}
 		}
 	}
 	args := m.Called(ctx, nameOrAddress, epochInputMap, blockNumber)
@@ -109,7 +101,22 @@ func (m *MockRepository) GetEspressoNonce(ctx context.Context, senderAddress str
 // GetEspressoNonce implements repository.Repository.
 func (m *MockRepository) GetEspressoNonceWithTx(ctx context.Context, tx pgx.Tx, senderAddress string, nameOrAddress string) (uint64, error) {
 	args := m.Called(ctx, tx, senderAddress, nameOrAddress)
-	return uint64(m.nonce), args.Error(1)
+	var r0 uint64
+	if val, ok := args.Get(0).(uint64); ok {
+		r0 = val
+	}
+	return r0, args.Error(1)
+}
+
+func (m *MockRepository) UpdateEspressoNonceWithTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	senderAddress string,
+	nameOrAddress string,
+) error {
+	args := m.Called(ctx, tx, senderAddress, nameOrAddress)
+	m.nonce++
+	return args.Error(0)
 }
 
 // GetInput implements repository.Repository.
@@ -125,13 +132,31 @@ func (m *MockRepository) GetInputByTxReference(ctx context.Context, nameOrAddres
 // GetInputIndex implements repository.Repository.
 func (m *MockRepository) GetInputIndex(ctx context.Context, nameOrAddress string) (uint64, error) {
 	args := m.Called(ctx, nameOrAddress)
-	return uint64(m.inputIndex), args.Error(1)
+	var r0 uint64
+	if val, ok := args.Get(0).(uint64); ok {
+		r0 = val
+	}
+	return r0, args.Error(1)
 }
 
 // GetInputIndexWithTx implements repository.Repository.
 func (m *MockRepository) GetInputIndexWithTx(ctx context.Context, tx pgx.Tx, nameOrAddress string) (uint64, error) {
 	args := m.Called(ctx, tx, nameOrAddress)
-	return uint64(m.inputIndex), args.Error(1)
+	var r0 uint64
+	if val, ok := args.Get(0).(uint64); ok {
+		r0 = val
+	}
+	return r0, args.Error(1)
+}
+
+func (m *MockRepository) UpdateInputIndexWithTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	nameOrAddress string,
+) error {
+	args := m.Called(ctx, tx, nameOrAddress)
+	m.inputIndex++
+	return args.Error(0)
 }
 
 // GetLastInput implements repository.Repository.
@@ -142,6 +167,15 @@ func (m *MockRepository) GetLastInput(ctx context.Context, appAddress string, ep
 // GetLastProcessedEspressoBlock implements repository.Repository.
 func (m *MockRepository) GetLastProcessedEspressoBlock(ctx context.Context, nameOrAddress string) (uint64, error) {
 	panic("unimplemented")
+}
+
+func (m *MockRepository) UpdateLastProcessedEspressoBlockWithTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	nameOrAddress string,
+	lastProcessedEspressoBlock uint64,
+) error {
+	return nil
 }
 
 // GetOutput implements repository.Repository.
@@ -231,6 +265,86 @@ func (m *MockRepository) InsertEspressoConfig(
 	startingBlock uint64, namespace uint64,
 ) error {
 	panic("unimplemented")
+}
+
+type MockPgxTx struct {
+	mock.Mock
+}
+
+func (_m *MockPgxTx) Begin(ctx context.Context) (pgx.Tx, error) {
+	_m.Called(ctx)
+	return _m, nil
+}
+
+func (_m *MockPgxTx) Commit(ctx context.Context) error {
+	args := _m.Called(ctx)
+	return args.Error(0)
+}
+
+func (_m *MockPgxTx) Rollback(ctx context.Context) error {
+	args := _m.Called(ctx)
+	return args.Error(0)
+}
+
+func (_m *MockPgxTx) Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+	_m.Called(ctx, sql, arguments)
+	return pgconn.CommandTag{}, nil
+}
+
+func (_m *MockPgxTx) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	_m.Called(ctx, sql, args)
+	return nil, nil
+}
+
+func (_m *MockPgxTx) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
+	_m.Called(ctx, sql, args)
+	return nil
+}
+
+func (_m *MockPgxTx) Prepare(ctx context.Context, name string, sql string) (*pgconn.StatementDescription, error) {
+	_m.Called(ctx, name, sql)
+	return nil, nil
+}
+
+func (_m *MockPgxTx) Conn() *pgx.Conn {
+	_m.Called()
+	return nil
+}
+
+func (_m *MockPgxTx) Status() int8 {
+	_m.Called()
+	return 0
+}
+
+func (_m *MockPgxTx) IsValid() bool {
+	_m.Called()
+	return true
+}
+
+// CopyFrom provides a mocked function with given fields: ctx, tableName, columnNames, rowSrc
+func (_m *MockPgxTx) CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error) {
+	_m.Called(ctx, tableName, columnNames, rowSrc)
+	return 0, nil // Return default values
+}
+
+func (_m *MockPgxTx) LargeObjects() pgx.LargeObjects {
+	_m.Called()
+	return pgx.LargeObjects{}
+}
+
+func (_m *MockPgxTx) SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults {
+	_m.Called(ctx, b)
+	return nil // Or return a mock pgx.BatchResults if needed
+}
+
+// CreateEpoch implements repository.Repository.
+func (m *MockRepository) GetTx(ctx context.Context) (pgx.Tx, error) {
+	args := m.Called(ctx)
+	var r0 pgx.Tx
+	if val, ok := args.Get(0).(pgx.Tx); ok {
+		r0 = val
+	}
+	return r0, args.Error(1)
 }
 
 type MockEspressoClient struct {
@@ -335,6 +449,7 @@ type EspressoReaderUnitTestSuite struct {
 	mockEthClient      *MockEthClientInterface
 	mockInputSource    *MockInputSource
 	mockEspressoHelper *MockEspressoHelper
+	mockTx             *MockPgxTx
 }
 
 var transactions = []types.Bytes{
@@ -372,6 +487,7 @@ func (s *EspressoReaderUnitTestSuite) SetupTest() {
 	mockEspressoHelper := new(MockEspressoHelper)
 	s.mockEspressoHelper = mockEspressoHelper
 	s.espressoReader.espressoHelper = mockEspressoHelper
+	s.mockTx = new(MockPgxTx)
 }
 
 func ignoreError(val interface{}, _ error) interface{} {
@@ -412,23 +528,6 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 		mock.Anything, // namespace
 	).Return(transactionsInBlock, nil)
 
-	s.mockDatabase.On("GetEspressoNonce",
-		mock.Anything, // context.Context
-		mock.Anything, // msgSender
-		mock.Anything, // appAddressStr
-	).Return(0, nil)
-
-	s.mockDatabase.On("GetInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
-	).Return(currentInputIndex, nil)
-
-	s.mockDatabase.On("GetInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // tx
-		mock.Anything, // nameOrAddress
-	).Return(currentInputIndex, nil)
-
 	s.mockDatabase.On("GetEpoch",
 		mock.Anything, // context.Context
 		mock.Anything, // nameOrAddress
@@ -437,10 +536,10 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 
 	s.mockDatabase.On("CreateEpochsAndInputs",
 		mock.Anything, // context.Context
+		mock.Anything, // pgx.Tx
 		mock.Anything, // nameOrAddress
 		mock.Anything, // epochInputMap
 		mock.Anything, // blockNumber
-		mock.Anything, // EspressoUpdateInfo
 	).Return(nil)
 
 	s.mockEthClient.On("HeaderByNumber",
@@ -459,6 +558,42 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspresso() {
 		Application:        application,
 		InputSourceAdapter: s.mockInputSource,
 	}
+
+	s.mockDatabase.On("GetTx", ctx).Return(s.mockTx, nil)
+	s.mockDatabase.On(
+		"GetEspressoNonceWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(s.mockDatabase.nonce, nil)
+	s.mockDatabase.On(
+		"GetInputIndexWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(s.mockDatabase.inputIndex, nil)
+	s.mockDatabase.On(
+		"UpdateEspressoNonceWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+	s.mockDatabase.On(
+		"UpdateInputIndexWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+	s.mockTx.On(
+		"Commit",
+		mock.Anything,
+	).Return(nil)
+	s.mockTx.On(
+		"Rollback",
+		mock.Anything,
+	).Return(nil)
 
 	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
 
@@ -489,7 +624,6 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 	currentBlockHeight := 10
 	l1FinalizedLatestHeight := 3
 	l1FinalizedTimestamp := 17
-	currentInputIndex := 0
 
 	s.mockEspressoClient.On(
 		"FetchTransactionsInBlock",
@@ -497,23 +631,6 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 		mock.Anything, // blockHeight
 		mock.Anything, // namespace
 	).Return(transactionsInBlock, nil)
-
-	s.mockDatabase.On("GetEspressoNonce",
-		mock.Anything, // context.Context
-		mock.Anything, // msgSender
-		mock.Anything, // appAddressStr
-	).Return(0, nil)
-
-	s.mockDatabase.On("GetInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
-	).Return(currentInputIndex, nil)
-
-	s.mockDatabase.On("GetInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // tx
-		mock.Anything, // nameOrAddress
-	).Return(currentInputIndex, nil)
 
 	s.mockDatabase.On("GetEpoch",
 		mock.Anything, // context.Context
@@ -523,10 +640,10 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 
 	s.mockDatabase.On("CreateEpochsAndInputs",
 		mock.Anything, // context.Context
+		mock.Anything, // pgx.Tx
 		mock.Anything, // nameOrAddress
 		mock.Anything, // epochInputMap
 		mock.Anything, // blockNumber
-		mock.Anything, // EspressoUpdateInfo
 	).Return(nil)
 
 	s.mockEthClient.On("HeaderByNumber",
@@ -545,6 +662,55 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 		Application:        application,
 		InputSourceAdapter: s.mockInputSource,
 	}
+
+	s.mockDatabase.On("GetTx", ctx).Return(s.mockTx, nil)
+	s.mockDatabase.On(
+		"GetEspressoNonceWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(s.mockDatabase.nonce, nil).Once()
+	s.mockDatabase.On(
+		"GetEspressoNonceWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(s.mockDatabase.nonce+1, nil).Once()
+	s.mockDatabase.On(
+		"GetInputIndexWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(s.mockDatabase.inputIndex, nil).Once()
+	s.mockDatabase.On(
+		"GetInputIndexWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(s.mockDatabase.inputIndex+1, nil).Once()
+	s.mockDatabase.On(
+		"UpdateEspressoNonceWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+	s.mockDatabase.On(
+		"UpdateInputIndexWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+	s.mockTx.On(
+		"Commit",
+		mock.Anything,
+	).Return(nil)
+	s.mockTx.On(
+		"Rollback",
+		mock.Anything,
+	).Return(nil)
 
 	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(l1FinalizedLatestHeight), uint64(l1FinalizedTimestamp))
 
@@ -566,6 +732,7 @@ func (s *EspressoReaderUnitTestSuite) TestReadEspressoWith2Transactions() {
 	s.mockEspressoClient.AssertExpectations(s.T())
 	s.mockDatabase.AssertExpectations(s.T())
 	s.mockEthClient.AssertExpectations(s.T())
+	s.mockTx.AssertExpectations(s.T())
 }
 
 func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
@@ -583,7 +750,6 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 	lastProcessedBlock := 3
 	l1FinalizedLatestHeight := 5
 	l1FinalizedTimestamp := 17
-	currentInputIndex := 0
 
 	s.mockEspressoClient.On(
 		"FetchTransactionsInBlock",
@@ -591,23 +757,6 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 		mock.Anything, // blockHeight
 		mock.Anything, // namespace
 	).Return(transactionsInBlock, nil)
-
-	s.mockDatabase.On("GetEspressoNonce",
-		mock.Anything, // context.Context
-		mock.Anything, // msgSender
-		mock.Anything, // appAddressStr
-	).Return(0, nil)
-
-	s.mockDatabase.On("GetInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
-	).Return(currentInputIndex, nil)
-
-	s.mockDatabase.On("GetInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // tx
-		mock.Anything, // nameOrAddress
-	).Return(currentInputIndex, nil)
 
 	s.mockDatabase.On("GetEpoch",
 		mock.Anything, // context.Context
@@ -622,10 +771,10 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 
 	s.mockDatabase.On("CreateEpochsAndInputs",
 		mock.Anything, // context.Context
+		mock.Anything, // pgx.Tx
 		mock.Anything, // nameOrAddress
 		mock.Anything, // epochInputMap
 		mock.Anything, // blockNumber
-		mock.Anything, // EspressoUpdateInfo
 	).Return(nil)
 
 	s.mockEthClient.On("HeaderByNumber",
@@ -658,6 +807,42 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseInputAtTheEndOfEpoch() {
 		InputSourceAdapter: s.mockInputSource,
 	}
 
+	s.mockDatabase.On("GetTx", ctx).Return(s.mockTx, nil)
+	s.mockDatabase.On(
+		"GetEspressoNonceWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(s.mockDatabase.nonce, nil)
+	s.mockDatabase.On(
+		"GetInputIndexWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(s.mockDatabase.inputIndex, nil)
+	s.mockDatabase.On(
+		"UpdateEspressoNonceWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+	s.mockDatabase.On(
+		"UpdateInputIndexWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+	s.mockTx.On(
+		"Commit",
+		mock.Anything,
+	).Return(nil)
+	s.mockTx.On(
+		"Rollback",
+		mock.Anything,
+	).Return(nil)
+
 	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(lastProcessedBlock), uint64(l1FinalizedTimestamp))
 	var apps []evmreader.TypeExportApplication
 	apps = append(apps, appEvmType)
@@ -687,7 +872,6 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseSkippingL1Blocks() {
 	lastProcessedBlock := 3
 	l1FinalizedLatestHeight := 5
 	l1FinalizedTimestamp := 17
-	currentInputIndex := 0
 
 	s.mockEspressoClient.On(
 		"FetchTransactionsInBlock",
@@ -695,23 +879,6 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseSkippingL1Blocks() {
 		mock.Anything, // blockHeight
 		mock.Anything, // namespace
 	).Return(transactionsInBlock, nil)
-
-	s.mockDatabase.On("GetEspressoNonce",
-		mock.Anything, // context.Context
-		mock.Anything, // msgSender
-		mock.Anything, // appAddressStr
-	).Return(0, nil)
-
-	s.mockDatabase.On("GetInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // nameOrAddress
-	).Return(currentInputIndex, nil)
-
-	s.mockDatabase.On("GetInputIndex",
-		mock.Anything, // context.Context
-		mock.Anything, // tx
-		mock.Anything, // nameOrAddress
-	).Return(currentInputIndex, nil)
 
 	s.mockDatabase.On("GetEpoch",
 		mock.Anything, // context.Context
@@ -726,10 +893,10 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseSkippingL1Blocks() {
 
 	s.mockDatabase.On("CreateEpochsAndInputs",
 		mock.Anything, // context.Context
+		mock.Anything, // pgx.Tx
 		mock.Anything, // nameOrAddress
 		mock.Anything, // epochInputMap
 		mock.Anything, // blockNumber
-		mock.Anything, // EspressoUpdateInfo
 	).Return(nil)
 
 	s.mockEthClient.On("HeaderByNumber",
@@ -783,6 +950,42 @@ func (s *EspressoReaderUnitTestSuite) TestEdgeCaseSkippingL1Blocks() {
 		Application:        application,
 		InputSourceAdapter: s.mockInputSource,
 	}
+
+	s.mockDatabase.On("GetTx", ctx).Return(s.mockTx, nil)
+	s.mockDatabase.On(
+		"GetEspressoNonceWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(s.mockDatabase.nonce, nil)
+	s.mockDatabase.On(
+		"GetInputIndexWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(s.mockDatabase.inputIndex, nil)
+	s.mockDatabase.On(
+		"UpdateEspressoNonceWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+	s.mockDatabase.On(
+		"UpdateInputIndexWithTx",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+	s.mockTx.On(
+		"Commit",
+		mock.Anything,
+	).Return(nil)
+	s.mockTx.On(
+		"Rollback",
+		mock.Anything,
+	).Return(nil)
 
 	s.espressoReader.readEspresso(ctx, appEvmType, uint64(currentBlockHeight), 55555, uint64(lastProcessedBlock), uint64(l1FinalizedTimestamp))
 	var apps []evmreader.TypeExportApplication
