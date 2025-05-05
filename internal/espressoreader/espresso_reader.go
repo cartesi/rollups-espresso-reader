@@ -28,6 +28,7 @@ import (
 	espresso "github.com/EspressoSystems/espresso-sequencer-go/types/common"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/jackc/pgx/v5"
 )
 
 type EspressoClient interface {
@@ -290,6 +291,7 @@ func toBigInt(value uint64) *big.Int {
 }
 
 func (e *EspressoReader) buildInput(ctx context.Context,
+	tx pgx.Tx,
 	espressoInput *EspressoInput, chainId *big.Int,
 	app common.Address,
 	l1FinalizedLatestHeightBig *big.Int,
@@ -297,7 +299,7 @@ func (e *EspressoReader) buildInput(ctx context.Context,
 	prevRandao *big.Int,
 	l1FinalizedLatestHeight uint64,
 ) (*model.Input, error) {
-	indexUint64, err := e.repository.GetInputIndex(ctx, espressoInput.app)
+	indexUint64, err := e.repository.GetInputIndexWithTx(ctx, tx, espressoInput.app)
 	if err != nil {
 		slog.Error("failed to read index", "app", espressoInput.app, "error", err)
 	}
@@ -324,8 +326,8 @@ func (e *EspressoReader) buildInput(ctx context.Context,
 	return &input, nil
 }
 
-func (e *EspressoReader) isNonceValid(ctx context.Context, espressoInput *EspressoInput) (bool, error) {
-	nonceInDb, err := e.repository.GetEspressoNonce(ctx, espressoInput.msgSender.Hex(), espressoInput.app)
+func (e *EspressoReader) isNonceValid(ctx context.Context, tx pgx.Tx, espressoInput *EspressoInput) (bool, error) {
+	nonceInDb, err := e.repository.GetEspressoNonceWithTx(ctx, tx, espressoInput.msgSender.Hex(), espressoInput.app)
 	if err != nil {
 		slog.Error("failed to get espresso nonce from db", "error", err)
 		return false, err
@@ -371,10 +373,21 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 	prevRandao, err := readPrevRandao(ctx, l1FinalizedLatestHeight, e.evmReader.GetEthClient())
 	if err != nil {
 		slog.Error("failed to read prevrandao", "error", err)
+		return
 	}
-	savedTransaction := 0
+
+	dbTx, err := e.repository.GetTx(ctx)
+	if err != nil {
+		slog.Error("failed to create db tx", "error", err)
+		return
+	}
+	defer dbTx.Rollback(ctx)
+
 	numTx := len(transactions.Transactions)
 	for i := 0; i < numTx; i++ {
+		// store one input at a time
+
+		slog.Debug("processing espresso block", "currentEspressoBlockHeight", currentEspressoBlockHeight, "tx index", i)
 		transaction := transactions.Transactions[i]
 		espressoInput, err := e.readEspressoInput(transaction)
 		if err != nil {
@@ -386,12 +399,12 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 			continue
 		}
 
-		nonceValid, err := e.isNonceValid(ctx, espressoInput)
+		nonceValid, err := e.isNonceValid(ctx, dbTx, espressoInput)
 		if !nonceValid || err != nil {
 			continue
 		}
 
-		input, err := e.buildInput(ctx, espressoInput, chainId, app, l1FinalizedLatestHeightBig, l1FinalizedTimestampBig, prevRandao, l1FinalizedLatestHeight)
+		input, err := e.buildInput(ctx, dbTx, espressoInput, chainId, app, l1FinalizedLatestHeightBig, l1FinalizedTimestampBig, prevRandao, l1FinalizedLatestHeight)
 		if err != nil {
 			slog.Error("failed to build input", "error", err)
 			continue
@@ -412,30 +425,43 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		}
 		epochInputMap[currentEpoch] = append(currentInputs, input)
 
-		// Store everything
-		espressoUpdateInfo := &model.EspressoUpdateInfo{
-			SenderAddress:              espressoInput.msgSender.Hex(),
-			LastProcessedEspressoBlock: currentEspressoBlockHeight,
-		}
+		// Store input
 		err = e.repository.CreateEpochsAndInputs(
 			ctx,
+			dbTx,
 			readingAppAddress,
 			epochInputMap,
 			l1FinalizedLatestHeight,
-			espressoUpdateInfo,
 		)
 		if err != nil {
 			slog.Error("could not store Espresso input", "err", err)
 			continue
 		}
-		savedTransaction++
-	}
-	if savedTransaction == 0 {
-		err = e.repository.UpdateEspressoBlock(ctx, app, currentEspressoBlockHeight)
+
+		// update nonce
+		err = e.repository.UpdateEspressoNonceWithTx(ctx, dbTx, espressoInput.msgSender.Hex(), readingAppAddress)
 		if err != nil {
-			slog.Error("failed to update current espresso block height", "error", err)
+			slog.Error("!!!could not update Espresso nonce!!!", "err", err)
+			continue
 		}
-		slog.Info("Espresso block updated", "app", app.Hex(), "currentEspressoBlockHeight", currentEspressoBlockHeight)
+		// update input index
+		err = e.repository.UpdateInputIndexWithTx(ctx, dbTx, readingAppAddress)
+		if err != nil {
+			slog.Error("failed to update index", "app", readingAppAddress, "error", err)
+		}
+	}
+
+	// update lastProcessedEspressoBlock in db
+	err = e.repository.UpdateLastProcessedEspressoBlockWithTx(ctx, dbTx, readingAppAddress, currentEspressoBlockHeight)
+	if err != nil {
+		slog.Error("failed updating last processed espresso block", "error", err)
+		return
+	}
+
+	// Commit transaction
+	err = dbTx.Commit(ctx)
+	if err != nil {
+		slog.Error("could not commit db tx", "err", err)
 		return
 	}
 }

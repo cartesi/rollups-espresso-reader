@@ -66,7 +66,7 @@ type ApplicationRepository interface {
 
 type EpochRepository interface {
 	CreateEpoch(ctx context.Context, nameOrAddress string, e *Epoch) error
-	CreateEpochsAndInputs(ctx context.Context, nameOrAddress string, epochInputMap map[*Epoch][]*Input, blockNumber uint64, espressoUpdateInfo *EspressoUpdateInfo) error
+	CreateEpochsAndInputs(ctx context.Context, tx pgx.Tx, nameOrAddress string, epochInputMap map[*Epoch][]*Input, blockNumber uint64) error
 
 	GetEpoch(ctx context.Context, nameOrAddress string, index uint64) (*Epoch, error)
 	GetEpochByVirtualIndex(ctx context.Context, nameOrAddress string, index uint64) (*Epoch, error)
@@ -94,6 +94,7 @@ type NodeConfigRepository interface {
 }
 
 type EspressoRepository interface {
+	GetTx(ctx context.Context) (pgx.Tx, error)
 	GetEspressoConfig(
 		ctx context.Context,
 		nameOrAddress string,
@@ -102,11 +103,6 @@ type EspressoRepository interface {
 		ctx context.Context,
 		nameOrAddress string,
 		startingBlock uint64, namespace uint64,
-	) error
-	UpdateEspressoBlock(
-		ctx context.Context,
-		appAddress common.Address,
-		lastProcessedEspressoBlock uint64,
 	) error
 	GetEspressoNonce(
 		ctx context.Context,
@@ -119,6 +115,12 @@ type EspressoRepository interface {
 		senderAddress string,
 		nameOrAddress string,
 	) (uint64, error)
+	UpdateEspressoNonceWithTx(
+		ctx context.Context,
+		tx pgx.Tx,
+		senderAddress string,
+		nameOrAddress string,
+	) error
 	GetInputIndex(
 		ctx context.Context,
 		nameOrAddress string,
@@ -128,10 +130,21 @@ type EspressoRepository interface {
 		tx pgx.Tx,
 		nameOrAddress string,
 	) (uint64, error)
+	UpdateInputIndexWithTx(
+		ctx context.Context,
+		tx pgx.Tx,
+		nameOrAddress string,
+	) error
 	GetLastProcessedEspressoBlock(
 		ctx context.Context,
 		nameOrAddress string,
 	) (uint64, error)
+	UpdateLastProcessedEspressoBlockWithTx(
+		ctx context.Context,
+		tx pgx.Tx,
+		nameOrAddress string,
+		lastProcessedEspressoBlock uint64,
+	) error
 }
 
 type Repository interface {
