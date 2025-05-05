@@ -29,7 +29,7 @@ func (f *fakeRepo) CreateEpoch(ctx context.Context, nameOrAddress string, e *mod
 }
 
 // CreateEpochsAndInputs implements repository.Repository.
-func (f *fakeRepo) CreateEpochsAndInputs(ctx context.Context, nameOrAddress string, epochInputMap map[*model.Epoch][]*model.Input, blockNumber uint64, espressoUpdateInfo *model.EspressoUpdateInfo) error {
+func (f *fakeRepo) CreateEpochsAndInputs(ctx context.Context, tx pgx.Tx, nameOrAddress string, epochInputMap map[*model.Epoch][]*model.Input, blockNumber uint64) error {
 	panic("unimplemented")
 }
 
@@ -150,6 +150,36 @@ func (f *fakeRepo) UpdateEspressoBlock(ctx context.Context, appAddress common.Ad
 
 // UpdateEventLastCheckBlock implements repository.Repository.
 func (f *fakeRepo) UpdateEventLastCheckBlock(ctx context.Context, appIDs []int64, event model.MonitoredEvent, blockNumber uint64) error {
+	panic("unimplemented")
+}
+
+func (f *fakeRepo) GetTx(ctx context.Context) (pgx.Tx, error) {
+	panic("unimplemented")
+}
+
+func (f *fakeRepo) UpdateEspressoNonceWithTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	senderAddress string,
+	nameOrAddress string,
+) error {
+	panic("unimplemented")
+}
+
+func (f *fakeRepo) UpdateInputIndexWithTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	nameOrAddress string,
+) error {
+	panic("unimplemented")
+}
+
+func (f *fakeRepo) UpdateLastProcessedEspressoBlockWithTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	nameOrAddress string,
+	lastProcessedEspressoBlock uint64,
+) error {
 	panic("unimplemented")
 }
 
