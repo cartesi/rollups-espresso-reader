@@ -12,9 +12,7 @@ import (
 	"sort"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/model"
-	espressoTable "github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/espresso/table"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository/postgres/db/rollupsdb/public/table"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/jackc/pgx/v5"
 )
@@ -110,10 +108,10 @@ func orderEpochs(epochInputsMap map[*model.Epoch][]*model.Input) []*model.Epoch 
 
 func (r *PostgresRepository) CreateEpochsAndInputs(
 	ctx context.Context,
+	tx pgx.Tx,
 	nameOrAddress string,
 	epochInputsMap map[*model.Epoch][]*model.Input,
 	blockNumber uint64,
-	espressoUpdateInfo *model.EspressoUpdateInfo,
 ) error {
 
 	whereClause, err := getWhereClauseFromNameOrAddress(nameOrAddress)
@@ -140,14 +138,6 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 			table.Input.Status,
 			table.Input.TransactionReference,
 		)
-
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
-	app := common.HexToAddress(nameOrAddress)
 
 	epochs := orderEpochs(epochInputsMap)
 	for _, epoch := range epochs {
@@ -199,52 +189,6 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 			if err != nil {
 				return err
 			}
-
-			if espressoUpdateInfo != nil {
-				// update espresso nonce
-				senderAddress := espressoUpdateInfo.SenderAddress
-				sender := common.HexToAddress(senderAddress)
-				nonce, err := r.GetEspressoNonceWithTx(ctx, tx, senderAddress, nameOrAddress)
-				if err != nil {
-					return err
-				}
-				nextNonce := nonce + 1
-				nonceInsertStmt := espressoTable.EspressoNonce.INSERT(
-					espressoTable.EspressoNonce.SenderAddress,
-					espressoTable.EspressoNonce.ApplicationAddress,
-					espressoTable.EspressoNonce.Nonce,
-				).VALUES(
-					postgres.Bytea(sender.Bytes()),
-					postgres.Bytea(app.Bytes()),
-					nextNonce,
-				)
-				sqlStr, args := nonceInsertStmt.
-					ON_CONFLICT(espressoTable.EspressoNonce.SenderAddress, espressoTable.EspressoNonce.ApplicationAddress).
-					DO_UPDATE(postgres.SET(
-						espressoTable.EspressoNonce.Nonce.SET(postgres.RawInt(fmt.Sprintf("%d", nextNonce))),
-					)).Sql()
-				_, err = tx.Exec(ctx, sqlStr, args...)
-				if err != nil {
-					return err
-				}
-			}
-			// update input index
-			index, err := r.GetInputIndexWithTx(ctx, tx, nameOrAddress)
-			if err != nil {
-				return err
-			}
-			nextIndex := index + 1
-			sqlStr, args = espressoTable.AppInfo.
-				UPDATE(espressoTable.AppInfo.Index).
-				SET(espressoTable.AppInfo.Index.SET(postgres.RawInt(fmt.Sprintf("%d", nextIndex)))).
-				WHERE(espressoTable.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))).Sql()
-			_, err = tx.Exec(ctx, sqlStr, args...)
-			if err != nil {
-				return err
-			}
-
-			index, _ = r.GetInputIndexWithTx(ctx, tx, nameOrAddress)
-			slog.Debug("input index is now", "index", index)
 		}
 	}
 
@@ -263,26 +207,6 @@ func (r *PostgresRepository) CreateEpochsAndInputs(
 	if err != nil {
 		return err
 	}
-
-	if espressoUpdateInfo != nil {
-		// update last processed espresso block
-		lastProcessedEspressoBlock := espressoUpdateInfo.LastProcessedEspressoBlock
-		sqlStr, args = espressoTable.AppInfo.
-			UPDATE(espressoTable.AppInfo.LastProcessedEspressoBlock).
-			SET(espressoTable.AppInfo.LastProcessedEspressoBlock.SET(postgres.RawFloat(fmt.Sprintf("%d", lastProcessedEspressoBlock)))).
-			WHERE(espressoTable.AppInfo.ApplicationAddress.EQ(postgres.Bytea(app.Bytes()))).Sql()
-		_, err = tx.Exec(ctx, sqlStr, args...)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Commit transaction
-	err = tx.Commit(ctx)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

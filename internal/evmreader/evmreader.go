@@ -11,7 +11,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/cartesi/rollups-espresso-reader/internal/model"
 	. "github.com/cartesi/rollups-espresso-reader/internal/model"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	appcontract "github.com/cartesi/rollups-espresso-reader/pkg/contracts/iapplication"
@@ -23,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/jackc/pgx/v5"
 )
 
 //go:embed abi.json
@@ -51,14 +51,25 @@ type EvmReaderRepository interface {
 	UpdateEventLastCheckBlock(ctx context.Context, appIDs []int64, event MonitoredEvent, blockNumber uint64) error
 
 	CreateEpochsAndInputs(
-		ctx context.Context, nameOrAddress string,
+		ctx context.Context, tx pgx.Tx, nameOrAddress string,
 		epochInputMap map[*Epoch][]*Input, blockNumber uint64,
-		espressoUpdateInfo *model.EspressoUpdateInfo,
 	) error
 	GetEpoch(ctx context.Context, nameOrAddress string, index uint64) (*Epoch, error)
 
 	GetInputIndex(
 		ctx context.Context,
+		nameOrAddress string,
+	) (uint64, error)
+
+	GetTx(ctx context.Context) (pgx.Tx, error)
+	UpdateInputIndexWithTx(
+		ctx context.Context,
+		tx pgx.Tx,
+		nameOrAddress string,
+	) error
+	GetInputIndexWithTx(
+		ctx context.Context,
+		tx pgx.Tx,
 		nameOrAddress string,
 	) (uint64, error)
 }
