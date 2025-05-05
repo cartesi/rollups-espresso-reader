@@ -65,10 +65,20 @@ func (r *EvmReader) ReadAndStoreInputs(
 			continue
 		}
 
-		combinedIndex, err := r.repository.GetInputIndex(ctx, address.Hex())
-
 		// Initialize epochs inputs map
 		var epochInputMap = make(map[*Epoch][]*Input)
+
+		dbTx, err := r.repository.GetTx(ctx)
+		if err != nil {
+			slog.Error("Error beginning db tx",
+				"application", app.Name,
+				"address", address,
+				"error", err,
+			)
+			continue
+		}
+		defer dbTx.Rollback(ctx)
+
 		// Index Inputs into epochs
 		for _, input := range inputs {
 
@@ -140,6 +150,7 @@ func (r *EvmReader) ReadAndStoreInputs(
 				currentInputs = []*Input{}
 			}
 			// overriding input index
+			combinedIndex, err := r.repository.GetInputIndexWithTx(ctx, dbTx, address.Hex())
 			if err != nil {
 				slog.Error("evmreader: failed to read index", "app", address, "error", err)
 			}
@@ -150,7 +161,11 @@ func (r *EvmReader) ReadAndStoreInputs(
 				if err == nil {
 					input.RawData = modifiedRawData
 				}
-				combinedIndex++
+			}
+			// update input index
+			err = r.repository.UpdateInputIndexWithTx(ctx, dbTx, address.Hex())
+			if err != nil {
+				slog.Error("failed to update index", "app", address, "error", err)
 			}
 			epochInputMap[currentEpoch] = append(currentInputs, input)
 
@@ -175,10 +190,10 @@ func (r *EvmReader) ReadAndStoreInputs(
 
 		err = r.repository.CreateEpochsAndInputs(
 			ctx,
+			dbTx,
 			address.String(),
 			epochInputMap,
 			mostRecentBlockNumber,
-			nil,
 		)
 		if err != nil {
 			slog.Error("Error storing inputs and epochs",
@@ -186,6 +201,14 @@ func (r *EvmReader) ReadAndStoreInputs(
 				"address", address,
 				"error", err,
 			)
+			dbTx.Rollback(ctx)
+			continue
+		}
+		// Commit transaction
+		err = dbTx.Commit(ctx)
+		if err != nil {
+			slog.Error("could not commit db tx", "err", err)
+			dbTx.Rollback(ctx)
 			continue
 		}
 
