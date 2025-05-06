@@ -95,7 +95,6 @@ RUN go build -o cartesi-rollups-espresso-reader
 FROM debian:bookworm-20250113-slim AS rollups-node
 
 ARG NODE_RUNTIME_DIR=/var/lib/cartesi-rollups-node
-ARG TARGETARCH=arm64
 
 USER root
 
@@ -123,6 +122,7 @@ ARG GO_BUILD_PATH
 ENV CARTESI_MACHINE_VERSION=0.19.0
 RUN <<EOF
     set -e
+    TARGETARCH=$(dpkg --print-architecture)
     curl -LO https://github.com/cartesi/machine-emulator/releases/download/v0.19.0-alpha3/cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
     dpkg -i ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
     rm ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
@@ -136,6 +136,7 @@ RUN curl -L https://github.com/cartesi/machine-emulator-tools/releases/download/
 ARG ROLLUPS_NODE_VERSION
 RUN <<EOF
     set -e
+    TARGETARCH=$(dpkg --print-architecture)
     curl -LO https://github.com/cartesi/rollups-node/releases/download/v${ROLLUPS_NODE_VERSION}/cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
     dpkg -i ./cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
     rm ./cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
@@ -152,5 +153,9 @@ RUN cartesi-machine --ram-length=128Mi --store=applications/echo-dapp --final-ha
 COPY --from=go-builder ${GO_BUILD_PATH}/cartesi-rollups-* /usr/bin
 
 COPY --chown=cartesi:cartesi ./ci/entrypoint.sh /entrypoint.sh
+COPY --chown=cartesi:cartesi ./ci/scripts/migrate-db.sh /migrate-db.sh
+COPY --chown=cartesi:cartesi ./internal/repository/postgres/schema/migrations /internal/repository/postgres/schema/migrations
+ADD https://raw.githubusercontent.com/cartesi/rollups-node/refs/tags/v2.0.0-alpha.4/internal/repository/postgres/schema/migrations/000001_create_initial_schema.up.sql /rollups-node/migrations/
+
 RUN chmod +x /entrypoint.sh
 CMD ["tini", "--", "/entrypoint.sh"]
