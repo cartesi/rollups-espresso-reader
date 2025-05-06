@@ -1,4 +1,7 @@
 #!/bin/sh
+set -e
+
+/migrate-db.sh
 
 cartesi-rollups-node &
 

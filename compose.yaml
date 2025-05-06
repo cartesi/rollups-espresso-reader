@@ -1,16 +1,6 @@
 services:
   db:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: rollupsdb
-    ports:
-      - 5433:5432
-    volumes:
-      - ./rollupsdb-dump.sql:/docker-entrypoint-initdb.d/rollupsdb-dump.sql
-  db-espresso:
-    image: postgres:16
+    image: postgres:17-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -20,13 +10,10 @@ services:
   devnet:
     container_name: devnet
     build:
-      context: ./rollups-node/test/devnet
+      context: ./ci/devnet
       dockerfile: Dockerfile
     ports:
       - 8545:8545
-    volumes:
-      - ./rollups-node/deployment.json:/usr/share/devnet/deployment.json
-      - ./rollups-node/anvil_state.json:/usr/share/devnet/anvil_state.json
   espresso-dev-node:
     image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
     environment:
@@ -34,21 +21,23 @@ services:
       ESPRESSO_SEQUENCER_API_PORT: 24000
       ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL: 1s
       ESPRESSO_STATE_PROVER_UPDATE_INTERVAL: 1s
-      ESPRESSO_SEQUENCER_POSTGRES_HOST: db-espresso
+      ESPRESSO_SEQUENCER_POSTGRES_HOST: db
       ESPRESSO_SEQUENCER_POSTGRES_PORT: 5432
       ESPRESSO_SEQUENCER_POSTGRES_DATABASE: rollupsdb
       ESPRESSO_SEQUENCER_POSTGRES_USER: postgres
       ESPRESSO_SEQUENCER_POSTGRES_PASSWORD: password
     depends_on:
-      - db-espresso
+      - db
       - devnet
     ports:
       - 24000:24000
-  c_espresso:
-    container_name: c_espresso
+  cartesi_espresso:
+    container_name: cartesi_espresso
     build:
       context: .
       dockerfile: ./ci/Dockerfile
+      args:
+        - ROLLUPS_NODE_VERSION=2.0.0-alpha.4
     env_file:
       - ./ci/env.nodev2-espressolocal
     ports:
@@ -59,4 +48,5 @@ services:
       CARTESI_BLOCKCHAIN_WS_ENDPOINT: ws://devnet:8545/
       ESPRESSO_BASE_URL: http://espresso-dev-node:24000
     depends_on:
+      - db
       - espresso-dev-node
