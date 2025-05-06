@@ -17,27 +17,80 @@ As such, applications can take advantage of Espresso's higher throughput and low
 
 Check the [architecture](docs/architecture.md) page for more details about how the integration of Espresso with Cartesi Rollups works.
 
-## App Development
+## App development
 
 Check the [development](docs/development.md) page for details about how to develop Cartesi applications using Espresso.
 
-## Building and Running
+## Running locally
 
-To build:
+The Espresso Reader is intended to be executed alongside a Cartesi Rollups Node.
+
+In order to run it locally, it is necessary to instantiate an environment with all the necessary components: a local blockchain network, a local Espresso network, and a Cartesi Rollups Node alongside its database and the Espresso Reader itself.
+
+To build all necessary components:
+
+```bash
+docker compose build
+```
+
+Then, you can execute everything by running:
+
+```bash
+docker compose up -d
+```
+
+Logs for the Cartesi Node with the Espresso Reader can be tracked by typing:
+
+```bash
+docker compose logs node_espresso -f
+```
+
+A sample Echo application can be deployed on your local node by executing:
+
+```bash
+INPUT_BOX_ADDRESS="0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c" \
+ESPRESSO_STARTING_BLOCK="0" \
+ESPRESSO_NAMESPACE="55555" \
+DATA_AVAILABILITY=$(cast calldata \
+    "InputBoxAndEspresso(address,uint256,uint32)" \
+    $INPUT_BOX_ADDRESS $ESPRESSO_STARTING_BLOCK $ESPRESSO_NAMESPACE); \
+docker exec node_espresso cartesi-rollups-cli app deploy -v \
+    --salt 0000000000000000000000000000000000000000000000000000000000000000 \
+    --data-availability $DATA_AVAILABILITY \
+    -n echo-dapp \
+    -t applications/echo-dapp/
+```
+
+Once deployed, an L1 InputBox input can be sent using cast:
+
+```bash
+INPUT=0xdeadbeef; \
+INPUT_BOX_ADDRESS=0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c; \
+APPLICATION_ADDRESS=0x01e800bbE852aeb27cE65604709134Ea63782c6B; \
+cast send \
+    --mnemonic "test test test test test test test test test test test junk" \
+    --rpc-url "http://localhost:8545" \
+    $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
+```
+
+## Building and testing with a local Cartesi Node repository
+
+First build the Espresso Reader itself:
 
 ```bash
 go build
 ```
 
-To run, first you need to run the appropriate version of the Cartesi Rollups Node from its [repository](https://github.com/cartesi/rollups-node/releases/tag/v2.0.0-alpha.1):
+To run it alongisde a Cartesi Rollups Node checked out from its [repository](https://github.com/cartesi/rollups-node/releases/tag/v2.0.0-alpha.4):
 
 ```bash
 cd <path-to-cartesi-rollups-node>
+make
 make run-postgres && make migrate
 ./cartesi-rollups-node
 ```
 
-Then, run the Espresso Reader to read inputs from Espresso and write them to the Node's database (make sure to have configured the Node with an appropriate application, such as the `echo-dapp`):
+Then, run the Espresso Reader to read inputs from Espresso and write them to the Node's database (make sure to adjust environment variables as appropriate to match the Node's configuration):
 
 ```bash
 eval $(make env)
