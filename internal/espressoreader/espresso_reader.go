@@ -23,9 +23,9 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/dataavailability"
 	"github.com/cartesi/rollups-espresso-reader/pkg/ethutil"
 
-	"github.com/EspressoSystems/espresso-sequencer-go/client"
-	"github.com/EspressoSystems/espresso-sequencer-go/types"
-	espresso "github.com/EspressoSystems/espresso-sequencer-go/types/common"
+	"github.com/EspressoSystems/espresso-network-go/client"
+	"github.com/EspressoSystems/espresso-network-go/types"
+	espresso "github.com/EspressoSystems/espresso-network-go/types/common"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/jackc/pgx/v5"
