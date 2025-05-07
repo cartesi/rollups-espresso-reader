@@ -39,7 +39,7 @@ func FromEnv() NodeConfig {
 	config.BlockchainWsEndpoint = Redacted[string]{GetBlockchainWsEndpoint()}
 	config.EvmReaderDefaultBlock = GetEvmReaderDefaultBlock()
 	config.PostgresEndpoint = Redacted[string]{GetDatabaseConnection()}
-	config.EspressoBaseUrl = GetBaseUrl() + "/v0"
+	config.EspressoBaseUrl = GetBaseUrl()
 	config.EspressoServiceEndpoint = GetServiceEndpoint()
 	config.MaxRetries = GetPolicyMaxRetries()
 	config.MaxDelay = GetPolicyMaxDelay()

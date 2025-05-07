@@ -3,6 +3,7 @@ package espressoreader
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -16,10 +17,25 @@ type SigAndData struct {
 	Signature string             `json:"signature"`
 }
 
+type SigAndDataV0 struct {
+	TypedData string `json:"typedData"`
+	Account   string `json:"account"`
+	Signature string `json:"signature"`
+}
+
 func ExtractSigAndData(raw string) (common.Address, apitypes.TypedData, string, error) {
 	var sigAndData SigAndData
 	if err := json.Unmarshal([]byte(raw), &sigAndData); err != nil {
-		return common.HexToAddress("0x"), apitypes.TypedData{}, "", fmt.Errorf("unmarshal sigAndData: %w", err)
+		slog.Warn("Unmarshal error", "raw", raw)
+		var sigAndDataV0 SigAndDataV0
+		if err0 := json.Unmarshal([]byte(raw), &sigAndDataV0); err0 != nil {
+			return common.HexToAddress("0x"), apitypes.TypedData{}, "", fmt.Errorf("unmarshal sigAndData: %w", err)
+		}
+		sigAndData.Account = sigAndDataV0.Account
+		sigAndData.Signature = sigAndDataV0.Signature
+		if err1 := json.Unmarshal([]byte(sigAndDataV0.TypedData), &sigAndData.TypedData); err1 != nil {
+			return common.HexToAddress("0x"), apitypes.TypedData{}, "", fmt.Errorf("unmarshal sigAndData: %w", err)
+		}
 	}
 
 	signature, err := hexutil.Decode(sigAndData.Signature)
