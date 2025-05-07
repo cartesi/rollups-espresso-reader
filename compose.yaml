@@ -31,8 +31,8 @@ services:
       - devnet
     ports:
       - 24000:24000
-  cartesi_espresso:
-    container_name: cartesi_espresso
+  node_espresso:
+    container_name: node_espresso
     build:
       context: .
       dockerfile: ./ci/Dockerfile
@@ -42,6 +42,9 @@ services:
       - ./ci/env.nodev2-espressolocal
     ports:
       - 10000:10000
+      - 10011:10011
+      - 10012:10012
+      - 8080:8080
     environment:
       CARTESI_DATABASE_CONNECTION: postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
       CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: http://devnet:8545/
