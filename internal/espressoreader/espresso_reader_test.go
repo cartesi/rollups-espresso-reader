@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/EspressoSystems/espresso-sequencer-go/client"
-	"github.com/EspressoSystems/espresso-sequencer-go/types"
+	"github.com/EspressoSystems/espresso-network-go/client"
+	"github.com/EspressoSystems/espresso-network-go/types"
 	"github.com/cartesi/rollups-espresso-reader/internal/config"
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/model"

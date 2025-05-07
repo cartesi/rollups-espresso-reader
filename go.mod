@@ -4,14 +4,14 @@ go 1.23.2
 
 require (
 	github.com/ethereum/go-ethereum v1.14.12
-	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/spf13/cobra v1.9.1
+	github.com/stretchr/testify v1.10.0
 )
 
 require github.com/BurntSushi/toml v1.4.0
 
 require (
-	github.com/EspressoSystems/espresso-sequencer-go v0.0.26
+	github.com/EspressoSystems/espresso-network-go v0.0.37
 	github.com/go-jet/jet/v2 v2.12.0
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/jackc/pgx/v5 v5.7.1
@@ -29,7 +29,6 @@ require (
 	github.com/bits-and-blooms/bitset v1.20.0 // indirect
 	github.com/consensys/bavard v0.1.24 // indirect
 	github.com/consensys/gnark-crypto v0.14.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/crate-crypto/go-ipa v0.0.0-20240724233137-53bbb0ceb27a // indirect
 	github.com/crate-crypto/go-kzg-4844 v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -64,7 +63,7 @@ require (
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/sigurn/crc8 v0.0.0-20220107193325-2243fe600f9f // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/supranational/blst v0.3.13 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
