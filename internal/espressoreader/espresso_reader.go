@@ -442,12 +442,13 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		err = e.repository.UpdateEspressoNonceWithTx(ctx, dbTx, espressoInput.msgSender.Hex(), readingAppAddress)
 		if err != nil {
 			slog.Error("!!!could not update Espresso nonce!!!", "err", err)
-			continue
+			return
 		}
 		// update input index
 		err = e.repository.UpdateInputIndexWithTx(ctx, dbTx, readingAppAddress)
 		if err != nil {
 			slog.Error("failed to update index", "app", readingAppAddress, "error", err)
+			return
 		}
 	}
 
