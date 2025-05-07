@@ -1,12 +1,18 @@
 services:
   db:
     image: postgres:17-alpine
+    container_name: db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: rollupsdb
     ports:
       - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-U", "postgres", "-d", "rollupsdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   devnet:
     container_name: devnet
     build:
@@ -15,24 +21,39 @@ services:
     ports:
       - 8545:8545
   espresso-dev-node:
-    image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
-    environment:
-      ESPRESSO_SEQUENCER_L1_PROVIDER: http://devnet:8545/
-      ESPRESSO_SEQUENCER_API_PORT: 24000
-      ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL: 1s
-      ESPRESSO_STATE_PROVER_UPDATE_INTERVAL: 1s
-      ESPRESSO_SEQUENCER_POSTGRES_HOST: db
-      ESPRESSO_SEQUENCER_POSTGRES_PORT: 5432
-      ESPRESSO_SEQUENCER_POSTGRES_DATABASE: rollupsdb
-      ESPRESSO_SEQUENCER_POSTGRES_USER: postgres
-      ESPRESSO_SEQUENCER_POSTGRES_PASSWORD: password
-    depends_on:
-      - db
-      - devnet
+    container_name: espresso-dev-node
+    image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20250428-dev-node-decaf-pos
     ports:
       - 24000:24000
-  node_espresso:
-    container_name: node_espresso
+      - 23000:23000
+      - 20000:20000
+      # - 5432:5432
+    environment:
+      - ESPRESSO_BUILDER_PORT=23000
+      - ESPRESSO_DEPLOYER_ACCOUNT_INDEX
+      - ESPRESSO_DEV_NODE_PORT=20000
+      - ESPRESSO_SEQUENCER_API_PORT=24000
+      - ESPRESSO_SEQUENCER_ETH_MNEMONIC
+      - ESPRESSO_SEQUENCER_L1_PROVIDER=http://host.docker.internal:8545
+      - ESPRESSO_SEQUENCER_DATABASE_MAX_CONNECTIONS=25
+      - ESPRESSO_SEQUENCER_STORAGE_PATH=/data/espresso
+      - RUST_LOG=info
+      - RUST_LOG_FORMAT
+    volumes:
+      - espresso_storage:/data/espresso
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - devnet
+    healthcheck:
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    # healthcheck:
+    #   test: ["CMD", "wget", "--spider", "-q", "http://espresso-dev-node:24000/status/block-height"]
+  cartesi_espresso:
+    container_name: cartesi_espresso
     build:
       context: .
       dockerfile: ./ci/Dockerfile
@@ -44,12 +65,18 @@ services:
       - 10000:10000
       - 10011:10011
       - 10012:10012
-      - 8080:8080
+      - "${ESPRESSO_READER_PORT:-8080}:8080"
     environment:
-      CARTESI_DATABASE_CONNECTION: postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
-      CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: http://devnet:8545/
-      CARTESI_BLOCKCHAIN_WS_ENDPOINT: ws://devnet:8545/
-      ESPRESSO_BASE_URL: http://espresso-dev-node:24000
+      - CARTESI_DATABASE_CONNECTION=postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
+      - CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=http://devnet:8545/
+      - CARTESI_BLOCKCHAIN_WS_ENDPOINT=ws://devnet:8545/
+      - ESPRESSO_BASE_URL=http://espresso-dev-node:24000
+      - CARTESI_FEATURE_ESPRESSO_READER_ENABLED
     depends_on:
-      - db
-      - espresso-dev-node
+      db:
+        condition: service_healthy
+      espresso-dev-node:
+        condition: service_healthy
+
+volumes:
+  espresso_storage:
