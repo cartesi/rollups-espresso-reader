@@ -176,11 +176,17 @@ func (e *EspressoReader) bootstrap(ctx context.Context, app evmreader.TypeExport
 				for index, nsTable := range nsTables {
 					nsTableBytes, _ := base64.StdEncoding.DecodeString(nsTable)
 					ns := e.espressoHelper.extractNS(nsTableBytes)
+					currentEspressoBlock := batchStartingBlock + uint64(index)
 					if slices.Contains(ns, uint32(namespace)) {
-						currentEspressoBlock := batchStartingBlock + uint64(index)
 						slog.Debug("found namespace contained in", "block", currentEspressoBlock)
 						l1FinalizedHeight, l1FinalizedTimestamp = e.readL1(ctx, app, currentEspressoBlock, l1FinalizedHeight)
 						e.readEspresso(ctx, app, currentEspressoBlock, namespace, l1FinalizedHeight, l1FinalizedTimestamp)
+					} else {
+						err = e.repository.UpdateLastProcessedEspressoBlock(ctx, app.IApplicationAddress, currentEspressoBlock)
+						if err != nil {
+							slog.Error("failed updating last processed espresso block during bootstrap", "error", err)
+							return err
+						}
 					}
 				}
 			}

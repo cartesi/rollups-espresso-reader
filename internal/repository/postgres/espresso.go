@@ -305,6 +305,35 @@ func (r *PostgresRepository) GetLastProcessedEspressoBlock(
 	return *lastProcessedEspressoBlock, nil
 }
 
+func (r *PostgresRepository) UpdateLastProcessedEspressoBlock(
+	ctx context.Context,
+	appAddress common.Address,
+	lastProcessedEspressoBlock uint64,
+) error {
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	sqlStr, args := table.AppInfo.
+		UPDATE(table.AppInfo.LastProcessedEspressoBlock).
+		SET(table.AppInfo.LastProcessedEspressoBlock.SET(postgres.RawFloat(fmt.Sprintf("%d", lastProcessedEspressoBlock)))).
+		WHERE(table.AppInfo.ApplicationAddress.EQ(postgres.Bytea(appAddress.Bytes()))).Sql()
+	_, err = tx.Exec(ctx, sqlStr, args...)
+
+	if err != nil {
+		return errors.Join(err, tx.Rollback(ctx))
+	}
+
+	// Commit transaction
+	err = tx.Commit(ctx)
+	if err != nil {
+		return errors.Join(err, tx.Rollback(ctx))
+	}
+	return nil
+}
+
 func (r *PostgresRepository) UpdateLastProcessedEspressoBlockWithTx(
 	ctx context.Context,
 	tx pgx.Tx,
