@@ -169,6 +169,14 @@ func (m *MockRepository) GetLastProcessedEspressoBlock(ctx context.Context, name
 	panic("unimplemented")
 }
 
+func (m *MockRepository) UpdateLastProcessedEspressoBlock(
+	ctx context.Context,
+	appAddress common.Address,
+	lastProcessedEspressoBlock uint64,
+) error {
+	panic("unimplemented")
+}
+
 func (m *MockRepository) UpdateLastProcessedEspressoBlockWithTx(
 	ctx context.Context,
 	tx pgx.Tx,
