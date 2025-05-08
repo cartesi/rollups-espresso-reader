@@ -3,6 +3,8 @@ set -e
 
 /migrate-db.sh
 
+/espresso-dev-node-health.sh
+
 cartesi-rollups-node &
 
 # TODO: remove in the future when we stop test the node v2 without espresso in this repo.
