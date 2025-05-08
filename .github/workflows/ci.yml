@@ -10,122 +10,6 @@ env:
   ESPRESSO_BASE_URL: http://localhost:24000
 
 jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    env:
-      CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
-    services:
-      postgres:
-        image: postgres:16
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: rollupsdb
-        options: --name postgres
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Clone Node V2 (avoid submodules)
-        run: |
-          git clone -b v${ROLLUPS_NODE_VERSION} --depth 1 --recurse-submodules https://github.com/cartesi/rollups-node.git
-
-      - name: Wait for PostgreSQL to be ready
-        run: |
-          for i in {1..30}; do
-            if pg_isready -h localhost -p 5432 -U postgres; then
-              echo "PostgreSQL is ready";
-              exit 0;
-            fi;
-            sleep 2;
-          done;
-          echo "PostgreSQL did not become ready in time";
-          exit 1;
-
-      - name: Install go migrate cli
-        run: |
-          GO_MIGRATE_VERSION=4.18.2
-          ARCH=$(dpkg --print-architecture || uname -m)
-          case "$ARCH" in
-              amd64|x86_64)
-                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-amd64.deb"
-                  ;;
-              arm64|aarch64)
-                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-arm64.deb"
-                  ;;
-              armhf|armv7l)
-                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-armv7.deb"
-                  ;;
-              i386)
-                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-386.deb"
-                  ;;
-              *)
-                  echo "Unsupported architecture: $ARCH"
-                  exit 1
-                  ;;
-          esac
-          curl -fsSL "$MIGRATE_URL" -o /tmp/migrate.deb
-          sudo dpkg -i /tmp/migrate.deb
-          rm /tmp/migrate.deb
-          migrate --version
-
-      - name: Migrate Node V2 DB
-        run: |
-          cd rollups-node
-          eval $(make env)
-          make migrate
-      
-      - name: Migrate Espresso DB
-        run: |
-          migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_DATABASE_CONNECTION&x-migrations-table=espresso_schema_migrations" up
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Run devnet (Anvil)
-        run: |
-          cd rollups-node
-          make devnet
-          make start-devnet
-      
-      - name: Build Espresso image
-        run: |
-          docker build --build-arg TARGETARCH=amd64 \
-            --build-arg ROLLUPS_NODE_VERSION=${ROLLUPS_NODE_VERSION} \
-            -t espresso -f ./ci/Dockerfile .
-
-      - name: Dump database
-        env:
-          PGPASSWORD: password
-        run: |
-          pg_dump -h localhost -U postgres -d rollupsdb > rollupsdb-dump.sql
-
-      - name: Save Docker image
-        run: |
-          docker save cartesi/rollups-node-devnet:devel -o docker-devnet-image.tar
-          docker save espresso -o docker-espresso-image.tar
-
-      - name: Tar DB bindings
-        run: |
-          tar -czf rollupsdb-postgres-bindings.tar.gz internal/repository/postgres/db/
-
-      - name: Upload Docker image
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-images
-          path: docker-*
-  
-      - name: Upload database dump
-        uses: actions/upload-artifact@v4
-        with:
-          name: db-dump
-          path: rollupsdb-*
-  
   local_e2e_test:
     name: e2e tests (Espresso Local)
     runs-on: ubuntu-latest
@@ -220,6 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CARTESI_FEATURE_ESPRESSO_READER_ENABLED: false
+      ESPRESSO_READER_PORT: 8081
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -254,7 +139,7 @@ jobs:
           CARTESI_CONTRACTS_AUTHORITY_FACTORY_ADDRESS: '0x451f57Ca716046D114Ab9ff23269a2F9F4a1bdaF'
           CARTESI_CONTRACTS_APPLICATION_FACTORY_ADDRESS: '0x2210ad1d9B0bD2D470c2bfA4814ab6253BC421A0'
           CARTESI_CONTRACTS_SELF_HOSTED_APPLICATION_FACTORY_ADDRESS: '0x4a409e1CaB9229711C4e1f68625DdbC75809e721'
-          CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable'
+          CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
           ESPRESSO_BASE_URL: 'http://localhost:24000'
           ESPRESSO_SERVICE_ENDPOINT: '0.0.0.0:8080'
           CARTESI_FEATURE_MACHINE_HASH_CHECK_ENABLED: false
