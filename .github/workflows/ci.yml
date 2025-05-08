@@ -129,19 +129,8 @@ jobs:
   local_e2e_test:
     name: e2e tests (Espresso Local)
     runs-on: ubuntu-latest
-    # needs: [build]
-
-    services:
-      postgres:
-        image: postgres:16
-        ports:
-          - 5433:5432 # Warn: I changed it to not crash with internal espresso-dev-ode
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: rollupsdb
-        options: --name postgres
-    
+    env:
+      CARTESI_FEATURE_ESPRESSO_READER_ENABLED: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -211,74 +200,17 @@ jobs:
     name: Integration tests (Local Espresso Dev Node)
     runs-on: ubuntu-latest
     needs: [build]
-
-    services:
-      postgres:
-        image: postgres:16
-        ports:
-          - 5433:5432 # Warn: I changed it to not crash with internal espresso-dev-ode
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: rollupsdb
-        options: --name postgres
-
+    env:
+      CARTESI_FEATURE_ESPRESSO_READER_ENABLED: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           submodules: recursive
 
-      - name: Download DB files
-        uses: actions/download-artifact@v4
-        with:
-          name: db-dump
-
-      - name: Restore DB bindings
+      - name: Run docker compose
         run: |
-          mkdir -p internal/repository/postgres/db/
-          tar -xzf rollupsdb-postgres-bindings.tar.gz
-
-      - name: Wait for PostgreSQL to be ready
-        run: |
-          for i in {1..30}; do
-            if pg_isready -h localhost -p 5433 -U postgres; then
-              echo "PostgreSQL is ready";
-              exit 0;
-            fi;
-            sleep 2;
-          done;
-          echo "PostgreSQL did not become ready in time";
-          exit 1;
-  
-      - name: Restore database
-        env:
-          PGPASSWORD: password
-        run: |
-          psql -h localhost -U postgres -d rollupsdb --port 5433 < rollupsdb-dump.sql
-
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-images
-  
-      - name: Load Docker image
-        run: |
-          docker load -i docker-devnet-image.tar
-          docker load -i docker-espresso-image.tar
-      
-      - name: Run devnet (Anvil)
-        run: |
-          docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
-
-      - name: Run Espresso dev node
-        run: |
-          docker run -d --network=host \
-            -e ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/ \
-            -e ESPRESSO_SEQUENCER_API_PORT=24000 \
-            -e ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL=1s \
-            -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
-            --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
+          docker compose up --wait
 
       - name: Wait for Espresso dev node to be available
         run: |
@@ -288,21 +220,6 @@ jobs:
       - name: Espresso dev node logs
         run: |
           docker logs --timestamps espresso-dev-node
-
-      - name: Run Espresso Reader image (Default input disabled)
-        env:
-          CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
-          CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
-          CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
-          CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable'
-        run: |
-          docker run -d --env-file ./ci/env.nodev2-espressolocal \
-            -e CARTESI_DATABASE_CONNECTION=$CARTESI_DATABASE_CONNECTION \
-            -e CARTESI_FEATURE_ESPRESSO_READER_ENABLED=false \
-            --rm --network=host \
-            --name c_espresso espresso
-          sleep 10
-          docker logs --timestamps c_espresso
 
       - name: Install Echo App
         run: |
