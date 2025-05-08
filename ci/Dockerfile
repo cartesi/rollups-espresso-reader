@@ -144,8 +144,8 @@ EOF
 
 WORKDIR ${NODE_RUNTIME_DIR}
 
-HEALTHCHECK --interval=1s --timeout=1s --retries=5 \
-    CMD curl -G -f -H 'Content-Type: application/json' http://127.0.0.1:10000/healthz
+# HEALTHCHECK --interval=1s --timeout=1s --retries=5 \
+    # CMD curl -G -f -H 'Content-Type: application/json' http://127.0.0.1:10000/healthz
 
 RUN mkdir applications
 RUN cartesi-machine --ram-length=128Mi --store=applications/echo-dapp --final-hash -- ioctl-echo-loop --vouchers=1 --notices=1 --reports=1 --verbose=1
