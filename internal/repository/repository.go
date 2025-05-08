@@ -139,6 +139,11 @@ type EspressoRepository interface {
 		ctx context.Context,
 		nameOrAddress string,
 	) (uint64, error)
+	UpdateLastProcessedEspressoBlock(
+		ctx context.Context,
+		appAddress common.Address,
+		lastProcessedEspressoBlock uint64,
+	) error
 	UpdateLastProcessedEspressoBlockWithTx(
 		ctx context.Context,
 		tx pgx.Tx,

@@ -174,6 +174,14 @@ func (f *fakeRepo) UpdateInputIndexWithTx(
 	panic("unimplemented")
 }
 
+func (f *fakeRepo) UpdateLastProcessedEspressoBlock(
+	ctx context.Context,
+	appAddress common.Address,
+	lastProcessedEspressoBlock uint64,
+) error {
+	panic("unimplemented")
+}
+
 func (f *fakeRepo) UpdateLastProcessedEspressoBlockWithTx(
 	ctx context.Context,
 	tx pgx.Tx,
