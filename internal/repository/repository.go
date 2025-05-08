@@ -184,6 +184,9 @@ func LoadNodeConfig[T any](
 	repo NodeConfigRepository,
 	key string,
 ) (*NodeConfig[T], error) {
+	if repo == nil {
+		return nil, fmt.Errorf("repo cannot be nil")
+	}
 	raw, createdAt, updatedAt, err := repo.LoadNodeConfigRaw(ctx, key)
 	if err != nil || raw == nil {
 		return nil, err
