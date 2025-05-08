@@ -1,4 +1,5 @@
 services:
+<<<<<<< HEAD
   db:
     image: postgres:17-alpine
     container_name: db
@@ -13,6 +14,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+=======
+  # db:
+  #   image: postgres:17-alpine
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: rollupsdb
+  #   ports:
+  #     - 5432:5432
+>>>>>>> d67a576 (wip: running with devel)
   devnet:
     container_name: devnet
     build:
@@ -21,6 +32,7 @@ services:
     ports:
       - 8545:8545
   espresso-dev-node:
+<<<<<<< HEAD
     container_name: espresso-dev-node
     image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20250428-dev-node-decaf-pos
     ports:
@@ -80,3 +92,83 @@ services:
 
 volumes:
   espresso_storage:
+=======
+    image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20250428-dev-node-decaf-pos
+    ports:
+      - 21000:21000
+      - 23000:23000
+      - 20000:20000
+      - 5432:5432
+    environment:
+      - ESPRESSO_BUILDER_PORT=23000
+      - ESPRESSO_DEPLOYER_ACCOUNT_INDEX
+      - ESPRESSO_DEV_NODE_PORT=20000
+      - ESPRESSO_SEQUENCER_API_PORT=21000
+      - ESPRESSO_SEQUENCER_ETH_MNEMONIC
+      - ESPRESSO_SEQUENCER_L1_PROVIDER=http://host.docker.internal:8545
+      - ESPRESSO_SEQUENCER_DATABASE_MAX_CONNECTIONS=25
+      - ESPRESSO_SEQUENCER_STORAGE_PATH=/data/espresso
+      - RUST_LOG=info
+      - RUST_LOG_FORMAT
+    volumes:
+      - espresso_storage:/data/espresso
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  # espresso-dev-node:
+  #   image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20250428-dev-node-decaf-pos
+  #   environment:
+  #     ESPRESSO_SEQUENCER_L1_PROVIDER: http://devnet:8545/
+  #     ESPRESSO_SEQUENCER_API_PORT: 24000
+  #     ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL: 100ms
+  #     ESPRESSO_STATE_PROVER_UPDATE_INTERVAL: 1s
+  #     ESPRESSO_SEQUENCER_POSTGRES_HOST: db
+  #     ESPRESSO_SEQUENCER_POSTGRES_PORT: 5432
+  #     ESPRESSO_SEQUENCER_POSTGRES_DATABASE: rollupsdb
+  #     ESPRESSO_SEQUENCER_POSTGRES_USER: postgres
+  #     ESPRESSO_SEQUENCER_POSTGRES_PASSWORD: password
+  #     ESPRESSO_SEQUENCER_ETH_MNEMONIC: 'test test test test test test test test test test test junk'
+  #     ESP_TOKEN_INITIAL_GRANT_RECIPIENT_ADDRESS: 0xdD2FD4581271e230360230F9337D5c0430Bf44C0
+  #     ESP_TOKEN_INITIAL_GRANT_RECIPIENT_ACCOUNT_INDEX: 18
+  #     ESPRESSO_DEMO_SEQUENCER_STAKING_PRIVATE_KEY_0: BLS_SIGNING_KEY~lNDh4Pn-pTAyzyprOAFdXHwhrKhEwqwtMtkD3CZF4x3o
+  #     ESPRESSO_SEQUENCER_STAKE_TABLE_CAPACITY: 10
+  #     ESPRESSO_SEQUENCER_L1_EVENTS_MAX_BLOCK_RANGE: 1000
+  #     ESPRESSO_SEQUENCER_L1_STAKE_TABLE_UPDATE_INTERVAL: 1m
+  #     ESPRESSO_SEQUENCER_STAKE_TABLE_EXIT_ESCROW_PERIOD: 3m
+  #     INTEGRATION_TEST_SEQUENCER_VERSION: 02
+  #     ESPRESSO_SEQUENCER_GENESIS_FILE: genesis/demo.toml
+  #     ESPRESSO_SEQUENCER_PROCESS_COMPOSE_GENESIS_FILE: data/genesis/demo.toml
+  #     ESPRESSO_SEQUENCER_PERMISSIONED_PROVER: 0x14dc79964da2c08b23698b3d3cc7ca32193d9955
+  #     ESPRESSO_SEQUENCER_LIGHT_CLIENT_PROXY_ADDRESS: 0x82dc47734901ee7d4f4232f398752cb9dd5daccc
+  #     ESPRESSO_SEQUENCER_STAKE_TABLE_PROXY_ADDRESS: 0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba
+  #     ESPRESSO_SEQUENCER_ESP_TOKEN_PROXY_ADDRESS: 0x8ce361602b935680e8dec218b820ff5056beb7af
+  #   depends_on:
+  #     - db
+  #     - devnet
+  #   ports:
+  #     - 24000:24000
+  # node_espresso:
+  #   container_name: node_espresso
+  #   build:
+  #     context: .
+  #     dockerfile: ./ci/Dockerfile
+  #     args:
+  #       - ROLLUPS_NODE_VERSION=2.0.0-alpha.4
+  #   env_file:
+  #     - ./ci/env.nodev2-espressolocal
+  #   ports:
+  #     - 10000:10000
+  #     - 10011:10011
+  #     - 10012:10012
+  #     - 8080:8080
+  #   environment:
+  #     CARTESI_DATABASE_CONNECTION: postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
+  #     CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: http://devnet:8545/
+  #     CARTESI_BLOCKCHAIN_WS_ENDPOINT: ws://devnet:8545/
+  #     ESPRESSO_BASE_URL: http://espresso-dev-node:24000
+  #   depends_on:
+  #     - db
+  #     - espresso-dev-node
+
+volumes:
+  espresso_storage:
+>>>>>>> d67a576 (wip: running with devel)
