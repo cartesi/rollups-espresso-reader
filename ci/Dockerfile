@@ -154,6 +154,7 @@ COPY --from=go-builder ${GO_BUILD_PATH}/cartesi-rollups-* /usr/bin
 
 COPY --chown=cartesi:cartesi ./ci/entrypoint.sh /entrypoint.sh
 COPY --chown=cartesi:cartesi ./ci/scripts/migrate-db.sh /migrate-db.sh
+COPY --chown=cartesi:cartesi ./ci/scripts/espresso-dev-node-health.sh /espresso-dev-node-health.sh
 COPY --chown=cartesi:cartesi ./internal/repository/postgres/schema/migrations /internal/repository/postgres/schema/migrations
 ADD https://raw.githubusercontent.com/cartesi/rollups-node/refs/tags/v2.0.0-alpha.4/internal/repository/postgres/schema/migrations/000001_create_initial_schema.up.sql /rollups-node/migrations/
 
