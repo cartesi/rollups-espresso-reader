@@ -7,6 +7,7 @@ permissions:
 
 env:
   ROLLUPS_NODE_VERSION: 2.0.0-alpha.4
+  ESPRESSO_BASE_URL: http://localhost:24000
 
 jobs:
   build:
@@ -128,7 +129,7 @@ jobs:
   local_e2e_test:
     name: e2e tests (Espresso Local)
     runs-on: ubuntu-latest
-    needs: [build]
+    # needs: [build]
 
     services:
       postgres:
@@ -189,9 +190,6 @@ jobs:
       - name: Espresso dev node logs
         run: docker logs --timestamps espresso-dev-node
 
-      - name: Espresso dev node debug hotshot.header
-        run: docker exec -i db psql -U root -d root -t -c "SELECT height, timestamp FROM hotshot.header ORDER BY height;"
-
       - name: Query Database for Output
         run: |
           MAX_RETRIES=30
@@ -207,8 +205,6 @@ jobs:
           done
           echo "Timeout reached: result not found"
           docker logs --timestamps cartesi_espresso
-          echo "Debug: hotshot.header table"
-          docker exec -i espresso-dev-node psql -U root -d root -t -c "SELECT height, timestamp FROM hotshot.header ORDER BY height;"
           exit 1
 
   integration_test:
