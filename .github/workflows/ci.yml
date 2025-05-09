@@ -71,7 +71,9 @@ jobs:
           npm i
           node index.js || true
           sleep 10
-          docker compose logs --timestamps cartesi_node_espresso
+
+      - name: Cartesi node Espresso logs
+        run: docker compose logs --timestamps cartesi_node_espresso
 
       - name: Espresso dev node logs
         run: docker compose logs --timestamps espresso-dev-node
