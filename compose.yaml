@@ -43,12 +43,10 @@ services:
     depends_on:
       - devnet
     healthcheck:
-      interval: 30s
-      timeout: 10s
-      retries: 10
+      interval: 1s
+      timeout: 1s
+      retries: 200
       start_period: 1m
-    # healthcheck:
-    #   test: ["CMD", "wget", "--spider", "-q", "http://espresso-dev-node:24000/status/block-height"]
   cartesi_node_espresso:
     build:
       context: .
