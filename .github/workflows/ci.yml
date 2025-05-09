@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CARTESI_FEATURE_ESPRESSO_READER_ENABLED: true
+      COMPOSE_BAKE: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,6 +24,9 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build docker compose
         run: |
@@ -120,11 +124,15 @@ jobs:
     env:
       CARTESI_FEATURE_ESPRESSO_READER_ENABLED: false
       ESPRESSO_READER_PORT: 8081
+      COMPOSE_BAKE: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build docker compose
         run: |
