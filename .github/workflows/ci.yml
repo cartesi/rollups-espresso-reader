@@ -57,7 +57,7 @@ jobs:
               --rpc-url "http://localhost:8545" \
               $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
 
-      - name: Checkout code
+      - name: Checkout nonodo
         uses: actions/checkout@v4
         with:
           repository: Calindra/nonodo
