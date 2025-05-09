@@ -46,9 +46,9 @@ services:
     depends_on:
       - devnet
     healthcheck:
-      interval: 1m30s
-      timeout: 30s
-      retries: 5
+      interval: 10s
+      timeout: 10s
+      retries: 10
       start_period: 30s
     # healthcheck:
     #   test: ["CMD", "wget", "--spider", "-q", "http://espresso-dev-node:24000/status/block-height"]
