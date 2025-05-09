@@ -24,7 +24,7 @@ services:
       - 24000:24000
       - 23000:23000
       - 20000:20000
-      # - 5432:5432
+      # - 5433:5432
     environment:
       - ESPRESSO_BUILDER_PORT=23000
       - ESPRESSO_DEPLOYER_ACCOUNT_INDEX
@@ -54,23 +54,19 @@ services:
       args:
         - ROLLUPS_NODE_VERSION=2.0.0-alpha.4
     env_file:
-      - ./ci/env.nodev2-espressolocal
+      - "${NODE_ENV_FILE:-./ci/env.nodev2-local}"
     ports:
       - 10000:10000
       - 10011:10011
       - 10012:10012
       - "${ESPRESSO_READER_PORT:-8080}:8080"
-    environment:
-      - CARTESI_DATABASE_CONNECTION=postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
-      - CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=http://devnet:8545/
-      - CARTESI_BLOCKCHAIN_WS_ENDPOINT=ws://devnet:8545/
-      - ESPRESSO_BASE_URL=http://espresso-dev-node:24000
-      - CARTESI_FEATURE_ESPRESSO_READER_ENABLED
     depends_on:
       db:
         condition: service_healthy
-      espresso-dev-node:
-        condition: service_healthy
+    # NOTE: not explicitly depending on `espresso-dev-node` because testnet execution doesn't need it
+    #       health check being done manually in ./ci/espresso-dev-node-health.sh
+    #   espresso-dev-node:
+    #     condition: service_healthy
 
 volumes:
   espresso_storage:
