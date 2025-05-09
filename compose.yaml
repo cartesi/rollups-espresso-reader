@@ -1,7 +1,6 @@
 services:
   db:
     image: postgres:17-alpine
-    container_name: db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -14,14 +13,12 @@ services:
       timeout: 5s
       retries: 5
   devnet:
-    container_name: devnet
     build:
       context: ./ci/devnet
       dockerfile: Dockerfile
     ports:
       - 8545:8545
   espresso-dev-node:
-    container_name: espresso-dev-node
     image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20250428-dev-node-decaf-pos
     ports:
       - 24000:24000
@@ -52,8 +49,7 @@ services:
       start_period: 30s
     # healthcheck:
     #   test: ["CMD", "wget", "--spider", "-q", "http://espresso-dev-node:24000/status/block-height"]
-  cartesi_espresso:
-    container_name: cartesi_espresso
+  cartesi_node_espresso:
     build:
       context: .
       dockerfile: ./ci/Dockerfile
