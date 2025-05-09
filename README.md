@@ -42,7 +42,7 @@ docker compose up -d
 Logs for the Cartesi Node with the Espresso Reader can be tracked by typing:
 
 ```bash
-docker compose logs node_espresso -f
+docker compose logs cartesi_node_espresso -f
 ```
 
 A sample Echo application can be deployed on your local node by executing:
@@ -54,7 +54,7 @@ ESPRESSO_NAMESPACE="55555" \
 DATA_AVAILABILITY=$(cast calldata \
     "InputBoxAndEspresso(address,uint256,uint32)" \
     $INPUT_BOX_ADDRESS $ESPRESSO_STARTING_BLOCK $ESPRESSO_NAMESPACE); \
-docker exec node_espresso cartesi-rollups-cli app deploy -v \
+docker compose exec cartesi_node_espresso cartesi-rollups-cli app deploy -v \
     --salt 0000000000000000000000000000000000000000000000000000000000000000 \
     --data-availability $DATA_AVAILABILITY \
     -n echo-dapp \
