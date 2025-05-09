@@ -46,7 +46,7 @@ services:
       interval: 1s
       timeout: 1s
       retries: 200
-      start_period: 1m
+      start_period: 10s
   cartesi_node_espresso:
     build:
       context: .
