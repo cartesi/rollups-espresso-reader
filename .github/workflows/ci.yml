@@ -34,7 +34,7 @@ jobs:
 
       - name: Run docker compose
         run: |
-          docker compose up --wait
+          docker compose up --wait --timestamps
 
       - name: Deploy Echo Dapp
         env:
@@ -140,7 +140,7 @@ jobs:
 
       - name: Run docker compose
         run: |
-          docker compose up --wait
+          docker compose up --wait --timestamps
 
       - name: Wait for Espresso dev node to be available
         run: |
