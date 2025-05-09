@@ -61,8 +61,8 @@ jobs:
         env:
           SENDER_PRIVATE_KEY: ${{ secrets.SENDER_PRIVATE_KEY }}
           TRANSACTION_BASE_URL: http://localhost:8080
-          APP_ADDRESS: 0x01e800bbE852aeb27cE65604709134Ea63782c6B
-          INPUT: 0xdeadbeefdeadbeef
+          APP_ADDRESS: "0x01e800bbE852aeb27cE65604709134Ea63782c6B"
+          INPUT: "0xdeadbeefdeadbeef"
         run: |
           npm i
           node index.js || true
