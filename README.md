@@ -73,6 +73,34 @@ cast send \
     $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
 ```
 
+### Running with an app deployed on Sepolia testnet
+
+You can also run your local node to process apps deployed on Sepolia testnet.
+In this scenario, the Espresso network to be used should be [Decaf](https://docs.espressosys.com/network/releases/testnets/decaf-testnet).
+
+The file [env.nodev2-sepolia-decaf](./ci/env.nodev2-sepolia-decaf) contains the basic environment variable settings in order to setup your local Node + Espresso Reader to use Sepolia + Decaf.
+Make sure to edit the first lines of that file to specify an appropriate Sepolia account and blockchain gateway.
+
+To start up your node, execute:
+
+```bash
+NODE_ENV_FILE=./ci/env.nodev2-sepolia-decaf docker compose up -d db cartesi_node_espresso
+```
+
+You should then deploy a testnet application (similarly to sample Echo deployment described above), or register an existing testnet application on your node.
+To register, execute the following:
+
+```bash
+eval $(cat ./ci/env.nodev2-sepolia-decaf)
+docker compose exec cartesi_node_espresso cartesi-rollups-cli app register -v \
+    -c 0xConsensusContractAddress \
+    -a 0xApplicationAddress \
+    -n app-name \
+    -t path/to/app/template/
+```
+
+
+
 ## Building and testing with a local Cartesi Node repository
 
 First build the Espresso Reader itself:

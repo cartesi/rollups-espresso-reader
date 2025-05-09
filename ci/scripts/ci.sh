@@ -33,7 +33,7 @@ make devnet
 make start-devnet
 cd -
 
-# export $(grep -v '^#' env.nodev2-sepolia | xargs)
+# export $(grep -v '^#' env.nodev2-sepolia-decaf | xargs)
 export CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=https://eth-sepolia.g.alchemy.com/v2/9hjbdwjACHkHf1j01yE2j7Q9G9J1VsC9
 export CARTESI_BLOCKCHAIN_WS_ENDPOINT=wss://eth-sepolia.g.alchemy.com/v2/9hjbdwjACHkHf1j01yE2j7Q9G9J1VsC9
 
@@ -41,7 +41,7 @@ export CARTESI_BLOCKCHAIN_WS_ENDPOINT=wss://eth-sepolia.g.alchemy.com/v2/9hjbdwj
 export ESPRESSO_STARTING_BLOCK=$(curl -s https://query.decaf.testnet.espresso.network/v0/status/block-height)
 
 docker run --env-file ./ci/env.nodev2-local --rm --network=host --name c_espresso espresso
-# docker run --env-file ./ci/env.nodev2-sepolia \
+# docker run --env-file ./ci/env.nodev2-sepolia-decaf \
 #   -e CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=$CARTESI_BLOCKCHAIN_HTTP_ENDPOINT \
 #   -e CARTESI_BLOCKCHAIN_WS_ENDPOINT=$CARTESI_BLOCKCHAIN_WS_ENDPOINT \
 #   --rm --network=host --name c_espresso espresso
