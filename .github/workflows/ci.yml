@@ -17,7 +17,7 @@ jobs:
       CARTESI_FEATURE_ESPRESSO_READER_ENABLED: true
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -30,44 +30,53 @@ jobs:
 
       - name: Deploy Echo Dapp
         env:
-          ACCOUNT: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-          PRIVATE_KEY: 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
-          RPC_URL: 'http://localhost:8545'
+          ACCOUNT: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+          PRIVATE_KEY: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+          RPC_URL: "http://localhost:8545"
         run: |
-          docker exec cartesi_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v -D 0x8579fd0c000000000000000000000000b6b39fb3dd926a9e3fbc7a129540eebea3016a6c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903
+          docker compose exec cartesi_node_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v -D 0x8579fd0c000000000000000000000000b6b39fb3dd926a9e3fbc7a129540eebea3016a6c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903
           sleep 10
-          docker logs --timestamps cartesi_espresso
+          docker compose logs --timestamps cartesi_node_espresso
 
       - name: Send L1 InputBox transaction
+        env:
+          INPUT: "0xdead01beef"
+          INPUT_BOX_ADDRESS: "0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c"
+          APPLICATION_ADDRESS: "0x01e800bbE852aeb27cE65604709134Ea63782c6B"
         run: |
-          INPUT=0xdead01beef; \
-          INPUT_BOX_ADDRESS=0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c; \
-          APPLICATION_ADDRESS=0x01e800bbE852aeb27cE65604709134Ea63782c6B; \
           cast send \
               --mnemonic "test test test test test test test test test test test junk" \
               --rpc-url "http://localhost:8545" \
               $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
 
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: Calindra/nonodo
+          submodules: recursive
+          path: ./nonodo
+
       - name: Send L2 EIP 712 transaction
+        working-directory: ./nonodo/eip712-client-js
         env:
           SENDER_PRIVATE_KEY: ${{ secrets.SENDER_PRIVATE_KEY }}
           TRANSACTION_BASE_URL: http://localhost:8080
+          APP_ADDRESS: 0x01e800bbE852aeb27cE65604709134Ea63782c6B
+          INPUT: 0xdeadbeefdeadbeef
         run: |
-          git clone --recurse-submodules https://github.com/Calindra/nonodo.git
-          cd nonodo/eip712-client-js
           npm i
-          APP_ADDRESS=0x01e800bbE852aeb27cE65604709134Ea63782c6B INPUT=0xdeadbeefdeadbeef node index.js || true
+          node index.js || true
           sleep 10
-          docker logs --timestamps cartesi_espresso
+          docker compose logs --timestamps cartesi_node_espresso
 
       - name: Espresso dev node logs
-        run: docker logs --timestamps espresso-dev-node
+        run: docker compose logs --timestamps espresso-dev-node
 
       - name: Query Database for Output
         run: |
           MAX_RETRIES=30
           for i in $(seq 1 $MAX_RETRIES); do
-            RESULT=$(docker exec -i db psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.output;")
+            RESULT=$(docker compose exec db psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.output;")
             if [[ "$RESULT" =~ "dead01beef" && "$RESULT" =~ "deadbeefdeadbeef" ]]; then
               echo "Result found: $RESULT"
               exit 0
@@ -77,20 +86,20 @@ jobs:
             sleep 5
           done
           echo "Timeout reached: result not found"
-          docker logs --timestamps cartesi_espresso
+          docker compose logs --timestamps cartesi_node_espresso
           exit 1
-      
+
       - name: Copy binaries
         run: |
-          docker cp cartesi_espresso:/usr/bin/cartesi-machine .
-          docker cp cartesi_espresso:/usr/bin/cartesi-machine-stored-hash .
-          docker cp cartesi_espresso:/usr/bin/cartesi-rollups-advancer .
-          docker cp cartesi_espresso:/usr/bin/cartesi-rollups-claimer .
-          docker cp cartesi_espresso:/usr/bin/cartesi-rollups-cli .
-          docker cp cartesi_espresso:/usr/bin/cartesi-rollups-espresso-reader .
-          docker cp cartesi_espresso:/usr/bin/cartesi-rollups-evm-reader .
-          docker cp cartesi_espresso:/usr/bin/cartesi-rollups-node .
-          docker cp cartesi_espresso:/usr/bin/cartesi-rollups-validator .
+          docker compose cp cartesi_node_espresso:/usr/bin/cartesi-machine .
+          docker compose cp cartesi_node_espresso:/usr/bin/cartesi-machine-stored-hash .
+          docker compose cp cartesi_node_espresso:/usr/bin/cartesi-rollups-advancer .
+          docker compose cp cartesi_node_espresso:/usr/bin/cartesi-rollups-claimer .
+          docker compose cp cartesi_node_espresso:/usr/bin/cartesi-rollups-cli .
+          docker compose cp cartesi_node_espresso:/usr/bin/cartesi-rollups-espresso-reader .
+          docker compose cp cartesi_node_espresso:/usr/bin/cartesi-rollups-evm-reader .
+          docker compose cp cartesi_node_espresso:/usr/bin/cartesi-rollups-node .
+          docker compose cp cartesi_node_espresso:/usr/bin/cartesi-rollups-validator .
           ls -la
 
       - name: Upload binaries as artifact
@@ -107,7 +116,7 @@ jobs:
       ESPRESSO_READER_PORT: 8081
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -122,26 +131,26 @@ jobs:
 
       - name: Espresso dev node logs
         run: |
-          docker logs --timestamps espresso-dev-node
+          docker compose logs --timestamps espresso-dev-node
 
       - name: Install Echo App
         run: |
-          docker logs --timestamps cartesi_espresso
-          docker exec cartesi_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -D 0x8579fd0c000000000000000000000000b6b39fb3dd926a9e3fbc7a129540eebea3016a6c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903
+          docker compose logs --timestamps cartesi_node_espresso
+          docker compose exec cartesi_node_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -D 0x8579fd0c000000000000000000000000b6b39fb3dd926a9e3fbc7a129540eebea3016a6c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903
 
       - name: Run integration tests
         env:
-          CARTESI_AUTH_MNEMONIC: 'test test test test test test test test test test test junk'
+          CARTESI_AUTH_MNEMONIC: "test test test test test test test test test test test junk"
           CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: http://localhost:8545
           CARTESI_BLOCKCHAIN_WS_ENDPOINT: ws://localhost:8545
           CARTESI_BLOCKCHAIN_ID: 13370
-          CARTESI_CONTRACTS_INPUT_BOX_ADDRESS: '0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c'
-          CARTESI_CONTRACTS_AUTHORITY_FACTORY_ADDRESS: '0x451f57Ca716046D114Ab9ff23269a2F9F4a1bdaF'
-          CARTESI_CONTRACTS_APPLICATION_FACTORY_ADDRESS: '0x2210ad1d9B0bD2D470c2bfA4814ab6253BC421A0'
-          CARTESI_CONTRACTS_SELF_HOSTED_APPLICATION_FACTORY_ADDRESS: '0x4a409e1CaB9229711C4e1f68625DdbC75809e721'
-          CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
-          ESPRESSO_BASE_URL: 'http://localhost:24000'
-          ESPRESSO_SERVICE_ENDPOINT: '0.0.0.0:8080'
+          CARTESI_CONTRACTS_INPUT_BOX_ADDRESS: "0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c"
+          CARTESI_CONTRACTS_AUTHORITY_FACTORY_ADDRESS: "0x451f57Ca716046D114Ab9ff23269a2F9F4a1bdaF"
+          CARTESI_CONTRACTS_APPLICATION_FACTORY_ADDRESS: "0x2210ad1d9B0bD2D470c2bfA4814ab6253BC421A0"
+          CARTESI_CONTRACTS_SELF_HOSTED_APPLICATION_FACTORY_ADDRESS: "0x4a409e1CaB9229711C4e1f68625DdbC75809e721"
+          CARTESI_DATABASE_CONNECTION: "postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable"
+          ESPRESSO_BASE_URL: "http://localhost:24000"
+          ESPRESSO_SERVICE_ENDPOINT: "0.0.0.0:8080"
           CARTESI_FEATURE_MACHINE_HASH_CHECK_ENABLED: false
           CARTESI_FEATURE_INPUT_READER_ENABLED: false
         run: |
