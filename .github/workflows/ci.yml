@@ -11,7 +11,7 @@ env:
 
 jobs:
   local_e2e_test:
-    name: e2e tests (Espresso Local)
+    name: e2e tests L1 and L2
     runs-on: ubuntu-latest
     env:
       CARTESI_FEATURE_ESPRESSO_READER_ENABLED: true
@@ -214,7 +214,7 @@ jobs:
           exit 1
 
   local_e2e_test_only_l2:
-    name: e2e tests (Espresso Local) send only L2
+    name: e2e tests send only L2
     runs-on: ubuntu-latest
     env:
       CARTESI_FEATURE_ESPRESSO_READER_ENABLED: true
@@ -291,8 +291,46 @@ jobs:
           docker compose logs --timestamps cartesi_node_espresso
           exit 1
 
+      - name: Stop Cartesi node Espresso
+        run: docker compose stop cartesi_node_espresso
+
+      - name: Start Cartesi node Espresso
+        run: docker compose start cartesi_node_espresso
+
+      - name: Wait for Cartesi node to initialize
+        run: sleep 10
+
+      - name: Send second L2 EIP 712 transaction
+        working-directory: ./nonodo/eip712-client-js
+        env:
+          SENDER_PRIVATE_KEY: ${{ secrets.SENDER_PRIVATE_KEY }}
+          TRANSACTION_BASE_URL: http://localhost:8080
+          APP_ADDRESS: "0x01e800bbE852aeb27cE65604709134Ea63782c6B"
+          INPUT: "0xbeefdeadbeef0202dead"
+        run: |
+          node index.js || true
+          sleep 10
+
+      - name: Query Database for Second Output
+        run: |
+          MAX_RETRIES=30
+          for i in $(seq 1 $MAX_RETRIES); do
+            RESULT=$(docker compose exec db psql -U postgres -d rollupsdb -t -c "SELECT * FROM public.output;")
+            if [[ "$RESULT" =~ "beefdeadbeef0202dead" ]]; then
+              echo "Second result found: $RESULT"
+              exit 0
+            fi
+            echo "Second result: $RESULT"
+            echo "Waiting for second result... attempt $i"
+            sleep 5
+          done
+          echo "Timeout reached: second result not found"
+          docker compose logs --timestamps cartesi_node_espresso
+          exit 1
+
+
   integration_test:
-    name: Integration tests (Local Espresso Dev Node)
+    name: Integration tests
     runs-on: ubuntu-latest
     env:
       CARTESI_FEATURE_ESPRESSO_READER_ENABLED: false
