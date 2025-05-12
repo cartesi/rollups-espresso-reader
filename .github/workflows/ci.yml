@@ -195,19 +195,14 @@ jobs:
         with:
           name: cartesi-binaries
 
-      - name: Download DB files
-        uses: actions/download-artifact@v4
-        with:
-          name: db-dump
-
       - name: Publish Github release
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           body_path: CHANGELOG.md
+
           files: |
             cartesi-*
-            rollupsdb-*
 
   releases-matrix:
     name: Build binaries for release
