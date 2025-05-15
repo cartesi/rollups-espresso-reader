@@ -153,19 +153,23 @@ func (r *EvmReader) ReadAndStoreInputs(
 			combinedIndex, err := r.repository.GetInputIndexWithTx(ctx, dbTx, address.Hex())
 			if err != nil {
 				slog.Error("evmreader: failed to read index", "app", address, "error", err)
+				return errors.New("evmreader: failed to read index")
 			}
 			if combinedIndex != input.Index && r.shouldModifyIndex == true {
 				slog.Info("evmreader: Overriding input index", "onchain-index", input.Index, "new-index", combinedIndex)
 				input.Index = combinedIndex
 				modifiedRawData, err := r.modifyIndexInRaw(input.RawData, combinedIndex)
-				if err == nil {
-					input.RawData = modifiedRawData
+				if err != nil {
+					slog.Error("evmreader: failed to modify index", "app", address, "error", err)
+					return errors.New("evmreader: failed to modify index")
 				}
+				input.RawData = modifiedRawData
 			}
 			// update input index
 			err = r.repository.UpdateInputIndexWithTx(ctx, dbTx, address.Hex())
 			if err != nil {
 				slog.Error("failed to update index", "app", address, "error", err)
+				return errors.New("evmreader: failed to update index")
 			}
 			epochInputMap[currentEpoch] = append(currentInputs, input)
 
@@ -201,15 +205,13 @@ func (r *EvmReader) ReadAndStoreInputs(
 				"address", address,
 				"error", err,
 			)
-			dbTx.Rollback(ctx)
-			continue
+			return errors.New("evmreader: Error storing inputs and epochs")
 		}
 		// Commit transaction
 		err = dbTx.Commit(ctx)
 		if err != nil {
 			slog.Error("could not commit db tx", "err", err)
-			dbTx.Rollback(ctx)
-			continue
+			return errors.New("evmreader: could not commit db tx")
 		}
 
 		// Store everything
