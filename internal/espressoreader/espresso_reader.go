@@ -132,7 +132,11 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 							slog.Debug("Espresso:", "app", appAddress, "currentBlockHeight", currentEspressoBlockHeight)
 
 							var l1FinalizedTimestamp uint64
-							lastProcessedL1Block, l1FinalizedTimestamp = e.readL1(ctx, app, currentEspressoBlockHeight, lastProcessedL1Block)
+							lastProcessedL1Block, l1FinalizedTimestamp, err = e.readL1(ctx, app, currentEspressoBlockHeight, lastProcessedL1Block)
+							if err != nil {
+								slog.Error("failed reading L1", "error", err)
+								continue
+							}
 							e.readEspresso(ctx, app, currentEspressoBlockHeight, namespace, lastProcessedL1Block, l1FinalizedTimestamp)
 						}
 					}
@@ -172,6 +176,7 @@ func (e *EspressoReader) bootstrap(ctx context.Context, app evmreader.TypeExport
 			err = json.Unmarshal(nsTableBytes, &nsTables)
 			if err != nil {
 				slog.Error("failed fetching ns tables", "error", err, "ns table", nsTables)
+				return err
 			} else {
 				for index, nsTable := range nsTables {
 					nsTableBytes, _ := base64.StdEncoding.DecodeString(nsTable)
@@ -179,7 +184,11 @@ func (e *EspressoReader) bootstrap(ctx context.Context, app evmreader.TypeExport
 					currentEspressoBlock := batchStartingBlock + uint64(index)
 					if slices.Contains(ns, uint32(namespace)) {
 						slog.Debug("found namespace contained in", "block", currentEspressoBlock)
-						l1FinalizedHeight, l1FinalizedTimestamp = e.readL1(ctx, app, currentEspressoBlock, l1FinalizedHeight)
+						l1FinalizedHeight, l1FinalizedTimestamp, err = e.readL1(ctx, app, currentEspressoBlock, l1FinalizedHeight)
+						if err != nil {
+							slog.Error("failed reading L1", "error", err)
+							return err
+						}
 						e.readEspresso(ctx, app, currentEspressoBlock, namespace, l1FinalizedHeight, l1FinalizedTimestamp)
 					} else {
 						err = e.repository.UpdateLastProcessedEspressoBlock(ctx, app.IApplicationAddress, currentEspressoBlock)
@@ -197,7 +206,7 @@ func (e *EspressoReader) bootstrap(ctx context.Context, app evmreader.TypeExport
 	return nil
 }
 
-func (e *EspressoReader) readL1(ctx context.Context, app evmreader.TypeExportApplication, currentBlockHeight uint64, lastProcessedL1Block uint64) (uint64, uint64) {
+func (e *EspressoReader) readL1(ctx context.Context, app evmreader.TypeExportApplication, currentBlockHeight uint64, lastProcessedL1Block uint64) (uint64, uint64, error) {
 	l1FinalizedLatestHeight, l1FinalizedTimestamp := e.espressoHelper.getL1FinalizedHeight(ctx, currentBlockHeight, e.maxDelay, e.url)
 	// read L1 if there might be update
 	if l1FinalizedLatestHeight > lastProcessedL1Block {
@@ -207,12 +216,16 @@ func (e *EspressoReader) readL1(ctx context.Context, app evmreader.TypeExportApp
 		apps = append(apps, app) // make app into 1-element array
 
 		// start reading from the block after the prev height
-		e.evmReader.ReadAndStoreInputs(ctx, lastProcessedL1Block, l1FinalizedLatestHeight, apps)
+		err := e.evmReader.ReadAndStoreInputs(ctx, lastProcessedL1Block, l1FinalizedLatestHeight, apps)
+		if err != nil {
+			slog.Error("failed to read and store L1 inputs", "error", err)
+			return 0, 0, err
+		}
 		// check for claim status and output execution
 		// e.evmReader.CheckForClaimStatus(ctx, apps, l1FinalizedLatestHeight) // checked by the node
 		// e.evmReader.CheckForOutputExecution(ctx, apps, l1FinalizedLatestHeight) // checked by the node
 	}
-	return l1FinalizedLatestHeight, l1FinalizedTimestamp
+	return l1FinalizedLatestHeight, l1FinalizedTimestamp, nil
 }
 
 type EspressoInput struct {
@@ -441,7 +454,7 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 		)
 		if err != nil {
 			slog.Error("could not store Espresso input", "err", err)
-			continue
+			return
 		}
 
 		// update nonce

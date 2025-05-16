@@ -107,18 +107,24 @@ func (s *EspressoReaderService) requestNonce(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
 	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Only POST method is allowed"})
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		slog.Error("could not read body", "err", err)
-		// TODO: error?
+		slog.Error("could not read request body", "error", err)
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		return
 	}
+	defer r.Body.Close()
+
 	nonceRequest := &NonceRequest{}
 	if err := json.Unmarshal(body, nonceRequest); err != nil {
-		slog.Error("could not unmarshal", "err", err)
-		// ?
+		slog.Error("could not unmarshal request body", "error", err, "body", string(body))
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
 	}
 
 	senderAddress := common.HexToAddress(nonceRequest.MsgSender)
@@ -128,9 +134,15 @@ func (s *EspressoReaderService) requestNonce(w http.ResponseWriter, r *http.Requ
 	if nonceCache[applicationAddress] == nil {
 		nonceCache[applicationAddress] = make(map[common.Address]uint64)
 	}
-	if nonceCache[applicationAddress][senderAddress] == 0 {
+	_, exists := nonceCache[applicationAddress][senderAddress]
+	if !exists {
 		ctx := r.Context()
-		nonce = s.queryNonceFromDb(ctx, senderAddress, applicationAddress)
+		nonce, err = s.queryNonceFromDb(ctx, senderAddress, applicationAddress)
+		if err != nil {
+			slog.Error("failed to query nonce from database", "error", err, "senderAddress", senderAddress, "applicationAddress", applicationAddress)
+			http.Error(w, "Failed to retrieve nonce", http.StatusInternalServerError)
+			return
+		}
 		nonceCache[applicationAddress][senderAddress] = nonce
 	} else {
 		nonce = nonceCache[applicationAddress][senderAddress]
@@ -139,10 +151,6 @@ func (s *EspressoReaderService) requestNonce(w http.ResponseWriter, r *http.Requ
 	slog.Debug("got nonce request", "senderAddress", senderAddress, "applicationAddress", applicationAddress)
 
 	nonceResponse := NonceResponse{Nonce: nonce}
-	if err != nil {
-		slog.Error("error json marshal nonce response", "err", err)
-		// ?
-	}
 
 	err = json.NewEncoder(w).Encode(nonceResponse)
 	if err != nil {
@@ -156,14 +164,14 @@ func (s *EspressoReaderService) requestNonce(w http.ResponseWriter, r *http.Requ
 func (s *EspressoReaderService) queryNonceFromDb(
 	ctx context.Context,
 	senderAddress common.Address,
-	applicationAddress common.Address) uint64 {
+	applicationAddress common.Address) (uint64, error) {
 	nonce, err := s.database.GetEspressoNonce(ctx, senderAddress.Hex(), applicationAddress.Hex())
 	if err != nil {
 		slog.Error("failed to get espresso nonce", "error", err)
-		// TODO: error?
+		return 0, err
 	}
 
-	return nonce
+	return nonce, nil
 }
 
 type SubmitResponse struct {
@@ -175,20 +183,23 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
 	if r.Method != http.MethodPost {
-		// TODO: error?
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Only POST method is allowed"})
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		slog.Error("could not read body", "err", err)
+		slog.Error("could not read request body", "error", err)
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		return
 	}
 	slog.Debug("got submit request", "request body", string(body))
 
 	msgSender, typedData, sigHash, err := ExtractSigAndData(string(body))
 	if err != nil {
 		slog.Error("transaction not correctly formatted", "error", err)
-		// TODO: error?
+		http.Error(w, "Invalid transaction format", http.StatusBadRequest)
 		return
 	}
 	submitResponse := SubmitResponse{Id: sigHash}
@@ -198,43 +209,62 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	client := client.NewClient(s.EspressoBaseUrl)
 	ctx := r.Context()
 	_, namespace, err := getEspressoConfig(ctx, appAddress, s.database, s.blockchainHttpEndpoint)
+	if err != nil {
+		slog.Error("failed to get espresso config", "error", err, "appAddress", appAddress)
+		http.Error(w, "Failed to get application configuration", http.StatusInternalServerError)
+		return
+	}
 	var tx types.Transaction
 	tx.Namespace = namespace
 	tx.Payload = body
 	_, err = client.SubmitTransaction(ctx, tx)
 	if err != nil {
-		slog.Error("espresso tx submit error", "err", err)
-		// TODO: error?
+		slog.Error("espresso tx submit error", "error", err)
+		http.Error(w, "Failed to submit transaction to Espresso", http.StatusInternalServerError)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(submitResponse)
-	if err != nil {
-		slog.Info("Internal server error",
-			"service", "espresso submit endpoint",
-			"err", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		// TODO: error?
+	if err := json.NewEncoder(w).Encode(submitResponse); err != nil {
+		slog.Error("failed to encode submit response", "error", err, "submitResponse", submitResponse)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	// update nonce cache
 	if nonceCache[appAddress] == nil {
-		slog.Error("Should query nonce before submit")
-		// TODO: error?
+		slog.Error("Should query nonce before submit", "appAddress", appAddress)
+		http.Error(w, "Nonce not initialized for this application. Please request a nonce first.", http.StatusBadRequest)
 		return
 	}
-	nonceInRequest := uint64(typedData.Message["nonce"].(float64))
-	if nonceCache[appAddress][msgSender] == 0 {
+	nonceInRequestFloat, ok := typedData.Message["nonce"].(float64)
+	if !ok {
+		slog.Error("Nonce not found or invalid type in request", "typedData", typedData)
+		http.Error(w, "Invalid or missing nonce in request", http.StatusBadRequest)
+		return
+	}
+	nonceInRequest := uint64(nonceInRequestFloat)
+
+	cachedNonce, exists := nonceCache[appAddress][msgSender]
+	if !exists {
 		ctx := r.Context()
-		nonceInDb := s.queryNonceFromDb(ctx, msgSender, appAddress)
+		nonceInDb, err := s.queryNonceFromDb(ctx, msgSender, appAddress)
+		if err != nil {
+			slog.Error("failed to query nonce from database during submit", "error", err, "senderAddress", msgSender, "applicationAddress", appAddress)
+			http.Error(w, "Failed to retrieve nonce for validation", http.StatusInternalServerError)
+			return
+		}
 		if nonceInRequest != nonceInDb {
-			slog.Error("Nonce in request is incorrect")
-			// TODO: error?
+			slog.Error("Nonce in request is incorrect", "nonceInRequest", nonceInRequest, "nonceInDb", nonceInDb, "senderAddress", msgSender, "applicationAddress", appAddress)
+			http.Error(w, "Incorrect nonce", http.StatusBadRequest)
 			return
 		}
 		nonceCache[appAddress][msgSender] = nonceInDb + 1
 	} else {
+		if nonceInRequest != cachedNonce {
+			slog.Error("Nonce in request is incorrect", "requestNonce", nonceInRequest, "cachedNonce", cachedNonce, "senderAddress", msgSender, "applicationAddress", appAddress)
+			http.Error(w, "Incorrect nonce", http.StatusBadRequest)
+			return
+		}
 		nonceCache[appAddress][msgSender]++
 	}
 }
