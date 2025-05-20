@@ -19,19 +19,25 @@ var (
 
 // read chunkedFilterLogs comment for additional information.
 //
-// NOTE: There is no standard reply among providers, add as needed. This
-// function assumes that any server side error codes represent block range that
-// is too large.
-// ┌────────────────────────────┬───────┬────────┬────────────┐
-// │          provider          │ limit │  code  │ checked at │
-// ├────────────────────────────┼───────┼────────┼────────────┤
-// │ https://cloudflare-eth.com │   800 │ -32047 │ 2025-01-24 │
-// └────────────────────────────┴───────┴────────┴────────────┘
+// NOTE: There is no standard reply among providers, add as needed. To handle a
+// new provider add it to the table below and make queryBlockRangeTooLarge
+// return true when encountering its RPC error code.
+// ┌───────────────────────────────────────────────────┬───────┬────────┬────────────┐
+// │          provider                                 │ limit │  code  │ checked at │
+// ├───────────────────────────────────────────────────┼───────┼────────┼────────────┤
+// │ https://cloudflare-eth.com/                       │   800 │ -32047 │ 2025-01-24 │
+// │ https://eth-mainnet.g.alchemy.com/v2/{key} (free) │   500 │ -32600 │ 2025-05-13 │
+// │ https://mainnet.infura.io/v3/{key} (free)         │ 10000 │ -32005 │ 2025-05-15 │
+// │ https://site1.moralis-nodes.com/eth/{key} (free)  │   100 │    400 │ 2025-05-15 │
+// └───────────────────────────────────────────────────┴───────┴────────┴────────────┘
 func queryBlockRangeTooLarge(err error) bool {
 	if err != nil {
 		switch e := err.(type) {
 		case rpc.Error:
-			return -32099 <= e.ErrorCode() && e.ErrorCode() <= -32000
+			return (e.ErrorCode() == -32047) || // cloudflare (free)
+				(e.ErrorCode() == -32600) || // alchemy (free)
+				(e.ErrorCode() == -32005) || // infura (free)
+				(e.ErrorCode() == 400) // moralis (free)
 		}
 	}
 	return false
