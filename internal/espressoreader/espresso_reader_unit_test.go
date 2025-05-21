@@ -477,7 +477,6 @@ func (s *EspressoReaderUnitTestSuite) SetupTest() {
 	evmReader := evmreader.NewEvmReader(
 		mockEthClient, nil, mockDatabase, chainId, "0", false, true,
 	)
-	blockchainHttpEndpoint := "http://localhost:8545"
 	s.espressoReader = NewEspressoReader(
 		espressoApiURL,
 		mockDatabase,
@@ -485,7 +484,6 @@ func (s *EspressoReaderUnitTestSuite) SetupTest() {
 		chainId,
 		uint64(maxRetries),
 		uint64(maxDelay),
-		blockchainHttpEndpoint,
 	)
 	mockEspressoClient := new(MockEspressoClient)
 	s.mockEthClient = mockEthClient

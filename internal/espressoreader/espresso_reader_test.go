@@ -100,7 +100,7 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 		LastInputCheckBlock:  0,
 		LastOutputCheckBlock: 0,
 		EpochLength:          10,
-		DataAvailability:     model.DataAvailability_InputBoxAndEspresso,
+		DataAvailability:     model.DataAvailability_InputBoxAndEspresso[:],
 	}
 	suite.senderAddress = common.HexToAddress("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266").String()
 
@@ -117,7 +117,7 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 	slog.Debug("SetupSuite", "chainID", config.Value.ChainID)
 	suite.chainId = config.Value.ChainID
 
-	_, namespace, err := getEspressoConfig(suite.ctx, common.HexToAddress(appAddress), suite.database, suite.c.BlockchainHttpEndpoint.Value)
+	_, namespace, err := getEspressoConfig(suite.ctx, common.HexToAddress(appAddress), suite.database, suite.application.DataAvailability)
 	suite.Nil(err)
 
 	err = suite.prepareTxs(suite.ctx, suite.c.EspressoBaseUrl, namespace, suite.c.BlockchainHttpEndpoint.Value)

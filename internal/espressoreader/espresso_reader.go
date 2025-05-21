@@ -21,13 +21,11 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	"github.com/cartesi/rollups-espresso-reader/internal/services/retry"
 	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/dataavailability"
-	"github.com/cartesi/rollups-espresso-reader/pkg/ethutil"
 
 	"github.com/EspressoSystems/espresso-network-go/client"
 	"github.com/EspressoSystems/espresso-network-go/types"
 	espresso "github.com/EspressoSystems/espresso-network-go/types/common"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -50,21 +48,20 @@ type EspressoHelperInterface interface {
 }
 
 type EspressoReader struct {
-	url                    string
-	client                 EspressoClient
-	espressoHelper         EspressoHelperInterface
-	repository             repository.Repository
-	evmReader              *evmreader.EvmReader
-	chainId                uint64
-	maxRetries             uint64
-	maxDelay               uint64
-	blockchainHttpEndpoint string
+	url            string
+	client         EspressoClient
+	espressoHelper EspressoHelperInterface
+	repository     repository.Repository
+	evmReader      *evmreader.EvmReader
+	chainId        uint64
+	maxRetries     uint64
+	maxDelay       uint64
 }
 
-func NewEspressoReader(url string, repository repository.Repository, evmReader *evmreader.EvmReader, chainId uint64, maxRetries uint64, maxDelay uint64, blockchainHttpEndpoint string) EspressoReader {
+func NewEspressoReader(url string, repository repository.Repository, evmReader *evmreader.EvmReader, chainId uint64, maxRetries uint64, maxDelay uint64) EspressoReader {
 	client := client.NewClient(url)
 	espressoHelper := &EspressoHelper{}
-	return EspressoReader{url: url, client: client, espressoHelper: espressoHelper, repository: repository, evmReader: evmReader, chainId: chainId, maxRetries: maxRetries, maxDelay: maxDelay, blockchainHttpEndpoint: blockchainHttpEndpoint}
+	return EspressoReader{url: url, client: client, espressoHelper: espressoHelper, repository: repository, evmReader: evmReader, chainId: chainId, maxRetries: maxRetries, maxDelay: maxDelay}
 }
 
 func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
@@ -93,11 +90,11 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 			apps := e.getAppsForEvmReader(ctx)
 			if len(apps) > 0 {
 				for _, app := range apps {
-					if app.DataAvailability != model.DataAvailability_InputBoxAndEspresso {
+					if !app.HasDataAvailabilitySelector(model.DataAvailability_InputBoxAndEspresso) {
 						continue
 					}
 
-					startingBlock, namespace, err := getEspressoConfig(ctx, app.IApplicationAddress, e.repository, e.blockchainHttpEndpoint)
+					startingBlock, namespace, err := getEspressoConfig(ctx, app.IApplicationAddress, e.repository, app.DataAvailability)
 					if err != nil {
 						slog.Error("failed getting espresso config from onchain", "error", err)
 						continue
@@ -473,20 +470,11 @@ func (e *EspressoReader) readEspresso(ctx context.Context, appEvmType evmreader.
 	}
 }
 
-func getEspressoConfig(ctx context.Context, appAddress common.Address, database repository.Repository, blockchainHttpEndpoint string) (uint64, uint64, error) {
+func getEspressoConfig(ctx context.Context, appAddress common.Address, database repository.Repository, da []byte) (uint64, uint64, error) {
 	startingBlock, namespace, err := database.GetEspressoConfig(ctx, appAddress.Hex())
 
 	if err != nil {
 		// da is not available in the db
-		ethClient, err := ethclient.Dial(blockchainHttpEndpoint)
-		if err != nil {
-			return 0, 0, fmt.Errorf("failed to connect to the blockchain http endpoint: %w", err)
-		}
-		defer ethClient.Close()
-		da, err := ethutil.GetDataAvailability(ctx, ethClient, appAddress)
-		if err != nil {
-			return 0, 0, fmt.Errorf("failed to get data availability for app %s: %w", appAddress.Hex(), err)
-		}
 		if len(da) < model.DATA_AVAILABILITY_SELECTOR_SIZE {
 			return 0, 0, fmt.Errorf("invalid Data Availability")
 		}
