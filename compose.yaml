@@ -55,6 +55,9 @@ services:
         - ROLLUPS_NODE_VERSION=2.0.0-alpha.4
     env_file:
       - "${NODE_ENV_FILE:-./ci/env.nodev2-local}"
+    environment:
+      - CARTESI_BLOCKCHAIN_HTTP_ENDPOINT
+      - CARTESI_BLOCKCHAIN_WS_ENDPOINT
     ports:
       - 10000:10000
       - 10011:10011
