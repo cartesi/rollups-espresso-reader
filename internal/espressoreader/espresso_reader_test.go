@@ -86,7 +86,7 @@ func (suite *EspressoReaderTestSuite) prepareTxs(ctx context.Context, EspressoBa
 func (suite *EspressoReaderTestSuite) SetupSuite() {
 	appAddress := "0x01e800bbE852aeb27cE65604709134Ea63782c6B"
 	consensusAddress := "0x1d76BDB32803AE72fc5aed528779B3f581f93FED"
-	inputboxAddress := "0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c"
+	inputboxAddress := "0xc7007368E1b9929488744fa4dea7BcAEea000051"
 	templatePath := "applications/echo-dapp/"
 	templateHash := "0x2fa07a837075faedd5be6215cef05e90848d01fd752e2f41b6039f3317bee84d" // templateHash := "0x1611c2f376328c21520ff4d521eb43d6ca581a5d51eab19e3c354f71ff4bdeae"
 	suite.application = model.Application{
