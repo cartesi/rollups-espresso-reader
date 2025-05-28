@@ -18,7 +18,7 @@ ROLLUPS_CONTRACTS_ABI_BASEDIR := rollups-contracts/
 CONTRACTS_VERSION := 2.0.0-rc.18
 CONTRACTS_URL := https://github.com/cartesi/rollups-contracts/releases/download/
 CONTRACTS_ARTIFACT := rollups-contracts-$(CONTRACTS_VERSION)-artifacts.tar.gz
-CONTRACTS_SHA256 := f87096ea7e7a3ff38c2c3807ae3d1711f23b8ce0ff843423c5b73356ef8b8bc7
+CONTRACTS_SHA256 := 1b32320a550857e426bce637267a02c552d9035e7bc5d67a732008b24a21db63
 
 env:
 	@echo export CARTESI_LOG_LEVEL="debug"
