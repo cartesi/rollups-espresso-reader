@@ -39,7 +39,7 @@ RUN <<EOF
     VERSION=v${CONTRACTS_VERSION}
     ARTIFACT=rollups-contracts-${CONTRACTS_VERSION}-anvil-v${FOUNDRY_VERSION}.tar.gz
     curl -sSL ${URL}/${VERSION}/${ARTIFACT} -o /tmp/contracts.tar.gz
-    echo "3c19e44868db7b8bf2edd55a089cda39787dcfb2715d4a2d877644d68c40141b  /tmp/contracts.tar.gz" | sha256sum --check
+    echo "8962909ea5be1e190aa099a08a949710d3fe2810ccdadcd3b860ef4338f87ece  /tmp/contracts.tar.gz" | sha256sum --check
     tar -zxf /tmp/contracts.tar.gz -C ${DEVNET_BUILD_PATH}/
     mkdir -p /usr/share/devnet
     cat ${DEVNET_BUILD_PATH}/deployments/*.json | jq -s 'map({ (.contractName): .address }) | add' > /usr/share/devnet/deployment.json
