@@ -52,7 +52,7 @@ services:
       context: .
       dockerfile: ./ci/Dockerfile
       args:
-        - ROLLUPS_NODE_VERSION=2.0.0-alpha.4
+        - ROLLUPS_NODE_VERSION=2.0.0-dev-20250527
     env_file:
       - "${NODE_ENV_FILE:-./ci/env.nodev2-local}"
     ports:
