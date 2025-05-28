@@ -15,7 +15,10 @@ import (
 // Create the private key from mnemonic and account index based on the BIP44 standard.
 // For more info on BIP44, see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
 func MnemonicToPrivateKey(mnemonic string, accountIndex uint32) (*ecdsa.PrivateKey, error) {
-	seed := bip39.NewSeed(mnemonic, "")
+	seed, err := bip39.NewSeedWithErrorChecking(mnemonic, "")
+	if err != nil {
+		return nil, err
+	}
 
 	masterKey, err := bip32.NewMasterKey(seed)
 	if err != nil {
