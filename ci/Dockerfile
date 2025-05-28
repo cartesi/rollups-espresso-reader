@@ -156,7 +156,7 @@ COPY --chown=cartesi:cartesi ./ci/entrypoint.sh /entrypoint.sh
 COPY --chown=cartesi:cartesi ./ci/scripts/migrate-db.sh /migrate-db.sh
 COPY --chown=cartesi:cartesi ./ci/scripts/espresso-dev-node-health.sh /espresso-dev-node-health.sh
 COPY --chown=cartesi:cartesi ./internal/repository/postgres/schema/migrations /internal/repository/postgres/schema/migrations
-ADD https://raw.githubusercontent.com/cartesi/rollups-node/refs/tags/v2.0.0-alpha.4/internal/repository/postgres/schema/migrations/000001_create_initial_schema.up.sql /rollups-node/migrations/
+ADD https://raw.githubusercontent.com/cartesi/rollups-node/refs/tags/v2.0.0-dev-20250527/internal/repository/postgres/schema/migrations/000001_create_initial_schema.up.sql /rollups-node/migrations/
 
 RUN chmod +x /entrypoint.sh
 CMD ["tini", "--", "/entrypoint.sh"]
