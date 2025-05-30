@@ -209,8 +209,9 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	client := client.NewClient(s.EspressoBaseUrl)
 	ctx := r.Context()
 	app, err := s.database.GetApplication(ctx, appAddressStr)
-	if err != nil {
+	if err != nil || app == nil {
 		slog.Error("application not registered", "err", err)
+		http.Error(w, "application not registered", http.StatusInternalServerError)
 		return
 	}
 	_, namespace, err := getEspressoConfig(ctx, appAddress, s.database, app.DataAvailability)
