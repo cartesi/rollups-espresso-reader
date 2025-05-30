@@ -135,7 +135,7 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 							lastProcessedL1Block, l1FinalizedTimestamp, err = e.readL1(ctx, app, currentEspressoBlockHeight, lastProcessedL1Block)
 							if err != nil {
 								slog.Error("failed reading L1", "error", err)
-								continue
+								break
 							}
 							e.readEspresso(ctx, app, currentEspressoBlockHeight, namespace, lastProcessedL1Block, l1FinalizedTimestamp)
 						}
