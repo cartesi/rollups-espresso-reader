@@ -46,7 +46,7 @@ jobs:
           PRIVATE_KEY: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
           RPC_URL: "http://localhost:8545"
         run: |
-          docker compose exec cartesi_node_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v -D 0x8579fd0c000000000000000000000000c7007368e1b9929488744fa4dea7bcaeea0000510000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903
+          docker compose exec cartesi_node_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -D 0x8579fd0c000000000000000000000000c7007368e1b9929488744fa4dea7bcaeea0000510000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903
           sleep 10
           docker compose logs --timestamps cartesi_node_espresso
 
@@ -54,7 +54,7 @@ jobs:
         env:
           INPUT: "0xdead01beef"
           INPUT_BOX_ADDRESS: "0xc7007368E1b9929488744fa4dea7BcAEea000051"
-          APPLICATION_ADDRESS: "0x01e800bbE852aeb27cE65604709134Ea63782c6B"
+          APPLICATION_ADDRESS: "0x0d151aDF64968A01C184657B314DB9eA9FcE4a18"
         run: |
           cast send \
               --mnemonic "test test test test test test test test test test test junk" \
@@ -73,7 +73,7 @@ jobs:
         env:
           SENDER_PRIVATE_KEY: ${{ secrets.SENDER_PRIVATE_KEY }}
           TRANSACTION_BASE_URL: http://localhost:8080
-          APP_ADDRESS: "0x01e800bbE852aeb27cE65604709134Ea63782c6B"
+          APP_ADDRESS: "0x0d151aDF64968A01C184657B314DB9eA9FcE4a18"
           INPUT: "0xdeadbeefdeadbeef"
         run: |
           npm i
