@@ -119,13 +119,13 @@ EOF
 ARG GO_BUILD_PATH
 
 # Install cartesi machine
-ENV CARTESI_MACHINE_VERSION=0.19.0
+ENV CARTESI_MACHINE_VERSION=0.19.0-alpha4
 RUN <<EOF
     set -e
     TARGETARCH=$(dpkg --print-architecture)
-    curl -LO https://github.com/cartesi/machine-emulator/releases/download/v0.19.0-alpha4/machine-emulator_amd64.deb
-    dpkg -i ./machine-emulator_amd64.deb
-    rm ./machine-emulator_amd64.deb
+    curl -LO https://github.com/cartesi/machine-emulator/releases/download/v${CARTESI_MACHINE_VERSION}/machine-emulator_${TARGETARCH}.deb
+    dpkg -i ./machine-emulator_${TARGETARCH}.deb
+    rm ./machine-emulator_${TARGETARCH}.deb
 EOF
 
 RUN curl -L https://github.com/cartesi/image-kernel/releases/download/v0.20.0/linux-6.5.13-ctsi-1-v0.20.0.bin -o /usr/share/cartesi-machine/images/linux.bin
@@ -137,9 +137,9 @@ ARG ROLLUPS_NODE_VERSION
 RUN <<EOF
     set -e
     TARGETARCH=$(dpkg --print-architecture)
-    curl -LO https://github.com/cartesi/rollups-espresso-reader/releases/download/v0.4.0-alpha.1/cartesi-rollups-node-v2.0.0-dev-20250527_amd64.deb
-    dpkg -i cartesi-rollups-node-v2.0.0-dev-20250527_amd64.deb
-    rm cartesi-rollups-node-v2.0.0-dev-20250527_amd64.deb
+    curl -LO https://github.com/cartesi/rollups-espresso-reader/releases/download/v0.4.0-alpha.1/cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
+    dpkg -i cartesi-rollups-node-v2.0.0-dev-20250527_${TARGETARCH}.deb
+    rm cartesi-rollups-node-v2.0.0-dev-20250527_${TARGETARCH}.deb
 EOF
 
 WORKDIR ${NODE_RUNTIME_DIR}
