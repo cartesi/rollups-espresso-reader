@@ -109,16 +109,20 @@ First build the Espresso Reader itself:
 go build
 ```
 
-To run it alongisde a Cartesi Rollups Node checked out from its [repository](https://github.com/cartesi/rollups-node/releases/tag/v2.0.0-alpha.4):
+To run it alongside a Cartesi Rollups Node checked out from its [repository](https://github.com/cartesi/rollups-node/releases/tag/v2.0.0-dev-20250604):
 
 ```bash
 cd <path-to-cartesi-rollups-node>
+eval $(make env)
+export CARTESI_FEATURE_INPUT_READER_ENABLED=false
 make
-make run-postgres && make migrate
+make start && make migrate
 ./cartesi-rollups-node
 ```
 
-Then, run the Espresso Reader to read inputs from Espresso and write them to the Node's database (make sure to adjust environment variables as appropriate to match the Node's configuration):
+Then, run the Espresso Reader to read inputs from Espresso and write them to the Node's database.
+Make sure to either run a local Espresso network or adjust the `ESPRESSO_BASE_URL` env var to point to an appropriate instance.
+Also always ensure the Espresso Reader env vars match those configured for the Node.
 
 ```bash
 eval $(make env)
