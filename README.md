@@ -48,7 +48,7 @@ docker compose logs cartesi_node_espresso -f
 A sample Echo application can be deployed on your local node by executing:
 
 ```bash
-INPUT_BOX_ADDRESS="0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c" \
+INPUT_BOX_ADDRESS="0xc7007368E1b9929488744fa4dea7BcAEea000051" \
 ESPRESSO_STARTING_BLOCK="0" \
 ESPRESSO_NAMESPACE="55555" \
 DATA_AVAILABILITY=$(cast calldata \
@@ -65,7 +65,7 @@ Once deployed, an L1 InputBox input can be sent using cast:
 
 ```bash
 INPUT=0xdeadbeef; \
-INPUT_BOX_ADDRESS=0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c; \
+INPUT_BOX_ADDRESS=0xc7007368E1b9929488744fa4dea7BcAEea000051; \
 APPLICATION_ADDRESS=0x01e800bbE852aeb27cE65604709134Ea63782c6B; \
 cast send \
     --mnemonic "test test test test test test test test test test test junk" \
@@ -109,16 +109,20 @@ First build the Espresso Reader itself:
 go build
 ```
 
-To run it alongisde a Cartesi Rollups Node checked out from its [repository](https://github.com/cartesi/rollups-node/releases/tag/v2.0.0-alpha.4):
+To run it alongside a Cartesi Rollups Node checked out from its [repository](https://github.com/cartesi/rollups-node/releases/tag/v2.0.0-dev-20250604):
 
 ```bash
 cd <path-to-cartesi-rollups-node>
+eval $(make env)
+export CARTESI_FEATURE_INPUT_READER_ENABLED=false
 make
-make run-postgres && make migrate
+make start && make migrate
 ./cartesi-rollups-node
 ```
 
-Then, run the Espresso Reader to read inputs from Espresso and write them to the Node's database (make sure to adjust environment variables as appropriate to match the Node's configuration):
+Then, run the Espresso Reader to read inputs from Espresso and write them to the Node's database.
+Make sure to either run a local Espresso network or adjust the `ESPRESSO_BASE_URL` env var to point to an appropriate instance.
+Also always ensure the Espresso Reader env vars match those configured for the Node.
 
 ```bash
 eval $(make env)
