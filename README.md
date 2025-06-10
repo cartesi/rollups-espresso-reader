@@ -48,7 +48,7 @@ docker compose logs cartesi_node_espresso -f
 A sample Echo application can be deployed on your local node by executing:
 
 ```bash
-INPUT_BOX_ADDRESS="0xc7007368E1b9929488744fa4dea7BcAEea000051" \
+INPUT_BOX_ADDRESS="0xc70074BDD26d8cF983Ca6A5b89b8db52D5850051" \
 ESPRESSO_STARTING_BLOCK="0" \
 ESPRESSO_NAMESPACE="55555" \
 DATA_AVAILABILITY=$(cast calldata \
@@ -63,7 +63,7 @@ Once deployed, an L1 InputBox input can be sent using cast:
 
 ```bash
 INPUT=0xdeadbeef; \
-INPUT_BOX_ADDRESS=0xc7007368E1b9929488744fa4dea7BcAEea000051; \
+INPUT_BOX_ADDRESS=0xc70074BDD26d8cF983Ca6A5b89b8db52D5850051; \
 APPLICATION_ADDRESS=0x01e800bbE852aeb27cE65604709134Ea63782c6B; \
 cast send \
     --mnemonic "test test test test test test test test test test test junk" \

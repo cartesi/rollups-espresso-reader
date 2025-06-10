@@ -8,7 +8,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"strings"
 
@@ -129,9 +128,6 @@ func NewEvmReader(
 	ioABI, err := abi.JSON(strings.NewReader(abiData))
 	if err != nil {
 		panic(err)
-	}
-	if maxBlockRange == 0 {
-		maxBlockRange = math.MaxUint64
 	}
 	evmReader := EvmReader{
 		client:   client,
