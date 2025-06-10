@@ -228,6 +228,18 @@ func GetLogPrettyEnabled() bool {
 	return val
 }
 
+func GetBlockchainMaxBlockRange() uint64 {
+	s, ok := os.LookupEnv("CARTESI_BLOCKCHAIN_MAX_BLOCK_RANGE")
+	if !ok {
+		s = "math.MaxUint64"
+	}
+	val, err := toUint64(s)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse CARTESI_BLOCKCHAIN_MAX_BLOCK_RANGE: %v", err))
+	}
+	return val
+}
+
 func GetPolicyMaxDelay() Duration {
 	s, ok := os.LookupEnv("RETRY_POLICY_MAX_DELAY")
 	if !ok {

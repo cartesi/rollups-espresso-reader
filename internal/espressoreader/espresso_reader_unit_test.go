@@ -475,7 +475,7 @@ func (s *EspressoReaderUnitTestSuite) SetupTest() {
 	mockInputSource := new(MockInputSource)
 	s.mockInputSource = mockInputSource
 	evmReader := evmreader.NewEvmReader(
-		mockEthClient, nil, mockDatabase, chainId, "0", false, true,
+		mockEthClient, nil, mockDatabase, chainId, "0", false, true, 0,
 	)
 	s.espressoReader = NewEspressoReader(
 		espressoApiURL,

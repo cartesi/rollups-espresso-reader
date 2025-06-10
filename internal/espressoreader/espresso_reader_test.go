@@ -132,6 +132,7 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 		suite.c.EspressoServiceEndpoint,
 		suite.c.MaxRetries,
 		suite.c.MaxDelay,
+		suite.c.MaxBlockRange,
 	)
 	go service.Start(suite.ctx, make(chan struct{}, 1))
 	// let reader run for some time
