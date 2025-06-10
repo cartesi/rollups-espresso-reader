@@ -107,8 +107,14 @@ func (e *EspressoReader) Run(ctx context.Context, ready chan<- struct{}) error {
 					}
 					lastProcessedL1Block := app.Application.LastInputCheckBlock
 					appAddress := app.Application.IApplicationAddress
-					if lastProcessedL1Block < app.IInputBoxBlock {
-						lastProcessedL1Block = app.IInputBoxBlock - 1
+
+					l1StartingBlock := app.IInputBoxBlock
+					l1FinalizedHeight, _ := e.espressoHelper.getL1FinalizedHeight(ctx, startingBlock, e.maxDelay, e.url)
+					if l1StartingBlock < l1FinalizedHeight {
+						l1StartingBlock = l1FinalizedHeight
+					}
+					if lastProcessedL1Block < l1StartingBlock {
+						lastProcessedL1Block = l1StartingBlock - 1
 					}
 					if lastProcessedEspressoBlock == 0 && startingBlock != 0 {
 						lastProcessedEspressoBlock = startingBlock - 1
