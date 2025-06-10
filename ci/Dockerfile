@@ -137,9 +137,9 @@ ARG ROLLUPS_NODE_VERSION
 RUN <<EOF
     set -e
     TARGETARCH=$(dpkg --print-architecture)
-    curl -LO https://github.com/cartesi/rollups-espresso-reader/releases/download/v0.4.0-alpha.1/cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
-    dpkg -i cartesi-rollups-node-v2.0.0-dev-20250527_${TARGETARCH}.deb
-    rm cartesi-rollups-node-v2.0.0-dev-20250527_${TARGETARCH}.deb
+    curl -LO https://github.com/cartesi/rollups-node/releases/download/v${ROLLUPS_NODE_VERSION}/cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
+    dpkg -i ./cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
+    rm ./cartesi-rollups-node-v${ROLLUPS_NODE_VERSION}_${TARGETARCH}.deb
 EOF
 
 WORKDIR ${NODE_RUNTIME_DIR}
