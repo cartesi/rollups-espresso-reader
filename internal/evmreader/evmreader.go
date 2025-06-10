@@ -8,6 +8,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
 	appcontract "github.com/cartesi/rollups-espresso-reader/pkg/contracts/iapplication"
 	"github.com/cartesi/rollups-espresso-reader/pkg/contracts/iinputbox"
+	"github.com/cartesi/rollups-espresso-reader/pkg/ethutil"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -122,22 +124,31 @@ func NewEvmReader(
 	defaultBlock DefaultBlock,
 	inputReaderEnabled bool,
 	shouldModifyIndex bool,
+	maxBlockRange uint64,
 ) EvmReader {
 	ioABI, err := abi.JSON(strings.NewReader(abiData))
 	if err != nil {
 		panic(err)
 	}
+	if maxBlockRange == 0 {
+		maxBlockRange = math.MaxUint64
+	}
 	evmReader := EvmReader{
-		client:                 client,
-		wsClient:               wsClient,
-		ExportedAdapterFactory: defaultAdapterFactory,
-		repository:             repository,
-		chainId:                chainId,
-		defaultBlock:           defaultBlock,
-		hasEnabledApps:         true,
-		inputReaderEnabled:     inputReaderEnabled,
-		shouldModifyIndex:      shouldModifyIndex,
-		IOAbi:                  ioABI,
+		client:   client,
+		wsClient: wsClient,
+		ExportedAdapterFactory: &DefaultAdapterFactory{
+			Filter: ethutil.Filter{
+				MinChunkSize: ethutil.DefaultMinChunkSize,
+				MaxChunkSize: new(big.Int).SetUint64(maxBlockRange),
+			},
+		},
+		repository:         repository,
+		chainId:            chainId,
+		defaultBlock:       defaultBlock,
+		hasEnabledApps:     true,
+		inputReaderEnabled: inputReaderEnabled,
+		shouldModifyIndex:  shouldModifyIndex,
+		IOAbi:              ioABI,
 	}
 	return evmReader
 }
@@ -153,7 +164,9 @@ type AdapterFactory interface {
 	CreateAdapters(app *Application, client EthClientInterface) (ApplicationContractAdapter, InputSourceAdapter, error)
 }
 
-type DefaultAdapterFactory struct{}
+type DefaultAdapterFactory struct {
+	Filter ethutil.Filter
+}
 
 func (f *DefaultAdapterFactory) CreateAdapters(app *Application, client EthClientInterface) (ApplicationContractAdapter, InputSourceAdapter, error) {
 	if app == nil {
@@ -166,7 +179,7 @@ func (f *DefaultAdapterFactory) CreateAdapters(app *Application, client EthClien
 		return nil, nil, fmt.Errorf("client is not an *ethclient.Client, cannot create adapters")
 	}
 
-	applicationContract, err := NewApplicationContractAdapter(app.IApplicationAddress, ethClient)
+	applicationContract, err := NewApplicationContractAdapter(app.IApplicationAddress, ethClient, f.Filter)
 	if err != nil {
 		return nil, nil, errors.Join(
 			fmt.Errorf("error building application contract"),
@@ -174,7 +187,7 @@ func (f *DefaultAdapterFactory) CreateAdapters(app *Application, client EthClien
 		)
 	}
 
-	inputSource, err := NewInputSourceAdapter(app.IInputBoxAddress, ethClient)
+	inputSource, err := NewInputSourceAdapter(app.IInputBoxAddress, ethClient, f.Filter)
 	if err != nil {
 		return nil, nil, errors.Join(
 			fmt.Errorf("error building inputbox contract"),
@@ -184,8 +197,6 @@ func (f *DefaultAdapterFactory) CreateAdapters(app *Application, client EthClien
 
 	return applicationContract, inputSource, nil
 }
-
-var defaultAdapterFactory = &DefaultAdapterFactory{}
 
 func (r *EvmReader) GetEthClient() *EthClientInterface {
 	return &r.client

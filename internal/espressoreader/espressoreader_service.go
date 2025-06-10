@@ -35,6 +35,7 @@ type EspressoReaderService struct {
 	maxDelay                time.Duration
 	chainId                 uint64
 	espressoServiceEndpoint string
+	maxBlockRange           uint64
 }
 
 func NewEspressoReaderService(
@@ -46,6 +47,7 @@ func NewEspressoReaderService(
 	espressoServiceEndpoint string,
 	maxRetries uint64,
 	maxDelay time.Duration,
+	maxBlockRange uint64,
 ) *EspressoReaderService {
 	return &EspressoReaderService{
 		blockchainHttpEndpoint:  blockchainHttpEndpoint,
@@ -56,6 +58,7 @@ func NewEspressoReaderService(
 		espressoServiceEndpoint: espressoServiceEndpoint,
 		maxRetries:              maxRetries,
 		maxDelay:                maxDelay,
+		maxBlockRange:           maxBlockRange,
 	}
 }
 
@@ -301,6 +304,7 @@ func (s *EspressoReaderService) trySetupEvmReader(ctx context.Context, r reposit
 		config.Value.DefaultBlock,
 		config.Value.InputReaderEnabled,
 		true,
+		s.maxBlockRange,
 	)
 
 	return &evmReader, nil

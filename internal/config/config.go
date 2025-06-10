@@ -19,6 +19,7 @@ type NodeConfig struct {
 	EspressoServiceEndpoint string
 	MaxRetries              uint64
 	MaxDelay                Duration
+	MaxBlockRange           uint64
 }
 
 // Redacted is a wrapper that redacts a given field from the logs.
@@ -43,5 +44,6 @@ func FromEnv() NodeConfig {
 	config.EspressoServiceEndpoint = GetServiceEndpoint()
 	config.MaxRetries = GetPolicyMaxRetries()
 	config.MaxDelay = GetPolicyMaxDelay()
+	config.MaxBlockRange = GetBlockchainMaxBlockRange()
 	return config
 }
