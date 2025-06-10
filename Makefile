@@ -15,7 +15,7 @@
 #
 
 ROLLUPS_CONTRACTS_ABI_BASEDIR := rollups-contracts/
-CONTRACTS_VERSION := 2.0.0-rc.18
+CONTRACTS_VERSION := 2.0.0
 CONTRACTS_URL := https://github.com/cartesi/rollups-contracts/releases/download/
 CONTRACTS_ARTIFACT := rollups-contracts-$(CONTRACTS_VERSION)-artifacts.tar.gz
 CONTRACTS_SHA256 := 1b32320a550857e426bce637267a02c552d9035e7bc5d67a732008b24a21db63

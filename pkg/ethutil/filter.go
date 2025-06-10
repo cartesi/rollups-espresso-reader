@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"iter"
 	"log/slog"
+	"math"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -103,6 +104,9 @@ func (f *Filter) ChunkedFilterLogs(
 			return nil, err
 		}
 		q.ToBlock = big.NewInt(0).SetUint64(end)
+	}
+	if f.MaxChunkSize == nil || f.MaxChunkSize.Uint64() == 0 {
+		f.MaxChunkSize = new(big.Int).SetUint64(math.MaxUint64)
 	}
 
 	return func(yield func(log *types.Log, err error) bool) {
