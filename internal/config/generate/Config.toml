@@ -37,7 +37,7 @@ The default block to be used by EVM Reader when requesting new blocks.
 One of 'latest', 'pending', 'safe', 'finalized'"""
 
 [rollups.CARTESI_BLOCKCHAIN_MAX_BLOCK_RANGE]
-default = "math.MaxUint64"
+default = "0"
 go-type = "uint64"
 description = """
 Maximum number of blocks in a single query to the provider. Queries with larger ranges will be broken into multiple smaller queries. Zero for unlimited."""

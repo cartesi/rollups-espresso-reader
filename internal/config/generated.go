@@ -231,7 +231,7 @@ func GetLogPrettyEnabled() bool {
 func GetBlockchainMaxBlockRange() uint64 {
 	s, ok := os.LookupEnv("CARTESI_BLOCKCHAIN_MAX_BLOCK_RANGE")
 	if !ok {
-		s = "math.MaxUint64"
+		s = "0"
 	}
 	val, err := toUint64(s)
 	if err != nil {

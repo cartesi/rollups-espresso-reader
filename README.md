@@ -54,11 +54,9 @@ ESPRESSO_NAMESPACE="55555" \
 DATA_AVAILABILITY=$(cast calldata \
     "InputBoxAndEspresso(address,uint256,uint32)" \
     $INPUT_BOX_ADDRESS $ESPRESSO_STARTING_BLOCK $ESPRESSO_NAMESPACE); \
-docker compose exec cartesi_node_espresso cartesi-rollups-cli app deploy -v \
+docker compose exec cartesi_node_espresso cartesi-rollups-cli deploy application echo-dapp applications/echo-dapp/ \
     --salt 0000000000000000000000000000000000000000000000000000000000000000 \
-    --data-availability $DATA_AVAILABILITY \
-    -n echo-dapp \
-    -t applications/echo-dapp/
+    --data-availability $DATA_AVAILABILITY
 ```
 
 Once deployed, an L1 InputBox input can be sent using cast:

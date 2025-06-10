@@ -70,7 +70,7 @@ docker run --env-file env.nodev2-local --rm --network=host -v ./rollups-node:/va
 Deploy the echo-dapp
 
 ```sh
-docker exec c_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v
+docker exec c_espresso cartesi-rollups-cli deploy application echo-dapp applications/echo-dapp/
 ```
 
 Troubleshoting
@@ -81,7 +81,7 @@ docker exec -it c_espresso /bin/bash
 mkdir -p applications
 cartesi-machine --ram-length=128Mi --store=applications/echo-dapp --final-hash -- ioctl-echo-loop --vouchers=1 --notices=1 --reports=1 --verbose=1
 
-cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -v
+cartesi-rollups-cli deploy application echo-dapp applications/echo-dapp/
 ```
 
 Output:

@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 env:
-  ROLLUPS_NODE_VERSION: 2.0.0-dev-20250527
+  ROLLUPS_NODE_VERSION: 2.0.0-alpha.5
   ESPRESSO_BASE_URL: http://localhost:24000
 
 jobs:
@@ -46,7 +46,7 @@ jobs:
           PRIVATE_KEY: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
           RPC_URL: "http://localhost:8545"
         run: |
-          docker compose exec cartesi_node_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -D 0x8579fd0c000000000000000000000000c7007368e1b9929488744fa4dea7bcaeea0000510000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903
+          docker compose exec cartesi_node_espresso cartesi-rollups-cli deploy application echo-dapp applications/echo-dapp/ -d 0x8579fd0c000000000000000000000000c7007368e1b9929488744fa4dea7bcaeea0000510000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903
           sleep 10
           docker compose logs --timestamps cartesi_node_espresso
 
@@ -158,7 +158,7 @@ jobs:
       - name: Install Echo App
         run: |
           docker compose logs --timestamps cartesi_node_espresso
-          docker compose exec cartesi_node_espresso cartesi-rollups-cli app deploy -n echo-dapp -t applications/echo-dapp/ -D 0x8579fd0c000000000000000000000000c7007368e1b9929488744fa4dea7bcaeea0000510000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903
+          docker compose exec cartesi_node_espresso cartesi-rollups-cli deploy application echo-dapp applications/echo-dapp/ -d 0x8579fd0c000000000000000000000000c7007368e1b9929488744fa4dea7bcaeea0000510000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903
 
       - name: Run integration tests
         env:
