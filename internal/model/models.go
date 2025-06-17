@@ -158,15 +158,15 @@ func (d *DataAvailabilitySelector) Scan(value any) error {
 type SnapshotPolicy string
 
 const (
-	SnapshotPolicy_None      SnapshotPolicy = "NONE"
-	SnapshotPolicy_EachInput SnapshotPolicy = "EACH_INPUT"
-	SnapshotPolicy_EachEpoch SnapshotPolicy = "EACH_EPOCH"
+	SnapshotPolicy_None       SnapshotPolicy = "NONE"
+	SnapshotPolicy_EveryInput SnapshotPolicy = "EVERY_INPUT"
+	SnapshotPolicy_EveryEpoch SnapshotPolicy = "EVERY_EPOCH"
 )
 
 var SnapshotPolicyAllValues = []SnapshotPolicy{
 	SnapshotPolicy_None,
-	SnapshotPolicy_EachInput,
-	SnapshotPolicy_EachEpoch,
+	SnapshotPolicy_EveryInput,
+	SnapshotPolicy_EveryEpoch,
 }
 
 func (e *SnapshotPolicy) Scan(value any) error {
@@ -183,10 +183,10 @@ func (e *SnapshotPolicy) Scan(value any) error {
 	switch enumValue {
 	case "NONE":
 		*e = SnapshotPolicy_None
-	case "EACH_INPUT":
-		*e = SnapshotPolicy_EachInput
-	case "EACH_EPOCH":
-		*e = SnapshotPolicy_EachEpoch
+	case "EVERY_INPUT":
+		*e = SnapshotPolicy_EveryInput
+	case "EVERY_EPOCH":
+		*e = SnapshotPolicy_EveryEpoch
 	default:
 		return errors.New("invalid scan value '" + enumValue + "' for SnapshotPolicy enum")
 	}
