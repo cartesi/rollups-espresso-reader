@@ -3,7 +3,7 @@ set -e
 
 rm -rf ./rollups-node
 
-git clone -b v2.0.0-alpha.5 --depth 1 --recurse-submodules https://github.com/cartesi/rollups-node.git
+git clone -b v2.0.0-alpha.6 --depth 1 --recurse-submodules https://github.com/cartesi/rollups-node.git
 
 docker stop $(docker ps -q) || true
 
