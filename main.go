@@ -90,6 +90,7 @@ func run(cmd *cobra.Command, args []string) {
 		c.EspressoServiceEndpoint,
 		c.MaxRetries,
 		c.MaxDelay,
+		c.MaxBlockRange,
 	)
 
 	// logs startup time

@@ -35,6 +35,7 @@ type EspressoReaderService struct {
 	maxDelay                time.Duration
 	chainId                 uint64
 	espressoServiceEndpoint string
+	maxBlockRange           uint64
 }
 
 func NewEspressoReaderService(
@@ -46,6 +47,7 @@ func NewEspressoReaderService(
 	espressoServiceEndpoint string,
 	maxRetries uint64,
 	maxDelay time.Duration,
+	maxBlockRange uint64,
 ) *EspressoReaderService {
 	return &EspressoReaderService{
 		blockchainHttpEndpoint:  blockchainHttpEndpoint,
@@ -56,6 +58,7 @@ func NewEspressoReaderService(
 		espressoServiceEndpoint: espressoServiceEndpoint,
 		maxRetries:              maxRetries,
 		maxDelay:                maxDelay,
+		maxBlockRange:           maxBlockRange,
 	}
 }
 
@@ -66,7 +69,7 @@ func (s *EspressoReaderService) Start(
 
 	evmReader := s.setupEvmReader(ctx, s.database)
 
-	espressoReader := NewEspressoReader(s.EspressoBaseUrl, s.database, evmReader, s.chainId, s.maxRetries, uint64(s.maxDelay), s.blockchainHttpEndpoint)
+	espressoReader := NewEspressoReader(s.EspressoBaseUrl, s.database, evmReader, s.chainId, s.maxRetries, uint64(s.maxDelay))
 
 	go s.setupNonceHttpServer()
 
@@ -208,7 +211,13 @@ func (s *EspressoReaderService) submit(w http.ResponseWriter, r *http.Request) {
 	appAddress := common.HexToAddress(appAddressStr)
 	client := client.NewClient(s.EspressoBaseUrl)
 	ctx := r.Context()
-	_, namespace, err := getEspressoConfig(ctx, appAddress, s.database, s.blockchainHttpEndpoint)
+	app, err := s.database.GetApplication(ctx, appAddressStr)
+	if err != nil || app == nil {
+		slog.Error("application not registered", "err", err)
+		http.Error(w, "application not registered", http.StatusInternalServerError)
+		return
+	}
+	_, namespace, err := getEspressoConfig(ctx, appAddress, s.database, app.DataAvailability)
 	if err != nil {
 		slog.Error("failed to get espresso config", "error", err, "appAddress", appAddress)
 		http.Error(w, "Failed to get application configuration", http.StatusInternalServerError)
@@ -295,6 +304,7 @@ func (s *EspressoReaderService) trySetupEvmReader(ctx context.Context, r reposit
 		config.Value.DefaultBlock,
 		config.Value.InputReaderEnabled,
 		true,
+		s.maxBlockRange,
 	)
 
 	return &evmReader, nil

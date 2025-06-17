@@ -10,11 +10,11 @@ package enum
 import "github.com/go-jet/jet/v2/postgres"
 
 var SnapshotPolicy = &struct {
-	None      postgres.StringExpression
-	EachInput postgres.StringExpression
-	EachEpoch postgres.StringExpression
+	None       postgres.StringExpression
+	EveryInput postgres.StringExpression
+	EveryEpoch postgres.StringExpression
 }{
-	None:      postgres.NewEnumValue("NONE"),
-	EachInput: postgres.NewEnumValue("EACH_INPUT"),
-	EachEpoch: postgres.NewEnumValue("EACH_EPOCH"),
+	None:       postgres.NewEnumValue("NONE"),
+	EveryInput: postgres.NewEnumValue("EVERY_INPUT"),
+	EveryEpoch: postgres.NewEnumValue("EVERY_EPOCH"),
 }

@@ -22,11 +22,13 @@ type InputSourceAdapterImpl struct {
 	inputbox        *iinputbox.IInputBox
 	client          *ethclient.Client
 	inputBoxAddress common.Address
+	filter          ethutil.Filter
 }
 
 func NewInputSourceAdapter(
 	inputBoxAddress common.Address,
 	client *ethclient.Client,
+	filter ethutil.Filter,
 ) (InputSourceAdapter, error) {
 	inputbox, err := iinputbox.NewIInputBox(inputBoxAddress, client)
 	if err != nil {
@@ -36,6 +38,7 @@ func NewInputSourceAdapter(
 		inputbox:        inputbox,
 		client:          client,
 		inputBoxAddress: inputBoxAddress,
+		filter:          filter,
 	}, nil
 }
 
@@ -89,7 +92,7 @@ func (i *InputSourceAdapterImpl) RetrieveInputs(
 		return nil, err
 	}
 
-	itr, err := ethutil.ChunkedFilterLogs(opts.Context, i.client, q)
+	itr, err := i.filter.ChunkedFilterLogs(opts.Context, i.client, q)
 	if err != nil {
 		return nil, err
 	}

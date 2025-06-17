@@ -22,7 +22,7 @@ import (
 func NewRepositoryFromConnectionString(ctx context.Context, conn string) (Repository, error) {
 	lowerConn := strings.ToLower(conn)
 	switch {
-	case strings.HasPrefix(lowerConn, "postgres://"):
+	case strings.HasPrefix(lowerConn, "postgres://"), strings.HasPrefix(lowerConn, "postgresql://"):
 		return newPostgresRepository(ctx, conn)
 	default:
 		return nil, fmt.Errorf("unrecognized connection string format: %s", conn)

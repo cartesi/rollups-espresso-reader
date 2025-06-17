@@ -22,11 +22,13 @@ type ApplicationContractAdapterImpl struct {
 	application        *iapplication.IApplication
 	client             *ethclient.Client
 	applicationAddress common.Address
+	filter             ethutil.Filter
 }
 
 func NewApplicationContractAdapter(
 	appAddress common.Address,
 	client *ethclient.Client,
+	filter ethutil.Filter,
 ) (ApplicationContractAdapter, error) {
 	applicationContract, err := iapplication.NewIApplication(appAddress, client)
 	if err != nil {
@@ -36,6 +38,7 @@ func NewApplicationContractAdapter(
 		application:        applicationContract,
 		applicationAddress: appAddress,
 		client:             client,
+		filter:             filter,
 	}, nil
 }
 
@@ -74,7 +77,7 @@ func (a *ApplicationContractAdapterImpl) RetrieveOutputExecutionEvents(
 		return nil, err
 	}
 
-	itr, err := ethutil.ChunkedFilterLogs(opts.Context, a.client, q)
+	itr, err := a.filter.ChunkedFilterLogs(opts.Context, a.client, q)
 	if err != nil {
 		return nil, err
 	}

@@ -119,13 +119,13 @@ EOF
 ARG GO_BUILD_PATH
 
 # Install cartesi machine
-ENV CARTESI_MACHINE_VERSION=0.19.0
+ENV CARTESI_MACHINE_VERSION=0.19.0-alpha4
 RUN <<EOF
     set -e
     TARGETARCH=$(dpkg --print-architecture)
-    curl -LO https://github.com/cartesi/machine-emulator/releases/download/v0.19.0-alpha3/cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
-    dpkg -i ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
-    rm ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
+    curl -LO https://github.com/cartesi/machine-emulator/releases/download/v${CARTESI_MACHINE_VERSION}/machine-emulator_${TARGETARCH}.deb
+    dpkg -i ./machine-emulator_${TARGETARCH}.deb
+    rm ./machine-emulator_${TARGETARCH}.deb
 EOF
 
 RUN curl -L https://github.com/cartesi/image-kernel/releases/download/v0.20.0/linux-6.5.13-ctsi-1-v0.20.0.bin -o /usr/share/cartesi-machine/images/linux.bin
@@ -156,7 +156,7 @@ COPY --chown=cartesi:cartesi ./ci/entrypoint.sh /entrypoint.sh
 COPY --chown=cartesi:cartesi ./ci/scripts/migrate-db.sh /migrate-db.sh
 COPY --chown=cartesi:cartesi ./ci/scripts/espresso-dev-node-health.sh /espresso-dev-node-health.sh
 COPY --chown=cartesi:cartesi ./internal/repository/postgres/schema/migrations /internal/repository/postgres/schema/migrations
-ADD https://raw.githubusercontent.com/cartesi/rollups-node/refs/tags/v2.0.0-alpha.4/internal/repository/postgres/schema/migrations/000001_create_initial_schema.up.sql /rollups-node/migrations/
+ADD https://raw.githubusercontent.com/cartesi/rollups-node/refs/tags/v2.0.0-dev-20250527/internal/repository/postgres/schema/migrations/000001_create_initial_schema.up.sql /rollups-node/migrations/
 
 RUN chmod +x /entrypoint.sh
 CMD ["tini", "--", "/entrypoint.sh"]
