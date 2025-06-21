@@ -61,6 +61,7 @@ require (
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
+	github.com/rs/cors v1.11.1 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/sigurn/crc8 v0.0.0-20220107193325-2243fe600f9f // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
