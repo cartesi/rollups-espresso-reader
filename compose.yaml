@@ -19,7 +19,7 @@ services:
     ports:
       - 8545:8545
   espresso-dev-node:
-    image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20250428-dev-node-decaf-pos
+    image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20250623
     ports:
       - 24000:24000
       - 23000:23000
