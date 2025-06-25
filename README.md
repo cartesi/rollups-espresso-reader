@@ -64,7 +64,7 @@ Once deployed, an L1 InputBox input can be sent using cast:
 ```bash
 INPUT=0xdeadbeef; \
 INPUT_BOX_ADDRESS=0xc70074BDD26d8cF983Ca6A5b89b8db52D5850051; \
-APPLICATION_ADDRESS=0x01e800bbE852aeb27cE65604709134Ea63782c6B; \
+APPLICATION_ADDRESS=0xFA792A3E813f8eAf9998d28819fadeb4E39a2263; \
 cast send \
     --mnemonic "test test test test test test test test test test test junk" \
     --rpc-url "http://localhost:8545" \
