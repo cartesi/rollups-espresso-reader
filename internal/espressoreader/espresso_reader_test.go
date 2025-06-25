@@ -45,12 +45,12 @@ func (suite *EspressoReaderTestSuite) prepareTxs(ctx context.Context, EspressoBa
 	var tx types.Transaction
 	tx.Namespace = namespace
 
-	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0xFA792A3E813f8eAf9998d28819fadeb4E39a2263","nonce":0,"data":"0xbb01","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0xf1200fef3b94091435e6748df136d10868d2f6587bfe03b0be83d6dc01e0342b2032f21e96ff7ead4f3ada9012931a02e95979063160430422459cc7471c57151c"}`)
+	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x02b2C34b3dBdBD6C7b7CC923db5621af730171c2","nonce":0,"data":"0xbb01","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x0b3c3015fee491c116a45728c85730b2869228b6a4d1b43784c15d26945491ba64b8dc773f72c4d2d39b607a609526bdbd003eb2a4198a925fd30e342d49eb2d1c"}`)
 	_, err := client.SubmitTransaction(ctx, tx)
 	suite.Require().NoError(err)
 	time.Sleep(1 * time.Second)
 
-	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0xFA792A3E813f8eAf9998d28819fadeb4E39a2263","nonce":1,"data":"0xbb02","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x224874f7229f68294ee7b590a53db32635df99369895f7b0ce0b3ec837918f4655e3f59d2b2c75a66bbd9593245e49e9352efdc5ba75c7100df05f1987a4f7c81b"}`)
+	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x02b2C34b3dBdBD6C7b7CC923db5621af730171c2","nonce":1,"data":"0xbb02","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x2a2edcd1dbe790b9c27c038c8e51daa1761cbd4f453cd440da02246354c1931f12395290d4ef30f664bcacd0c078e83fb5da5a5be8b62e9631e655c96a5d2e8b1c"}`)
 	_, err = client.SubmitTransaction(ctx, tx)
 	suite.Require().NoError(err)
 
@@ -68,14 +68,14 @@ func (suite *EspressoReaderTestSuite) prepareTxs(ctx context.Context, EspressoBa
 	L1Payload, _ = hex.DecodeString("aa04")
 	_, _, err = ethutil.AddInput(ctx, ethClient, txOpts, suite.application.IInputBoxAddress, suite.application.IApplicationAddress, L1Payload)
 	cobra.CheckErr(err)
-	time.Sleep(65 * time.Second)
+	time.Sleep(70 * time.Second)
 
-	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0xFA792A3E813f8eAf9998d28819fadeb4E39a2263","nonce":2,"data":"0xbb05","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x007947535c196fa332160684900959067870babb351d253097dea7a4d61f9598276914764391c3e90a78e7d99244a7abffaeb8fe1b992f79bc0716d8b8cef5c31c"}`)
+	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x02b2C34b3dBdBD6C7b7CC923db5621af730171c2","nonce":2,"data":"0xbb05","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x752b903e4b271f7ffd71549bfa0667d8f07145eb49a7721111733c163f997fc97909bc77dd27ddec4e720c2e605745f4e9ba459124c2cfa65f94d29c596194621b"}`)
 	_, err = client.SubmitTransaction(ctx, tx)
 	suite.Require().NoError(err)
 	time.Sleep(1 * time.Second)
 
-	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0xFA792A3E813f8eAf9998d28819fadeb4E39a2263","nonce":3,"data":"0xbb06","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x588cf62f9cb2c9c2b4a2785fdbcad247320bc80f56b89e0de937c9ff15a89a2560ba362644f5c9a01abacc2e8ed6ffd16b3eb2d860da274f880578c7f0825a211b"}`)
+	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x02b2C34b3dBdBD6C7b7CC923db5621af730171c2","nonce":3,"data":"0xbb06","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x4e1e668db167caa141bb0d707e9ad2ce0414dfd99f380ff033b3a1af4316359a674398cf42429f1936a14af5174638d8cfb84bed17029300ee8e34743dfe97601c"}`)
 	_, err = client.SubmitTransaction(ctx, tx)
 	suite.Require().NoError(err)
 	time.Sleep(10 * time.Second)
@@ -84,11 +84,13 @@ func (suite *EspressoReaderTestSuite) prepareTxs(ctx context.Context, EspressoBa
 }
 
 func (suite *EspressoReaderTestSuite) SetupSuite() {
-	appAddress := "0xFA792A3E813f8eAf9998d28819fadeb4E39a2263"
+	appAddress := "0x02b2C34b3dBdBD6C7b7CC923db5621af730171c2"
 	consensusAddress := "0xb3B509f8669b193654e5417D2fE19a3436283642"
 	inputboxAddress := "0xc70074BDD26d8cF983Ca6A5b89b8db52D5850051"
 	templatePath := "applications/echo-dapp/"
 	templateHash := "0x2fa07a837075faedd5be6215cef05e90848d01fd752e2f41b6039f3317bee84d"
+	daHex := "8579fd0c000000000000000000000000c70074bdd26d8cf983ca6a5b89b8db52d58500510000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000d903"
+	daBytes, _ := hex.DecodeString(daHex)
 	suite.application = model.Application{
 		Name:                 "test-dapp",
 		IApplicationAddress:  common.HexToAddress(appAddress),
@@ -100,7 +102,7 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 		LastInputCheckBlock:  0,
 		LastOutputCheckBlock: 0,
 		EpochLength:          10,
-		DataAvailability:     model.DataAvailability_InputBoxAndEspresso[:],
+		DataAvailability:     daBytes,
 	}
 	suite.senderAddress = common.HexToAddress("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266").String()
 
@@ -158,7 +160,7 @@ func (suite *EspressoReaderTestSuite) TestInputs() {
 	suite.Equal("bb01", params.Payload)
 
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
-	suite.Equal(common.HexToHash("0xb883efafdaf31e8d9744659bc8b2f8206b6c674853b23f6a222c3c18cbbe5a9a"), input.TransactionReference)
+	suite.Equal(common.HexToHash("0x668137ed642f71d06bc94df83bd03f2ffe2604a15e2ba31c3cde816056d46d48"), input.TransactionReference)
 
 	// input1
 	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress.Hex(), 1)
@@ -178,7 +180,7 @@ func (suite *EspressoReaderTestSuite) TestInputs() {
 	suite.Equal("bb02", params.Payload)
 
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
-	suite.Equal(common.HexToHash("0xb8e8c71bf1c7efa3669646fcd4eeada3e9e15665561e64045311e9f5dd59148a"), input.TransactionReference)
+	suite.Equal(common.HexToHash("0xcfb39b33ccae4aac59e525e45f9f4ea5daa7a81f605028bc99562f0937bfda89"), input.TransactionReference)
 
 	// input2
 	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress.Hex(), 2)
@@ -238,7 +240,7 @@ func (suite *EspressoReaderTestSuite) TestInputs() {
 	suite.Equal("bb05", params.Payload)
 
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
-	suite.Equal(common.HexToHash("0xb5496e5eb98e2c9e926dcda735cef44b2fca51078e5a1c2fc88b1265919cd223"), input.TransactionReference)
+	suite.Equal(common.HexToHash("0xf6f5e5f69d29d32a263e54301686b72124a64758be57a96ab305cd46ae836c77"), input.TransactionReference)
 
 	// input5
 	input, err = suite.database.GetInput(suite.ctx, suite.application.IApplicationAddress.Hex(), 5)
@@ -258,7 +260,7 @@ func (suite *EspressoReaderTestSuite) TestInputs() {
 	suite.Equal("bb06", params.Payload)
 
 	suite.Equal(model.InputCompletionStatus_Accepted, input.Status)
-	suite.Equal(common.HexToHash("0x37ae4f61f9cb244ede06cc9f0fc00c935b05686b0398dfa04e641d8606cc8f8f"), input.TransactionReference)
+	suite.Equal(common.HexToHash("0x4c88995e6f9e7b3001d02e215da5aa0c37176350b1261375ebfdb977ab5cf007"), input.TransactionReference)
 }
 
 func (suite *EspressoReaderTestSuite) TestEspressoNonce() {
