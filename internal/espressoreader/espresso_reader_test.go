@@ -68,7 +68,7 @@ func (suite *EspressoReaderTestSuite) prepareTxs(ctx context.Context, EspressoBa
 	L1Payload, _ = hex.DecodeString("aa04")
 	_, _, err = ethutil.AddInput(ctx, ethClient, txOpts, suite.application.IInputBoxAddress, suite.application.IApplicationAddress, L1Payload)
 	cobra.CheckErr(err)
-	time.Sleep(70 * time.Second)
+	time.Sleep(75 * time.Second)
 
 	tx.Payload = []byte(`{"typedData":{"domain":{"name":"Cartesi","version":"0.1.0","chainId":13370,"verifyingContract":"0x0000000000000000000000000000000000000000"},"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"CartesiMessage":[{"name":"app","type":"address"},{"name":"nonce","type":"uint64"},{"name":"max_gas_price","type":"uint128"},{"name":"data","type":"bytes"}]},"primaryType":"CartesiMessage","message":{"app":"0x02b2C34b3dBdBD6C7b7CC923db5621af730171c2","nonce":2,"data":"0xbb05","max_gas_price":"10"}},"account":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","signature":"0x752b903e4b271f7ffd71549bfa0667d8f07145eb49a7721111733c163f997fc97909bc77dd27ddec4e720c2e605745f4e9ba459124c2cfa65f94d29c596194621b"}`)
 	_, err = client.SubmitTransaction(ctx, tx)
