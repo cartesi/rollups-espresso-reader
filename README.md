@@ -49,7 +49,7 @@ A sample Echo application can be deployed on your local node by executing:
 
 ```bash
 INPUT_BOX_ADDRESS="0xc70074BDD26d8cF983Ca6A5b89b8db52D5850051" \
-ESPRESSO_STARTING_BLOCK="0" \
+ESPRESSO_STARTING_BLOCK="1" \
 ESPRESSO_NAMESPACE="55555" \
 DATA_AVAILABILITY=$(cast calldata \
     "InputBoxAndEspresso(address,uint256,uint32)" \
@@ -64,7 +64,7 @@ Once deployed, an L1 InputBox input can be sent using cast:
 ```bash
 INPUT=0xdeadbeef; \
 INPUT_BOX_ADDRESS=0xc70074BDD26d8cF983Ca6A5b89b8db52D5850051; \
-APPLICATION_ADDRESS=0xFA792A3E813f8eAf9998d28819fadeb4E39a2263; \
+APPLICATION_ADDRESS=0x02b2C34b3dBdBD6C7b7CC923db5621af730171c2; \
 cast send \
     --mnemonic "test test test test test test test test test test test junk" \
     --rpc-url "http://localhost:8545" \
