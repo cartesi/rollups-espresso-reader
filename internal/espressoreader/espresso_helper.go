@@ -51,8 +51,11 @@ func (eh *EspressoHelper) getL1FinalizedHeight(ctx context.Context, espressoBloc
 
 			l1FinalizedNumber := gjson.Get(espressoHeader, "fields.l1_finalized.number").Uint()
 			l1FinalizedTimestampStr := gjson.Get(espressoHeader, "fields.l1_finalized.timestamp").Str
-			if len(l1FinalizedTimestampStr) < 2 {
+			if l1FinalizedNumber == 0 || len(l1FinalizedTimestampStr) < 2 {
 				slog.Debug("Espresso header not ready. Retry fetching", "height", espressoBlockHeight)
+				if espressoBlockHeight == 0 {
+					slog.Error("Espresso header not available for block 0")
+				}
 				time.Sleep(time.Duration(delay))
 				continue
 			}
