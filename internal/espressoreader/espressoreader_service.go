@@ -10,11 +10,13 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
 	"github.com/cartesi/rollups-espresso-reader/internal/evmreader"
 	"github.com/cartesi/rollups-espresso-reader/internal/repository"
+	"github.com/rs/cors"
 
 	"github.com/EspressoSystems/espresso-network-go/client"
 	"github.com/EspressoSystems/espresso-network-go/types"
@@ -83,10 +85,34 @@ func (s *EspressoReaderService) String() string {
 func (s *EspressoReaderService) setupNonceHttpServer() {
 	nonceCache = make(map[common.Address]map[common.Address]uint64)
 
-	http.HandleFunc("/nonce", s.requestNonce)
-	http.HandleFunc("/submit", s.submit)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/nonce", s.requestNonce)
+	mux.HandleFunc("/submit", s.submit)
 
-	err := http.ListenAndServe(s.espressoServiceEndpoint, nil)
+	// Configure CORS options
+	c := cors.New(cors.Options{
+		AllowOriginFunc: func(origin string) bool {
+			// Parse the origin URL
+			u, err := url.Parse(origin)
+			if err != nil {
+				return false // Invalid origin URL
+			}
+			// Check if the scheme is http and host is localhost
+			// This covers "localhost" and "127.0.0.1" (though usually "localhost" resolves to 127.0.0.1)
+			return u.Scheme == "http" && (u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1")
+		},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"}, // Add any custom headers your frontend sends
+		ExposedHeaders:   []string{"Link"},                          // Headers to expose to the frontend
+		AllowCredentials: true,                                      // Set to true if your frontend sends cookies/auth headers
+		MaxAge:           300,                                       // Maximum age for preflight cache (in seconds)
+		// Debug: true, // Uncomment for verbose logging
+	})
+
+	// Apply the CORS middleware to your handler
+	handler := c.Handler(mux)
+
+	err := http.ListenAndServe(s.espressoServiceEndpoint, handler)
 	if err != nil {
 		panic(fmt.Sprintf("failed to start the transaction endpoints /nonce and /submit: %v", err))
 	}
