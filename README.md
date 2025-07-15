@@ -2,6 +2,11 @@
 
 Input reader implementation for the [Cartesi Rollups Node](https://github.com/cartesi/rollups-node) that follows an [Espresso Network](https://docs.espressosys.com/network) to fetch input data.
 
+The latest version of this reader is based on the following releases:
+
+- [Cartesi Rollups Node v2.0.0-alpha.6](https://github.com/cartesi/rollups-node/tree/v2.0.0-alpha.6)
+- [Espresso SDK v20250623](https://github.com/EspressoSystems/espresso-network/tree/20250623). 
+
 ## Introduction
 
 [Espresso Systems](https://www.espressosys.com/) provides a decentralized sequencer and data availability system, which can be very useful to scale layer-2 rollup solutions.
@@ -85,7 +90,7 @@ To start up your node, execute:
 NODE_ENV_FILE=./ci/env.nodev2-sepolia-decaf docker compose up -d db cartesi_node_espresso
 ```
 
-You should then deploy a testnet application (similarly to sample Echo deployment described above), or register an existing testnet application on your node.
+You should then deploy a testnet application (similarly to the sample Echo deployment described above), or register an existing testnet application on your node.
 To register, execute the following:
 
 ```bash
