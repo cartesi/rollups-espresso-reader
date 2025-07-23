@@ -230,3 +230,14 @@ jobs:
           goarch: ${{ matrix.goarch }}
           extra_files: CHANGELOG.md LICENSE README.md
           binary_name: cartesi-rollups-espresso-reader
+
+      - uses: wangyoucao577/go-release-action@v1
+        with:
+          overwrite: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          extra_files: CHANGELOG.md LICENSE README.md
+          project_path: ./dev/migrate/main
+          binary_name: cartesi-rollups-espresso-reader-db-migration
+          asset_name: cartesi-rollups-espresso-reader-bd-migration-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
