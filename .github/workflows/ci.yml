@@ -214,6 +214,6 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           extra_files: CHANGELOG.md LICENSE README.md
-          project_path: ./dev/migrate/main
+          project_path: ./dev/migrate
           binary_name: cartesi-rollups-espresso-reader-db-migration
           asset_name: cartesi-rollups-espresso-reader-bd-migration-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
