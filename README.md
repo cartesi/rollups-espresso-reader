@@ -112,7 +112,7 @@ First build the Espresso Reader itself:
 go build
 ```
 
-To run it alongside a Cartesi Rollups Node checked out from its [repository](https://github.com/cartesi/rollups-node/releases/tag/v2.0.0-dev-20250604):
+To run it alongside a Cartesi Rollups Node checked out from its [repository](https://github.com/cartesi/rollups-node/releases/tag/v2.0.0-alpha.6):
 
 ```bash
 cd <path-to-cartesi-rollups-node>
